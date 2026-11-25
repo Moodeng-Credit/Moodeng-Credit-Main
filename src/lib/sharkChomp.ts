@@ -300,40 +300,41 @@ export const callCountdownLabel = (startsAtIso: string | null, now: number): str
    return `Your call starts in ${min} min`;
 };
 
-// One level = one lesson about borrowing safely, shown on a card before it starts (George
-// 2026-11-25: levels that teach how the platform works). Keep each line short and plain (8th-grade
-// English, Filipino first-time borrowers). After the last one, the lessons repeat.
+// One level = one Moodeng rule. Moo-Guard (the house guardian) explains it in Moodeng's House
+// after each level (George 2026-11-25: "each level is 1 rule"). Short, plain 8th-grade English for
+// Filipino first-time borrowers; every line must be true of how Moodeng works today. After the last
+// rule they repeat.
 export type Lesson = { title: string; text: string; tip?: string };
 export const LEVELS: Lesson[] = [
    {
-      title: 'Spot the loan shark',
-      text: 'Loan sharks lend fast, then pile on interest and threaten you when you’re late. That’s how debt traps start.',
-      tip: 'Chomp every shark to clear the level!'
+      title: 'Show up to your call',
+      text: 'Every new borrower meets us on a short video call. Bring your real ID and turn your camera on. It keeps scammers out.',
+      tip: 'Snacks hide in the seaweed. Chomp it!'
    },
    {
-      title: 'Meet us on a quick call',
-      text: 'Moodeng meets every new borrower on a short video call. It keeps scammers and fake accounts out.',
-      tip: 'Grab 🍞 pandesal to swim faster.'
+      title: 'One account, your real name',
+      text: 'Borrow only for yourself, with your own name, ID and Facebook. Two accounts or borrowing for someone else gets you rejected.',
+      tip: 'Pandesal makes you swim faster.'
    },
    {
       title: 'Start small, grow',
-      text: 'Your first loan is small. Pay it back on time and your limit can grow, step by step.',
-      tip: 'Eat 🥭 mangoes to grow your bite too.'
+      text: 'Your first loan is small. Pay it back on time and your limit grows, step by step.',
+      tip: 'Mango gives you a longer bite.'
    },
    {
-      title: 'No surprises',
-      text: 'One clear fee and one due date. You always know what you’ll pay back. No hidden charges.',
-      tip: 'Halo-halo gives you a shield for a few seconds.'
+      title: 'Know what you owe',
+      text: 'One fixed fee and one due date, shown before you borrow. No hidden charges, no surprises.',
+      tip: 'Halo-halo gives you a shield.'
    },
    {
       title: 'Pay on time',
-      text: 'Paying on time earns rewards and raises your limit. Late payments are recorded and can close your account.',
+      text: 'Paying on time earns rewards and a bigger limit. Late payments are recorded and can close your account.',
       tip: 'Turon gives you an extra heart.'
    },
    {
-      title: 'Bring friends, not debt',
+      title: 'Bring friends, not loan sharks',
       text: 'Invite friends to Moodeng instead of a loan shark. When they repay on time, you get rewarded.',
-      tip: 'Now the sharks get faster. Good luck!'
+      tip: 'The sharks get faster now. Good luck!'
    }
 ];
 export const lessonFor = (wave: number): Lesson & { level: number } => ({ ...LEVELS[(wave - 1) % LEVELS.length], level: wave });

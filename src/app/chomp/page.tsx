@@ -108,8 +108,8 @@ const moving = (g: Glide, now: number) => now - g.start < g.dur && (g.from.x !==
 // Little effects: the CHOMP! pop, eaten-shark poofs, the hit ring.
 type Fx = { kind: 'chomp' | 'poof' | 'hit' | 'pickup'; at: Pos; start: number; text?: string; flip?: boolean };
 
-// intro = the story; lesson = level 1's card; playing; house = Moodeng's House between levels; over.
-type Phase = 'intro' | 'lesson' | 'playing' | 'house' | 'over';
+// intro = the one-tap Play card; playing; house = Moodeng's House between levels (lesson, shop, wheel); over.
+type Phase = 'intro' | 'playing' | 'house' | 'over';
 
 const FOOD_FX: Record<Food, string> = {
    pandesal: 'Pandesal! Faster 💨',
@@ -119,19 +119,6 @@ const FOOD_FX: Record<Food, string> = {
 };
 const FAST_MOVE_MS = 105;
 
-// The story before the first level (George 2026-11-25: explain that loan sharks are bad).
-const INTRO_SLIDES = [
-   {
-      img: '/chomp/shark.webp',
-      title: 'Loan sharks are bad news',
-      text: 'They lend fast, then add huge interest and threaten you when you’re late. Many families get stuck paying them for years.'
-   },
-   {
-      img: '/hippos/body/hippo-body.webp',
-      title: 'Moodeng is the fair way',
-      text: 'Small loans, clear terms, real people. Pay on time and your limit grows. Now help Moodeng chase the sharks away!'
-   }
-] as const;
 
 const useImages = () => {
    const ref = useRef<Record<keyof typeof SPRITES, HTMLImageElement> | null>(null);
@@ -148,6 +135,18 @@ const useImages = () => {
 };
 
 const ready = (img?: HTMLImageElement) => Boolean(img?.complete && img.naturalWidth > 0);
+
+// A sprite by name, loading it on first use if it isn't in the set yet (e.g. art added while a tab
+// was open). Never throws; the caller falls back while it loads.
+const sprite = (ref: { current: Record<keyof typeof SPRITES, HTMLImageElement> | null }, key: keyof typeof SPRITES): HTMLImageElement | undefined => {
+   if (!ref.current) return undefined;
+   if (!ref.current[key]) {
+      const img = new Image();
+      img.src = SPRITES[key];
+      ref.current[key] = img;
+   }
+   return ref.current[key];
+};
 
 export default function SharkChompPage() {
    const [params] = useSearchParams();
@@ -171,7 +170,6 @@ export default function SharkChompPage() {
    const [joyKnob, setJoyKnob] = useState<{ dx: number; dy: number } | null>(null);
 
    const [phase, setPhase] = useState<Phase>('intro');
-   const [slide, setSlide] = useState(0);
    const [powers, setPowers] = useState({ fast: 0, shield: 0 });
    const [coins, setCoins] = useState(0);
    // Moodeng's House: power-ups bought (or won) for the next level, and the wheel.
@@ -337,12 +335,13 @@ export default function SharkChompPage() {
       stateRef.current = newWave(1, Math.random);
       snapAll(stateRef.current, at);
       fx.current = [];
-      setPhase('lesson');
+      lastSharkStep.current = at + 900; // a breath before the sharks start swimming
+      setPhase('playing');
       sync();
       clarityEvent('chomp_game_start');
    };
 
-   // From the level-1 card, or out of Moodeng's House into the next level (with what they bought/won).
+   // Out of Moodeng's House into the next level (with what they bought/won).
    const beginLevel = () => {
       const at = Date.now();
       if (stateRef.current.inHouse) {
@@ -527,29 +526,24 @@ export default function SharkChompPage() {
                   const nom = sinceBite < 200 ? 'open' : sinceBite < 560 ? 'munch' : null;
                   // She faces the way she swims: side frames left/right, front frames down, back frames up.
                   const vertical = s.facing === 'up' || s.facing === 'down';
-                  const sheet = imgs.current;
                   const step = walking ? stride : 0;
-                  const img = nom === 'open'
-                     ? sheet?.nomOpen
-                     : nom === 'munch'
-                       ? sheet?.nomMunch
-                       : s.facing === 'down'
-                         ? (step ? sheet?.front2 : sheet?.front1)
-                         : s.facing === 'up'
-                           ? (step ? sheet?.back2 : sheet?.back1)
-                           : step
-                             ? sheet?.run2
-                             : sheet?.run1;
+                  const wanted: keyof typeof SPRITES =
+                     nom === 'open' ? 'nomOpen' : nom === 'munch' ? 'nomMunch' : s.facing === 'down' ? (step ? 'front2' : 'front1') : s.facing === 'up' ? (step ? 'back2' : 'back1') : step ? 'run2' : 'run1';
+                  // Still loading? Show the plain side-view Moodeng meanwhile, never an emoji.
+                  const chosen = sprite(imgs, wanted);
+                  const usable = ready(chosen);
+                  const img = usable ? chosen : sprite(imgs, 'run1');
+                  const big = usable && (nom !== null || vertical);
                   const nw = img?.naturalWidth || 80;
                   const nh = img?.naturalHeight || 120;
-                  const h = nom ? t * 1.42 : vertical ? t * 1.36 : t * 1.3 * (nh / 120);
+                  const h = big ? (nom ? t * 1.42 : t * 1.36) : t * 1.3 * (nh / 120);
                   const w = h * (nw / nh);
                   const bounce = walking ? Math.abs(Math.sin(at / STRIDE_MS * Math.PI)) * t * 0.09 : 0;
                   const breathe = walking ? 1 : 1 + Math.sin(at / 500) * 0.025;
                   const squash = 1 + lunge * 0.14;
                   ctx.save();
                   ctx.translate(cx, by - bounce);
-                  if (faceLeft.current && (!vertical || nom)) ctx.scale(-1, 1);
+                  if (faceLeft.current && (!vertical || nom || !usable)) ctx.scale(-1, 1);
                   ctx.scale(squash, breathe / (1 + lunge * 0.06));
                   if (hurt) ctx.globalAlpha = 0.6;
                   if (at < s.fastUntil && walking) {
@@ -576,10 +570,6 @@ export default function SharkChompPage() {
                      ctx.beginPath();
                      ctx.arc(0, -h * 0.45, h * 0.62, 0, Math.PI * 2);
                      ctx.fill();
-                  }
-                  else {
-                     ctx.font = `${Math.floor(t * 0.9)}px system-ui, "Apple Color Emoji", sans-serif`;
-                     ctx.fillText('🦛', 0, -t * 0.5);
                   }
                   ctx.restore();
                }
@@ -847,6 +837,17 @@ export default function SharkChompPage() {
                            I&apos;m already in the call
                         </button>
                      </div>
+                  ) : phase === 'intro' ? (
+                     // One tap to play (George 2026-11-25: "one click and you can play, not 3 pages").
+                     <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[#f8f1ffe6] px-5 text-center">
+                        <img alt="Moodeng the hippo chasing off a loan shark" className="max-h-[38%] w-auto object-contain" src={SPRITES.hero} />
+                        <span className="text-[26px] font-bold leading-tight">Chomp the loan sharks!</span>
+                        <span className="text-[15px] leading-snug">Loan sharks trap people with huge interest. Help Moodeng chase them away.</span>
+                        <button className={goldBtn} onClick={start} type="button">
+                           ▶ Play
+                        </button>
+                        <span className="text-[13px] text-[#7b6b8c]">Slide to swim · tap CHOMP to eat · grab snacks for power</span>
+                     </div>
                   ) : phase === 'over' ? (
                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[#f8f1ffee] px-5 text-center">
                         <img alt="" className="h-[30%] w-auto" src={SPRITES.shark} />
@@ -900,178 +901,174 @@ export default function SharkChompPage() {
             </div>
          </div>
 
-         {phase === 'intro' || phase === 'lesson' || phase === 'house' ? (
-            <div
-               className="absolute inset-0 z-10 overflow-y-auto bg-[#f8f1ff]"
-               style={{ paddingTop: 'max(14px, env(safe-area-inset-top))', paddingBottom: 'max(16px, env(safe-area-inset-bottom))', touchAction: 'pan-y' }}
-            >
-               <div className="mx-auto flex min-h-full w-full max-w-[440px] flex-col items-center gap-4 px-5 text-center">
-                  {callLabel ? (
-                     <div className="flex w-full items-center justify-between gap-2 rounded-full bg-white px-4 py-2 text-[14px] font-semibold shadow-sm">
-                        <span>⏰ {callLabel}</span>
-                        {joinUrl ? (
-                           <a className="flex items-center gap-1 text-[#6b55f7]" href={joinUrl} rel="noreferrer" target="_blank">
-                              <Video aria-hidden="true" className="size-4" /> Join
-                           </a>
-                        ) : null}
-                     </div>
-                  ) : null}
-
-                  {phase === 'intro' ? (
-                     <>
-                        <div className="flex flex-1 flex-col items-center justify-center gap-4">
-                           <img alt="" className="h-[200px] w-auto object-contain" src={INTRO_SLIDES[slide].img} />
-                           <h1 className="text-[26px] font-bold leading-tight">{INTRO_SLIDES[slide].title}</h1>
-                           <p className="text-[16px] leading-snug">{INTRO_SLIDES[slide].text}</p>
-                           <div className="flex gap-1.5">
-                              {INTRO_SLIDES.map((sl, i) => (
-                                 <span className={`size-2 rounded-full ${i === slide ? 'bg-[#7661f9]' : 'bg-[#d8cffc]'}`} key={sl.title} />
-                              ))}
-                           </div>
-                        </div>
-                        {slide < INTRO_SLIDES.length - 1 ? (
-                           <button className={goldBtn} onClick={() => setSlide(slide + 1)} type="button">
-                              Next
-                           </button>
-                        ) : (
-                           <>
-                              <div className="w-full rounded-[18px] bg-white p-4 text-left text-[14px] shadow-sm">
-                                 <p className="mb-2 font-bold">How to play</p>
-                                 <p>👈 Slide your thumb on the left to swim.</p>
-                                 <p>👉 Tap <b>CHOMP</b>: Moodeng dashes forward and eats sharks.</p>
-                                 <p className="mb-2">🚪 Eat every shark and a door opens to Moodeng&apos;s House.</p>
-                                 <p className="mb-1 font-bold">Snacks in the seaweed</p>
-                                 <ul className="grid grid-cols-2 gap-2">
-                                    {FOOD_LIST.map((f) => (
-                                       <li className="flex items-center gap-2" key={f}>
-                                          <img alt="" className="h-[28px] w-[34px] object-contain" src={SPRITES[f]} />
-                                          <span className="leading-tight">
-                                             <b>{FOODS[f].name}</b>
-                                             <br />
-                                             <span className="text-[12px] text-[#7b6b8c]">{FOODS[f].power}</span>
-                                          </span>
-                                       </li>
-                                    ))}
-                                 </ul>
-                              </div>
-                              <button className={goldBtn} onClick={start} type="button">
-                                 Let&apos;s chomp!
-                              </button>
-                           </>
-                        )}
-                     </>
-                  ) : phase === 'lesson' ? (
-                     <LessonCard onGo={beginLevel} wave={hud.wave} />
-                  ) : (
-                     <>
-                        <h1 className="text-[24px] font-bold">🏠 Moodeng&apos;s House</h1>
-                        <p className="-mt-2 text-[15px]">You cleared level {hud.wave}! Rest here, then on to the next.</p>
-                        <LessonCard wave={hud.wave + 1} />
-
-                        {wheel.due ? (
-                           <PrizeWheel
-                              angle={wheel.angle}
-                              onSpin={() => {
-                                 const i = spinWheel(Math.random);
-                                 let before = 0;
-                                 for (let j = 0; j < i; j++) before += WHEEL[j].weight;
-                                 const mid = ((before + WHEEL[i].weight * (0.2 + Math.random() * 0.6)) / WHEEL_TOTAL) * 360;
-                                 setWheel({ due: true, spun: -1, angle: 360 * 6 + (360 - mid) });
-                                 window.setTimeout(() => {
-                                    const prize = WHEEL[i];
-                                    if (prize.coins) stateRef.current = { ...stateRef.current, coins: stateRef.current.coins + prize.coins };
-                                    if (prize.snack) setPending((p) => [...p, prize.snack as Food]);
-                                    setWheel((w) => ({ ...w, spun: i }));
-                                    sync();
-                                    buzz(30);
-                                    clarityEvent('chomp_wheel_spin');
-                                 }, 4200);
-                              }}
-                              spun={wheel.spun}
-                           />
-                        ) : null}
-
-                        <div className="w-full rounded-[18px] bg-white p-4 text-left shadow-sm">
-                           <div className="mb-2 flex items-center justify-between">
-                              <span className="font-bold">Power up for the next level</span>
-                              <span className="font-bold">🍞 {coins}</span>
-                           </div>
-                           <ul className="flex flex-col gap-2">
-                              {FOOD_LIST.map((f) => {
-                                 const price = SHOP[f];
-                                 const can = coins >= price;
-                                 return (
-                                    <li className="flex items-center gap-3" key={f}>
-                                       <img alt="" className="h-[36px] w-[44px] object-contain" src={SPRITES[f]} />
-                                       <span className="flex-1 leading-tight">
-                                          <b>{FOODS[f].name}</b>
-                                          <br />
-                                          <span className="text-[12px] text-[#7b6b8c]">{FOODS[f].power}</span>
-                                       </span>
-                                       <button
-                                          className={`min-h-[40px] min-w-[74px] rounded-full px-3 text-[14px] font-bold ${can ? 'bg-[#ffb703] text-[#3b2a00]' : 'bg-[#eee8f6] text-[#b3a5c4]'}`}
-                                          disabled={!can}
-                                          onClick={() => {
-                                             if (stateRef.current.coins < price) return;
-                                             stateRef.current = { ...stateRef.current, coins: stateRef.current.coins - price };
-                                             setPending((p) => [...p, f]);
-                                             sync();
-                                             buzz(12);
-                                          }}
-                                          type="button"
-                                       >
-                                          🍞 {price}
-                                       </button>
-                                    </li>
-                                 );
-                              })}
-                           </ul>
-                           {pending.length ? (
-                              <p className="mt-3 flex flex-wrap items-center gap-1 text-[13px] font-semibold text-[#2f7a3a]">
-                                 Ready for next level:
-                                 {FOOD_LIST.filter((f) => pending.includes(f)).map((f) => (
-                                    <span className="flex items-center" key={f}>
-                                       <img alt={FOODS[f].name} className="h-[22px] w-auto" src={SPRITES[f]} />
-                                       {pending.filter((x) => x === f).length > 1 ? `×${pending.filter((x) => x === f).length}` : ''}
-                                    </span>
-                                 ))}
-                              </p>
-                           ) : (
-                              <p className="mt-3 text-[12px] text-[#7b6b8c]">Earn 🍞 pandesal points: 1 per shark, 3 per level.</p>
-                           )}
-                        </div>
-
-                        <button className={goldBtn} disabled={wheel.spun === -1} onClick={beginLevel} type="button">
-                           Level {hud.wave + 1} ▶
-                        </button>
-                     </>
-                  )}
-               </div>
-            </div>
+         {phase === 'house' ? (
+            <HouseRoom
+               callLabel={callLabel}
+               coins={coins}
+               joinUrl={joinUrl}
+               onBuy={(f) => {
+                  const price = SHOP[f];
+                  if (stateRef.current.coins < price) return;
+                  stateRef.current = { ...stateRef.current, coins: stateRef.current.coins - price };
+                  setPending((p) => [...p, f]);
+                  sync();
+                  buzz(12);
+               }}
+               onExit={beginLevel}
+               onSpin={() => {
+                  const i = spinWheel(Math.random);
+                  let before = 0;
+                  for (let j = 0; j < i; j++) before += WHEEL[j].weight;
+                  const mid = ((before + WHEEL[i].weight * (0.2 + Math.random() * 0.6)) / WHEEL_TOTAL) * 360;
+                  setWheel({ due: true, spun: -1, angle: 360 * 6 + (360 - mid) });
+                  window.setTimeout(() => {
+                     const prize = WHEEL[i];
+                     if (prize.coins) stateRef.current = { ...stateRef.current, coins: stateRef.current.coins + prize.coins };
+                     if (prize.snack) setPending((p) => [...p, prize.snack as Food]);
+                     setWheel((w) => ({ ...w, spun: i }));
+                     sync();
+                     buzz(30);
+                     clarityEvent('chomp_wheel_spin');
+                  }, 4200);
+               }}
+               pending={pending}
+               wave={hud.wave}
+               wheel={wheel}
+            />
          ) : null}
       </main>
    );
 }
 
-// The lesson for a level: Moodeng with a short, plain explanation of how borrowing with us works.
-function LessonCard({ wave, onGo }: { wave: number; onGo?: () => void }) {
-   const lesson = lessonFor(wave);
+// Moodeng's House, after each level: Moo-Guard (our own chibi robot guardian, Gemini art) walks in
+// and explains that level's Moodeng rule in a speech bubble; then a small snack shop, the bonus
+// wheel every other level, and one button back out to the next level.
+function HouseRoom(props: {
+   wave: number;
+   coins: number;
+   pending: Food[];
+   wheel: { due: boolean; spun: number | null; angle: number };
+   callLabel: string | null;
+   joinUrl: string | null;
+   onBuy: (f: Food) => void;
+   onSpin: () => void;
+   onExit: () => void;
+}) {
+   const { wave, coins, pending, wheel, callLabel, joinUrl, onBuy, onSpin, onExit } = props;
+   const rule = lessonFor(wave);
+   const said = `${rule.text}`;
+   const [typed, setTyped] = useState(0);
+   useEffect(() => {
+      setTyped(0);
+      const start = window.setTimeout(() => {
+         const t = window.setInterval(() => setTyped((n) => (n >= said.length ? (window.clearInterval(t), n) : n + 2)), 22);
+      }, 700); // after Moo-Guard has walked in
+      return () => window.clearTimeout(start);
+   }, [said]);
+   const done = typed >= said.length;
    return (
-      <div className="flex w-full flex-col items-center gap-2 rounded-[18px] border-2 border-[#7661f9] bg-white p-4 shadow-sm">
-         <span className="text-[12px] font-bold uppercase tracking-[0.08em] text-[#7661f9]">Level {lesson.level}</span>
-         <img alt="" className="h-[110px] w-auto" src="/hippos/body/hippo-body.webp" />
-         <h2 className="text-[20px] font-bold leading-tight">{lesson.title}</h2>
-         <p className="text-[15px] leading-snug">{lesson.text}</p>
-         {lesson.tip ? <p className="text-[13px] font-semibold text-[#7b6b8c]">{lesson.tip}</p> : null}
-         {onGo ? (
+      <div
+         className="absolute inset-0 z-10 overflow-y-auto bg-[#f3ecff] bg-cover bg-top"
+         style={{
+            backgroundImage: "url('/chomp/room.webp')",
+            paddingTop: 'max(12px, env(safe-area-inset-top))',
+            paddingBottom: 'max(16px, env(safe-area-inset-bottom))',
+            touchAction: 'pan-y'
+         }}
+      >
+         <style>{`
+            @keyframes guardIn { from { transform: translateX(130%) rotate(8deg); } 70% { transform: translateX(-6%) rotate(-3deg); } to { transform: translateX(0) rotate(0); } }
+            @keyframes guardBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+            @keyframes bubbleIn { from { opacity: 0; transform: scale(0.8) translateY(10px); } to { opacity: 1; transform: none; } }
+         `}</style>
+         <div className="mx-auto flex min-h-full w-full max-w-[440px] flex-col gap-3 px-4">
+            {callLabel ? (
+               <div className="flex items-center justify-between gap-2 rounded-full bg-white/95 px-4 py-2 text-[14px] font-semibold text-[#594d65] shadow-sm">
+                  <span>⏰ {callLabel}</span>
+                  {joinUrl ? (
+                     <a className="flex items-center gap-1 text-[#6b55f7]" href={joinUrl} rel="noreferrer" target="_blank">
+                        <Video aria-hidden="true" className="size-4" /> Join
+                     </a>
+                  ) : null}
+               </div>
+            ) : null}
+
+            <span className="mx-auto mt-1 rounded-full bg-[#7661f9] px-3 py-1 text-[13px] font-bold text-white shadow">
+               Level {wave} cleared! · Rule #{((wave - 1) % 6) + 1}
+            </span>
+
+            {/* Speech bubble */}
             <button
-               className="mt-1 flex min-h-[52px] w-full items-center justify-center rounded-full bg-[#ffb703] text-[18px] font-bold text-[#3b2a00] shadow-[0_6px_16px_rgba(255,183,3,0.4)]"
-               onClick={onGo}
+               className="relative mt-2 rounded-[20px] bg-white px-4 py-3 text-left text-[#594d65] shadow-[0_8px_24px_rgba(89,77,101,0.18)]"
+               onClick={() => setTyped(said.length)}
+               style={{ animation: 'bubbleIn 300ms ease-out 650ms both' }}
                type="button"
             >
-               Start level {lesson.level}
+               <span className="block text-[12px] font-bold uppercase tracking-[0.06em] text-[#7661f9]">Moo-Guard</span>
+               <span className="block text-[19px] font-bold leading-tight">{rule.title}</span>
+               <span className="mt-1 block min-h-[60px] text-[15px] leading-snug">
+                  {said.slice(0, typed)}
+                  {done ? null : <span className="opacity-40">▍</span>}
+               </span>
+               <span className="absolute -bottom-[10px] right-[38%] size-5 rotate-45 bg-white" />
             </button>
-         ) : null}
+
+            {/* Moo-Guard walks in, then bobs while talking; thumbs up when done. */}
+            <div className="flex justify-center" style={{ animation: 'guardIn 650ms cubic-bezier(0.2, 0.9, 0.3, 1) both' }}>
+               <img
+                  alt="Moo-Guard, the robot guardian of Moodeng's House"
+                  className="h-[min(150px,18dvh)] w-auto drop-shadow-[0_10px_12px_rgba(60,40,90,0.3)]"
+                  draggable={false}
+                  src={done ? '/chomp/guard-thumbs.webp' : '/chomp/guard-wave.webp'}
+                  style={{ animation: done ? 'none' : 'guardBob 600ms ease-in-out infinite' }}
+               />
+            </div>
+
+            {done ? (
+               <>
+                  {wheel.due ? <PrizeWheel angle={wheel.angle} onSpin={onSpin} spun={wheel.spun} /> : null}
+
+                  <div className="rounded-[18px] bg-white/95 p-3 text-[#594d65] shadow-sm">
+                     <div className="mb-2 flex items-center justify-between text-[14px] font-bold">
+                        <span>Snacks for the next level</span>
+                        <span>🍞 {coins}</span>
+                     </div>
+                     <div className="grid grid-cols-4 gap-2">
+                        {FOOD_LIST.map((f) => {
+                           const can = coins >= SHOP[f];
+                           const have = pending.filter((x) => x === f).length;
+                           return (
+                              <button
+                                 className={`relative flex flex-col items-center gap-0.5 rounded-[14px] border-2 px-1 py-2 text-[12px] font-bold ${can ? 'border-[#ffb703] bg-[#fff8e6]' : 'border-[#eee8f6] bg-[#faf7fd] opacity-60'}`}
+                                 disabled={!can}
+                                 key={f}
+                                 onClick={() => onBuy(f)}
+                                 type="button"
+                              >
+                                 <img alt="" className="h-[32px] w-[40px] object-contain" src={SPRITES[f]} />
+                                 <span>{FOODS[f].name}</span>
+                                 <span className="text-[11px] font-semibold text-[#7b6b8c]">{FOODS[f].power.split(':')[0]}</span>
+                                 <span className="text-[#3b2a00]">🍞 {SHOP[f]}</span>
+                                 {have ? <span className="absolute -right-1 -top-1 rounded-full bg-[#2f9e44] px-1.5 text-[11px] text-white">✓{have > 1 ? have : ''}</span> : null}
+                              </button>
+                           );
+                        })}
+                     </div>
+                  </div>
+
+                  <button
+                     className="flex min-h-[54px] w-full items-center justify-center gap-2 rounded-full bg-[#ffb703] text-[18px] font-bold text-[#3b2a00] shadow-[0_6px_16px_rgba(255,183,3,0.4)] active:scale-[0.98] disabled:opacity-60"
+                     disabled={wheel.spun === -1}
+                     onClick={onExit}
+                     type="button"
+                  >
+                     Got it! Level {wave + 1} ▶
+                  </button>
+               </>
+            ) : (
+               <span className="text-center text-[13px] font-semibold text-[#594d65]">Tap the bubble to skip</span>
+            )}
+         </div>
       </div>
    );
 }
