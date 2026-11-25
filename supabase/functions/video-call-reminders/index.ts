@@ -17,7 +17,7 @@ import {
    sendWaitingMessenger
 } from '../_shared/videoCall.ts';
 import { autoMarkNoShow, closeReleasedCall, promptAdminsForAttendance } from '../_shared/videoCallOutcome.ts';
-import { buildCallConfirmTemplate, CALL_CONFIRM_WHATSAPP_SETTING_KEY, CONFIRM_CLOSES_MIN, COUNTDOWN_SORRY, countdownTitle, minutesLeft, RUNG, type Rung, shouldReleaseSlot, skipsConfirmAsk, skipsDayBeforeReminder, targetRung } from './lib.ts';
+import { buildCallConfirmTemplate, CALL_CONFIRM_WHATSAPP_SETTING_KEY, CONFIRM_CLOSES_MIN, COUNTDOWN_SORRY, countdownTitle, gameInvite, minutesLeft, spinModeOn, RUNG, type Rung, shouldReleaseSlot, skipsConfirmAsk, skipsDayBeforeReminder, targetRung } from './lib.ts';
 import { cancelCalBooking } from '../_shared/calcomCancel.ts';
 import { cancelCallButton } from '../_shared/callCancel.ts';
 import { isInternalRequest } from '../_shared/internalAuth.ts';
@@ -193,7 +193,8 @@ const countdown = async (svc: Svc, u: ReminderUser, minutes: number) => {
    const title = countdownTitle(minutes);
    const body = `${minutes > 0 ? 'Tap to join when it starts.' : 'Tap to join now.'} Have your ID ready and video on.\n\n${COUNTDOWN_SORRY}`;
    await push(svc, u, title, body, u.video_call_join_url ?? `${SITE_URL}/request-board`);
-   const game: TelegramInlineKeyboard = minutes >= 10 ? [[{ text: '🦈 Play Shark Chomp while you wait', url: buildWaitGameUrl(u) }]] : [];
+   const invite = gameInvite(buildWaitGameUrl(u), spinOnThisRun);
+   const game: TelegramInlineKeyboard = minutes >= 10 ? [[{ text: invite.button, url: buildWaitGameUrl(u) }]] : [];
    const buttons = [...(joinButton(u) ?? []), ...game];
    await telegram(
       u,
@@ -203,8 +204,11 @@ const countdown = async (svc: Svc, u: ReminderUser, minutes: number) => {
          ? { svc, event: 'call_soon', data: { minutes, joinUrl: u.video_call_join_url } }
          : { svc, event: 'call_starting', data: { joinUrl: u.video_call_join_url } }
    );
-   logMessenger(u, await sendCountdownMessenger(u, minutes));
+   logMessenger(u, await sendCountdownMessenger(u, minutes, invite.text));
 };
+
+// Read once per run: is Moo-Spin on for borrowers? (Only then do reminders mention the game's spin.)
+let spinOnThisRun = false;
 
 // The ✅ ask reached nobody (Messenger's 24h window closed, no WhatsApp / Telegram / app), so the call is
 // kept but may well be a no-show: tell the team group + Discord #bookings so the host isn't waiting
@@ -346,6 +350,8 @@ serve(async (req) => {
 
    const svc = createClient(SUPABASE_URL, SERVICE_KEY);
    if (!(await isInternalRequest(svc, req))) return json({ error: 'unauthorized' }, 401);
+   const { data: spinRow } = await svc.from('telegram_bot_settings').select('value').eq('key', 'spin_wheel').maybeSingle();
+   spinOnThisRun = spinModeOn(spinRow?.value as string | undefined);
    const now = Date.now();
 
    // Every booking from LOOKBACK_H ago to ~25h ahead that hasn't finished the ladder or been decided.

@@ -1,6 +1,6 @@
 import { assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
-import { buildCallConfirmTemplate, countdownTitle, minutesLeft, RUNG, shouldReleaseSlot, skipsDayBeforeReminder, skipsConfirmAsk, targetRung } from './lib.ts';
+import { buildCallConfirmTemplate, countdownTitle, gameInvite, minutesLeft, RUNG, spinModeOn, shouldReleaseSlot, skipsDayBeforeReminder, skipsConfirmAsk, targetRung } from './lib.ts';
 
 const H = 60 * 60 * 1000;
 const start = Date.parse('2026-09-25T08:00:00Z');
@@ -64,4 +64,13 @@ Deno.test('countdown: the real minutes left, singular for 1, "starting now" at 0
    assertEquals(countdownTitle(30), 'Your Moodeng call starts in 30 minutes ⏰');
    assertEquals(countdownTitle(1), 'Your Moodeng call starts in 1 minute ⏰');
    assertEquals(countdownTitle(0), 'Your Moodeng call is starting now 👋');
+});
+
+Deno.test('game invite: mentions the Moo-Spin only while Moo-Spin is on for borrowers', () => {
+   assertEquals(gameInvite('https://moodeng.app/chomp', false).text, '🦈 Bored waiting? Play Shark Chomp: https://moodeng.app/chomp');
+   assertEquals(gameInvite('u', true).text.includes('Moo-Spin'), true);
+   assertEquals(spinModeOn('{"mode":"on","pot":{}}'), true);
+   assertEquals(spinModeOn('{"mode":"team"}'), false);
+   assertEquals(spinModeOn('not json'), false);
+   assertEquals(spinModeOn(null), false);
 });

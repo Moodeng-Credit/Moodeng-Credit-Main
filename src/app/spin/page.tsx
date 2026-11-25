@@ -1,7 +1,7 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { Gift, Loader2, Lock, Sparkles } from 'lucide-react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 
 import BrandedVideo from '@/components/BrandedVideo';
 
@@ -10,6 +10,8 @@ import { useAnswerSpinCampaign, useRefreshSpinState, useSpinState, useSpinWheel 
 import { EXTERNAL_LINKS } from '@/config/externalLinks';
 import {
    BLOCKED_TEXT,
+   earnGameSpin,
+   GAME_SPIN_TEXT,
    PRIZE_HEADLINE,
    SLICE_DEG,
    type SpinCampaign,
@@ -279,6 +281,26 @@ export default function SpinPage({ sample }: { sample?: SpinState } = {}) {
       : null;
    const state = useSpinState(code, !sample);
    const refresh = useRefreshSpinState();
+   // /spin?game=1: back from Shark Chomp (level 3) — save their one game spin, then show it.
+   const [params] = useSearchParams();
+   const fromGame = params.get('game') === '1' && !sample;
+   const [gameNote, setGameNote] = useState<string | null>(null);
+   const earned = useRef(false);
+   useEffect(() => {
+      if (!fromGame || earned.current) return;
+      earned.current = true;
+      earnGameSpin()
+         .then((r) => {
+            setGameNote(GAME_SPIN_TEXT[r.saved ? 'saved' : r.had ? 'had' : (r.reason ?? 'no_call')]);
+            try {
+               if (r.saved || r.had) window.localStorage.setItem('md_chomp_spin', 'saved');
+            } catch {
+               /* private mode */
+            }
+            refresh();
+         })
+         .catch(() => setGameNote(null));
+   }, [fromGame, refresh]);
    const spin = useSpinWheel();
    const [rotation, setRotation] = useState(0);
    const [spinning, setSpinning] = useState(false);
@@ -360,7 +382,16 @@ export default function SpinPage({ sample }: { sample?: SpinState } = {}) {
                </p>
             ) : data.blocked ? (
                <div className="flex flex-col gap-3 rounded-[24px] bg-white p-5 text-center shadow-[0_2px_10px_rgba(80,60,120,0.12)] dark:bg-[#1b1428]">
-                  <p className="text-[18px] font-bold text-[#3b2f4a] dark:text-[#f5f0ff]">{BLOCKED_TEXT[data.blocked]}</p>
+                  {gameNote ? <p className="text-[16px] font-bold text-[#2f7a3a]">{gameNote}</p> : null}
+                  {data.gameSpin && (data.blocked === 'not_approved' || data.blocked === 'off') ? (
+                     <p className="text-[18px] font-bold text-[#3b2f4a] dark:text-[#f5f0ff]">
+                        {data.blocked === 'not_approved'
+                           ? '🎟️ Your Shark Chomp spin is saved. It unlocks once you’re approved after your call.'
+                           : '🎟️ Your Shark Chomp spin is saved. Moo-Spin opens soon, we’ll let you know!'}
+                     </p>
+                  ) : (
+                     <p className="text-[18px] font-bold text-[#3b2f4a] dark:text-[#f5f0ff]">{BLOCKED_TEXT[data.blocked]}</p>
+                  )}
                   {data.blocked === 'overdue' ? (
                      <GoldLink href="/repay">Repay now</GoldLink>
                   ) : (
@@ -371,6 +402,9 @@ export default function SpinPage({ sample }: { sample?: SpinState } = {}) {
                </div>
             ) : (
                <>
+                  {gameNote ? (
+                     <p className="rounded-[16px] bg-white px-4 py-3 text-center text-[16px] font-bold text-[#2f7a3a] dark:bg-[#1b1428]">{gameNote}</p>
+                  ) : null}
                   {data.campaign ? <CampaignCard campaign={data.campaign} /> : null}
                   {data.campaignMissing ? (
                      <p className="rounded-[16px] bg-white px-4 py-3 text-center text-[15px] text-[#7b6b8c] dark:bg-[#1b1428]">
