@@ -263,7 +263,7 @@ async function readOnce(key: string, parts: unknown[]): Promise<RawRead> {
  */
 export async function gradeWithGemini(
    key: string,
-   input: { name: string; otherNames?: string[]; questions: GeminiQuestion[]; answers: GeminiAnswer[]; incomeFiles: GeminiFile[]; examples: unknown[] }
+   input: { name: string; otherNames?: string[]; aboutYou?: { gender: string; age: number; kids: string } | null; questions: GeminiQuestion[]; answers: GeminiAnswer[]; incomeFiles: GeminiFile[]; examples: unknown[] }
 ): Promise<GeminiResult> {
    const total =
       input.answers.reduce((n, a) => n + (a.video?.bytes.length ?? 0) + (a.photo?.bytes.length ?? 0) + (a.doc?.bytes.length ?? 0), 0) +
@@ -275,6 +275,7 @@ export async function gradeWithGemini(
          text: JSON.stringify({
             name: input.name,
             ...(input.otherNames?.length ? { other_names: input.otherNames } : {}),
+            ...(input.aboutYou ? { about_you: input.aboutYou } : {}),
             questions: input.questions.map((q) => {
                const a = input.answers.find((x) => x.q === q.id);
                const typed = Boolean(a?.text?.trim()) || q.kind === 'text';

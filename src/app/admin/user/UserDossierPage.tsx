@@ -10,6 +10,7 @@ import { BorrowerTimeline } from '@/app/admin/AdminHistory';
 import ProofHistory from '@/app/admin/ProofHistory';
 import { AdminLiveProvider } from '@/app/admin/useAdminLive';
 import {
+   aboutVsId,
    bkkDate,
    bkkDateTime,
    daysEarly,
@@ -389,6 +390,24 @@ function Loans({ loans }: { loans: DossierLoan[] }) {
    );
 }
 
+/** What they tapped on the "About you" card, 🟡 when the ID disagrees (team-only, never graded). */
+function AboutVsIdRow({ d }: { d: Dossier }) {
+   const a = aboutVsId(d);
+   if (!a) return null;
+   return (
+      <Row label="They said">
+         <span className="inline-flex flex-wrap items-center gap-2">
+            {a.said}
+            {a.mismatches.length ? (
+               <Pill tone="warn">🟡 {a.mismatches.join(' · ')}</Pill>
+            ) : a.checked ? (
+               <span className="text-xs font-semibold text-[#a89bb8]">matches ID</span>
+            ) : null}
+         </span>
+      </Row>
+   );
+}
+
 function Identity({ d, media, mediaError }: { d: Dossier; media: DiditSessionMedia[] | null; mediaError: string | null }) {
    const u = d.user;
    const kyc = d.kyc[0];
@@ -429,6 +448,7 @@ function Identity({ d, media, mediaError }: { d: Dossier; media: DiditSessionMed
          <Row label="Born">{kyc?.date_of_birth ? `${bkkDate(kyc.date_of_birth)} (${age(kyc.date_of_birth)})` : null}</Row>
          <Row label="Gender">{kyc?.gender}</Row>
          <Row label="Looks like">{photoEstimateText(d.photo_estimate)}</Row>
+         <AboutVsIdRow d={d} />
          <Row label="Address on ID">{kyc?.formatted_address}</Row>
          <Row label="Face match">{latest?.faceMatchScore != null ? `${Math.round(latest.faceMatchScore)}%` : null}</Row>
          <Row label="Liveness">{latest?.livenessScore != null ? `${Math.round(latest.livenessScore)}%` : u.liveness_status}</Row>
