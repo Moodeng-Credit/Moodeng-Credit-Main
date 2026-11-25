@@ -1,5 +1,13 @@
 {
   "version": "5",
+  "specifiers": {
+    "npm:unpdf@1.8.1": "1.8.1"
+  },
+  "npm": {
+    "unpdf@1.8.1": {
+      "integrity": "sha512-xkURhy2SoGpOIH0a1gLHNkASPIQYonadDJs2AQwPEfUakafeD9EA1WTWWsaR++gfTCXJpV27W7tU1nXuk82UKQ=="
+    }
+  },
   "redirects": {
     "https://esm.sh/@supabase/phoenix@^0.4.2?target=denonext": "https://esm.sh/@supabase/phoenix@0.4.5?target=denonext",
     "https://esm.sh/@supabase/supabase-js@2": "https://esm.sh/@supabase/supabase-js@2.106.2",
