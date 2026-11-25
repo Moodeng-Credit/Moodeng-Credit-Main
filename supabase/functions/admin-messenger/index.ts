@@ -3,7 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { loadDiditMedia } from '../_shared/diditMedia.ts';
 import { saveFacebookName, syncMessengerHistory } from '../_shared/messengerContactLog.ts';
-import { sendUtilityTemplate } from '../_shared/metaMessenger.ts';
+import { findPsidByName, sendUtilityTemplate } from '../_shared/metaMessenger.ts';
 import {
    createWhatsAppTemplate,
    findMessengerContactIdByCode,
@@ -192,6 +192,37 @@ serve(async (req) => {
       const params = (Array.isArray(body.params) ? body.params : []).map((p: unknown) => String(p ?? '').slice(0, 200));
       if (!psid || !params.length) return json({ ok: false, reason: 'missing_fields' }, 400);
       return json(await sendUtilityTemplate(svc, psid, { name, params }));
+   }
+
+   // Every 30 min from pg_cron (private.meta_reminders_tick): send the due Messenger repay reminders
+   // through Meta. Claims via meta_reminder_claim (08:00–20:59 Manila, switch meta_reminders_enabled),
+   // reports each row back; failures retry up to 3 times, then the 11:00 Telegram list takes them.
+   if (body.action === 'meta_reminders_run') {
+      const { data: rows, error } = await svc.rpc('meta_reminder_claim');
+      if (error) return json({ ok: false, reason: error.message }, 500);
+      const results = [];
+      for (const r of (rows ?? []) as Array<{
+         id: number;
+         psid: string | null;
+         first_name: string;
+         facebook_name: string | null;
+         amount_text: string;
+         due_text: string;
+         kind: string;
+      }>) {
+         const psid = r.psid ?? (r.facebook_name ? await findPsidByName(svc, r.facebook_name) : null);
+         const sent = psid
+            ? await sendUtilityTemplate(svc, psid, { name: 'moodeng_repay_reminder', params: [r.first_name, r.amount_text, r.due_text] })
+            : ({ ok: false, reason: 'no Messenger id for this person (not in event log, name not unique)', steps: [] } as const);
+         await svc.rpc('meta_reminder_report', {
+            p_id: r.id,
+            p_status: sent.ok ? 'sent' : 'failed',
+            p_detail: sent.ok ? `Meta direct ${r.psid ? '' : '(name lookup) '}${sent.messageId ?? ''}` : `Meta direct: ${sent.reason}`
+         });
+         results.push({ id: r.id, kind: r.kind, ok: sent.ok, reason: sent.ok ? null : sent.reason });
+      }
+      console.log(`[meta-reminders] ${results.length} claimed, ${results.filter((x) => x.ok).length} sent`);
+      return json({ ok: true, claimed: results.length, results });
    }
 
    if (body.action === 'msg_template_probe') {
