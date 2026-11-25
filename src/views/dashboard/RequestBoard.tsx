@@ -1440,8 +1440,8 @@ function RequestBoard$() {
               },
               {
                  target: '[data-tour-target="loan-repayment-amount"]',
-                 title: 'Set a clear repayment',
-                 body: 'Your repayment must be at least $1 more than what you borrow. Moo-lenders use this to decide if the request is worth funding.',
+                 title: 'Your repayment is set for you',
+                 body: 'Every loan is 30 days with 10% on top, so there is nothing to work out. You only choose how much to borrow.',
                  durationMs: 6400
               },
               {
