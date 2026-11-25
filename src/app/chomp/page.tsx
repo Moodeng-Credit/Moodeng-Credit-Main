@@ -6,7 +6,7 @@ import { useSearchParams } from 'react-router-dom';
 import { clarityEvent } from '@/lib/analytics/clarity';
 import {
    applySnack,
-   callCountdownLabel,
+   callStatus,
    nextLevel,
    SHOP,
    spinWheel,
@@ -32,7 +32,8 @@ import {
 
 // moodeng.app/chomp — Shark Chomp, a little game for while they wait for their call. Public (the
 // 30 / 15-minute reminders open it from Messenger, often signed out). Optional query:
-//   ?at=ISO     the call's start → "Your call starts in 12 min" bar, and a Join screen at start time
+//   ?at=ISO     the call's start → its day + time, a countdown + Join in the last hour, and a
+//               "Join or keep playing" popup at start time (callStatus in sharkChomp.ts)
 //   ?join=URL   the call's Zoom link for that Join button (only zoom.us links are used)
 //
 // The rules are tile-based (src/lib/sharkChomp.ts); everything on screen glides between tiles, so
@@ -187,9 +188,12 @@ export default function SharkChompPage() {
       if (import.meta.env.DEV) (window as unknown as { __chomp?: unknown }).__chomp = { stateRef };
    }, []);
 
-   const callLabel = callCountdownLabel(callAt, now);
-   const callStartMs = callAt ? Date.parse(callAt) : NaN;
-   const showCallScreen = !Number.isNaN(callStartMs) && now >= callStartMs && !callDismissed;
+   const call = callStatus(callAt, now);
+   const callLabel = call.label;
+   // Join only makes sense close to the call, not a day ahead.
+   const joinNow = call.kind === 'soon' || call.kind === 'now' ? joinUrl : null;
+   // At start time: a popup to join, or keep playing (then the bar keeps the Join button).
+   const showCallScreen = call.kind === 'now' && !callDismissed;
    const active = phase === 'playing' && !showCallScreen && !hidden;
 
    useEffect(() => {
@@ -794,9 +798,9 @@ export default function SharkChompPage() {
          <div className="mx-auto flex h-full w-full max-w-[480px] flex-col gap-2">
             {callLabel ? (
                <div className="flex shrink-0 items-center justify-between gap-2 rounded-full bg-white px-4 py-2 text-[14px] font-semibold shadow-sm">
-                  <span>⏰ {callLabel}</span>
-                  {joinUrl ? (
-                     <a className="flex items-center gap-1 text-[#6b55f7]" href={joinUrl} rel="noreferrer" target="_blank">
+                  <span>{callLabel}</span>
+                  {joinNow ? (
+                     <a className="flex items-center gap-1 text-[#6b55f7]" href={joinNow} rel="noreferrer" target="_blank">
                         <Video aria-hidden="true" className="size-4" /> Join
                      </a>
                   ) : null}
@@ -833,8 +837,12 @@ export default function SharkChompPage() {
                         ) : (
                            <span className="text-[15px] font-semibold">Open the Zoom link we sent you on Messenger.</span>
                         )}
-                        <button className="min-h-[44px] text-[14px] font-semibold text-[#7b6b8c]" onClick={() => setCallDismissed(true)} type="button">
-                           I&apos;m already in the call
+                        <button
+                           className="flex min-h-[48px] w-full items-center justify-center rounded-full border-2 border-[#7661f9] bg-white text-[16px] font-bold text-[#6b55f7]"
+                           onClick={() => setCallDismissed(true)}
+                           type="button"
+                        >
+                           Keep playing
                         </button>
                      </div>
                   ) : phase === 'intro' ? (
@@ -905,7 +913,7 @@ export default function SharkChompPage() {
             <HouseRoom
                callLabel={callLabel}
                coins={coins}
-               joinUrl={joinUrl}
+               joinUrl={joinNow}
                onBuy={(f) => {
                   const price = SHOP[f];
                   if (stateRef.current.coins < price) return;
@@ -984,7 +992,7 @@ function HouseRoom(props: {
          <div className="mx-auto flex min-h-full w-full max-w-[440px] flex-col gap-3 px-4">
             {callLabel ? (
                <div className="flex items-center justify-between gap-2 rounded-full bg-white/95 px-4 py-2 text-[14px] font-semibold text-[#594d65] shadow-sm">
-                  <span>⏰ {callLabel}</span>
+                  <span>{callLabel}</span>
                   {joinUrl ? (
                      <a className="flex items-center gap-1 text-[#6b55f7]" href={joinUrl} rel="noreferrer" target="_blank">
                         <Video aria-hidden="true" className="size-4" /> Join

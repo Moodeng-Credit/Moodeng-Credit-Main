@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { buy, callCountdownLabel, chomp, LEVELS, lessonFor, nextLevel, POWER_MS, spinWheel, WHEEL, type ChompState, CHOMP_COOLDOWN_MS, COLS, moveHippo, newWave, ROWS, stepSharks } from '@/lib/sharkChomp';
+import { buy, callStatus, chomp, LEVELS, lessonFor, nextLevel, POWER_MS, spinWheel, WHEEL, type ChompState, CHOMP_COOLDOWN_MS, COLS, moveHippo, newWave, ROWS, stepSharks } from '@/lib/sharkChomp';
 
 // Deterministic rng: always the same value.
 const fixed = (v: number) => () => v;
@@ -117,11 +117,14 @@ describe('Shark Chomp rules', () => {
       expect(spinWheel(fixed(0.999))).toBe(WHEEL.length - 1);
    });
 
-   it('the call bar counts down, then says it is starting', () => {
+   it('the call bar: day + time when far, countdown within the hour, Join popup at start, gone 20 min after', () => {
       const at = '2026-11-25T12:30:00Z';
-      expect(callCountdownLabel(at, Date.parse('2026-11-25T12:18:00Z'))).toBe('Your call starts in 12 min');
-      expect(callCountdownLabel(at, Date.parse('2026-11-25T12:30:05Z'))).toBe('Your call is starting now!');
-      expect(callCountdownLabel(null, 0)).toBeNull();
+      expect(callStatus(at, Date.parse('2026-11-25T12:18:00Z'))).toEqual({ kind: 'soon', label: '⏰ Your call starts in 12 min' });
+      expect(callStatus(at, Date.parse('2026-11-25T12:30:05Z')).kind).toBe('now');
+      expect(callStatus(at, Date.parse('2026-11-25T12:49:00Z')).kind).toBe('now');
+      expect(callStatus(at, Date.parse('2026-11-25T12:51:00Z')).kind).toBe('none');
+      expect(callStatus(at, Date.parse('2026-11-25T09:00:00Z'), 'Asia/Manila')).toEqual({ kind: 'later', label: '📅 Your call: Wed 8:30 PM' });
+      expect(callStatus(null, 0).kind).toBe('none');
       expect(COLS).toBe(11);
    });
 });

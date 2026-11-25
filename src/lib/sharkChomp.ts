@@ -290,14 +290,23 @@ export const stepSharks = (s: ChompState, now: number, rng: Rng): ChompState => 
    return sharkContact({ ...s, sharks }, now, rng);
 };
 
-// "Call in 12 min" / "Call starting now" for the bar above the lagoon. null = no call time known.
-export const callCountdownLabel = (startsAtIso: string | null, now: number): string | null => {
-   if (!startsAtIso) return null;
-   const at = Date.parse(startsAtIso);
-   if (Number.isNaN(at)) return null;
+// The call, as the game shows it (George 2026-11-25: a countdown is pointless when the call isn't soon):
+//   later  more than an hour away   → "📅 Your call: Wed 7:00 PM" (just so they know when)
+//   soon   within the hour          → "⏰ Your call starts in 12 min" + Join
+//   now    start → 20 min after     → the "Join the call or keep playing" popup
+//   none   no time, bad time, or more than 20 min after the start → no call UI at all
+export const CALL_SOON_MIN = 60;
+export const CALL_LATE_MIN = 20;
+export type CallStatus = { kind: 'none' | 'later' | 'soon' | 'now'; label: string | null };
+export const callStatus = (startsAtIso: string | null, now: number, timeZone?: string): CallStatus => {
+   const at = startsAtIso ? Date.parse(startsAtIso) : NaN;
+   if (Number.isNaN(at)) return { kind: 'none', label: null };
    const min = Math.ceil((at - now) / 60000);
-   if (min <= 0) return 'Your call is starting now!';
-   return `Your call starts in ${min} min`;
+   if (min < -CALL_LATE_MIN) return { kind: 'none', label: null };
+   if (min <= 0) return { kind: 'now', label: '🎥 Your call is on now' };
+   if (min <= CALL_SOON_MIN) return { kind: 'soon', label: `⏰ Your call starts in ${min} min` };
+   const when = new Intl.DateTimeFormat('en-US', { weekday: 'short', hour: 'numeric', minute: '2-digit', ...(timeZone ? { timeZone } : {}) }).format(new Date(at));
+   return { kind: 'later', label: `📅 Your call: ${when}` };
 };
 
 // One level = one Moodeng rule. Moo-Guard (the house guardian) explains it in Moodeng's House
