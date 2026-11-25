@@ -254,7 +254,7 @@ export const handleReminderNumber = async (svc: Svc, userId: string, contactId: 
 export const KEEP_SPOT_REPLY = /^\s*(ok(ay)?|oki|okie|k|yes|yup|yep|oo|opo|sige|g|game|noted|👍|✅)\s*[.!👍]*\s*$/i;
 const KEEP_SPOT_WITHIN_MS = 36 * 60 * 60 * 1000;
 
-/** True when it was an OK to an upcoming call's reminder and we answered it. Never throws. */
+/** True when it was the first OK to an upcoming call's reminder and we answered it. Never throws. */
 export const handleKeepSpotReply = async (svc: Svc, userId: string, contactId: string, text: string): Promise<boolean> => {
    try {
       if (!KEEP_SPOT_REPLY.test(text)) return false;
@@ -266,6 +266,16 @@ export const handleKeepSpotReply = async (svc: Svc, userId: string, contactId: s
       if (!user?.video_call_booking_uid || !user.video_call_starts_at || user.loan_access_status === 'rejected') return false;
       const until = Date.parse(user.video_call_starts_at) - Date.now();
       if (until <= 0 || until > KEEP_SPOT_WITHIN_MS) return false;
+      // Once per booking: a second "ok" (or a "yes" to someone on the team) gets no repeat of the same line.
+      // Claimed atomically so two messages arriving together can't both send it.
+      const { data: claimed } = await svc
+         .from('users')
+         .update({ video_call_keep_spot_ok_at: new Date().toISOString() })
+         .eq('id', userId)
+         .eq('video_call_booking_uid', user.video_call_booking_uid)
+         .is('video_call_keep_spot_ok_at', null)
+         .select('id');
+      if (!claimed?.length) return false;
       const when = formatCallTime(user.video_call_starts_at, user.video_call_timezone);
       const res = await sendMessengerMessage(contactId, {
          text: `👍 Got it! See you ${when}.\n⏰ 1 hour before, we'll send ✅ here. Tap it to keep your spot.`
