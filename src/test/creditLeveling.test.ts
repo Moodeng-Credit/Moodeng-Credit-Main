@@ -356,7 +356,8 @@ describe('LoanRequestModal borrowing gate', () => {
       );
 
       expect(markup).toContain('Last step: verify your ID');
-      expect(markup).toContain('Verify ID &amp; send request');
+      // The send button is now "Continue": the "Keep your loan 2+ days" card says "I understand, verify & send".
+      expect(markup).toContain('>Continue<');
       expect(markup).not.toContain('inert=""');
    });
 
@@ -430,8 +431,8 @@ describe('LoanRequestModal borrowing gate', () => {
       it('keeps today\u2019s open flow for referred borrowers: straight to the form, no call step', () => {
          const markup = render({ ...baseUser, loanAccessStatus: 'none', hasReferral: true }, 'open');
          expect(markup).toContain('Set your loan terms');
-         // terms, bio1, bio2, job (no job saved yet), contacts
-         expect(markup).toContain('Step 1 of 5');
+         // terms, contacts, bio1, bio2, job (no job saved yet), rules
+         expect(markup).toContain('Step 1 of 6');
       });
 
       it('skips the job and contact steps once the account has them (job, Messenger ID, WhatsApp)', () => {
@@ -449,7 +450,8 @@ describe('LoanRequestModal borrowing gate', () => {
             'open'
          );
          expect(markup).toContain('Set your loan terms');
-         expect(markup).not.toContain('Step 1 of');
+         // terms + the "Keep your loan 2+ days" card
+         expect(markup).toContain('Step 1 of 2');
       });
 
       it('asks for both lines when Messenger was only marked verified by hand (no Messenger ID)', () => {
@@ -466,7 +468,7 @@ describe('LoanRequestModal borrowing gate', () => {
             },
             'open'
          );
-         expect(markup).toContain('Step 1 of 2');
+         expect(markup).toContain('Step 1 of 3');
       });
 
       it('lets an approved borrower apply without a referral', () => {
@@ -486,7 +488,7 @@ describe('LoanRequestModal borrowing gate', () => {
          })
       );
 
-      expect(markup).toContain('Limit: $40');
+      expect(markup).toContain('Your limit: $40');
    });
 
    it('shows remaining available credit after the current limit is used', () => {
@@ -500,7 +502,7 @@ describe('LoanRequestModal borrowing gate', () => {
          })
       );
 
-      expect(markup).toContain('Limit: $0');
+      expect(markup).toContain('Your limit: $0');
    });
 });
 

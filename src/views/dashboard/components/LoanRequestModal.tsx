@@ -69,6 +69,7 @@ import {
    idUsdForIdr
 } from '@/lib/loanMarket';
 import { FIXED_TERM_DAYS, fixedRepayment, minimumRepayment } from '@/lib/loanPricing';
+import { getLoanRulesView, recordLoanRulesAgreed } from '@/lib/loanRequestCards';
 import { checkLoanReason, getCachedReasonVerdict, type ReasonAttempt, type ReasonCategory, type ReasonCheckLocale } from '@/lib/loanReasonCheck';
 import { isLikelyPhilippines } from '@/lib/isLikelyPhilippines';
 import { checkReasonQuality, looksNotEnglish } from '@/lib/reasonQuality';
@@ -87,6 +88,7 @@ import AvatarUploadModal from '@/views/account/AvatarUploadModal';
 import ConnectStep, { LoanAccessPendingCard, LoanAccessRejectedCard } from '@/views/dashboard/components/ConnectStep';
 import { CONNECT_HIPPOS, ConnectHero, GhostButton, PrimaryButton, stepAnimationClass, useStepDirection } from '@/views/dashboard/components/connectKit';
 import JobStep from '@/views/dashboard/components/JobStep';
+import { LoanRequestCard, LoanRulesStep } from '@/views/dashboard/components/LoanReadyCards';
 import ContactsStep from '@/views/dashboard/components/ContactsStep';
 import { SocialHandlesStep } from '@/views/dashboard/components/SocialHandlesStep';
 import VideoCallStep from '@/views/dashboard/components/VideoCallStep';
@@ -1270,7 +1272,7 @@ function IdLoanTermsFields({
 // contact step only when they have no verified line yet, and — in the 'open' flow only — the
 // video call when there's no referral code. (In the call/approval flows, PART 1 · Connect happens
 // before any of this; see ConnectStep.)
-type RequestStepKey = 'terms' | 'bio1' | 'bio2' | 'job' | 'contacts' | 'social' | 'videocall' | 'income';
+type RequestStepKey = 'terms' | 'bio1' | 'bio2' | 'job' | 'contacts' | 'social' | 'videocall' | 'rules' | 'income';
 
 // Human labels for each possible step key, used by the progress rail below.
 const STEP_KEY_LABEL: Record<RequestStepKey, string> = {
@@ -1281,6 +1283,7 @@ const STEP_KEY_LABEL: Record<RequestStepKey, string> = {
    contacts: 'Contact',
    social: 'Instagram / TikTok',
    videocall: 'Meet the team',
+   rules: 'Before you send',
    income: 'Proof of income'
 };
 
@@ -1660,6 +1663,10 @@ export default function LoanRequestModal({
    // Open flow only: the no-referral video call, booked (not attended) before the request posts.
    const [showVideoCallStep, setShowVideoCallStep] = useState(false);
    const [videoCallStepDone, setVideoCallStepDone] = useState(false);
+   // Card 2, "Keep your loan 2+ days" (2026-11-25): the last screen before the request goes out.
+   // rulesAgreed = they tapped "I understand" in this flow (saved via agree_loan_rules).
+   const [showRulesStep, setShowRulesStep] = useState(false);
+   const [rulesAgreed, setRulesAgreed] = useState(false);
    // Proof of income in steps that follow the credit ladder ($40, $60, $100, $140 today —
    // telegram_bot_settings.income_doc_tiers). The card says what this amount still needs.
    const [incomeGate, setIncomeGate] = useState<Extract<IncomeDocGate, { ok: false }> | null>(null);
@@ -1885,6 +1892,8 @@ export default function LoanRequestModal({
    // flag flips off when the answer saves), so the count doesn't shrink under them mid-flow.
    const needsSocialStep =
       !isIdLoan && Number(loanAmount) >= SOCIAL_HANDLES_MIN_USD && (needsSocialHandles(socialHandles) || socialStepDone);
+   // Philippines only: Indonesia keeps its own terms.
+   const needsRulesStep = !isIdLoan;
    const requestSteps: RequestStepKey[] = [
       'terms',
       ...(needsContactsStep || contactsStepDone ? (['contacts'] as const) : []),
@@ -1892,11 +1901,14 @@ export default function LoanRequestModal({
       ...(isMultiStepRequestFlow ? (['bio1', 'bio2'] as const) : []),
       ...(needsJobStep || jobStepDone ? (['job'] as const) : []),
       ...(needsVideoCallStep ? (['videocall'] as const) : []),
+      ...(needsRulesStep ? (['rules'] as const) : []),
       // Last, because it's the one step that leaves the form (see handleLoanFormSubmit).
       ...(needsIncomeStep ? (['income'] as const) : [])
    ];
    const currentStepKey: RequestStepKey = showIncomeGate
       ? 'income'
+      : showRulesStep
+      ? 'rules'
       : showSocialStep
       ? 'social'
       : showJobStep
@@ -1940,6 +1952,8 @@ export default function LoanRequestModal({
       wasOpenRef.current = true;
       // A popup left up when the form last closed must not greet them on the next open.
       setReturnNudge(null);
+      setShowRulesStep(false);
+      setRulesAgreed(false);
 
       // Resuming after a reload (typically back from the Messenger hop, which reloaded our app in
       // the same tab): drop the borrower exactly where they were instead of resetting to step 1.
@@ -2174,6 +2188,13 @@ export default function LoanRequestModal({
    // at their full limit; borrowing less is the only choice. Indonesia keeps its own fields.
    const fixedTermDate = formatDateInputValue(addDays(todayDate, FIXED_TERM_DAYS));
    const fixedTermTotal = isIdLoan ? null : fixedRepayment(Number(loanAmount), { split: splitOn });
+   const rulesView = getLoanRulesView({ amount: Number(loanAmount), creditLimit: Number(user.cs) || 0, joinedAt: user.createdAt, dueIso: selectedDate });
+   // What "I understand" does next: send, or the one step still left (ID check / proof of income).
+   const rulesCta = !isVerified
+      ? 'I understand, verify & send'
+      : !isIdLoan && incomeGateNow && !incomeGateNow.ok
+        ? 'I understand, continue'
+        : 'I understand, send my request';
    useEffect(() => {
       if (!isOpen || isIdLoan) return;
       if (!loanAmount && limitAmount > 0) setLoanAmount(String(limitAmount));
@@ -2660,6 +2681,10 @@ export default function LoanRequestModal({
                setReturnNudge(low);
                return;
             }
+            if (needsRulesStep && !rulesAgreed) {
+               openRulesStep();
+               return;
+            }
             void verifyToSendAfterChecks();
             return;
          }
@@ -2743,6 +2768,13 @@ export default function LoanRequestModal({
          return;
       }
 
+      // "Keep your loan 2+ days" right before it goes out (or before proof of income, which leaves the form).
+      if (needsRulesStep && !rulesAgreed) {
+         event.preventDefault();
+         openRulesStep();
+         return;
+      }
+
       // Proof of income LAST (2026-11-15). It's the only step that leaves the form (for /documents)
       // and can take a while, so everything else is answered first; the board then sends the request
       // by itself once they're back with a document sent (sendAfterDocs). It used to sit in the
@@ -2765,6 +2797,32 @@ export default function LoanRequestModal({
       handleSubmit(event, showBorrowerContextStep || borrowerContextPromptSeen ? borrowerContext : undefined);
    };
    submitHandlerRef.current = handleLoanFormSubmit;
+
+   const openRulesStep = () => {
+      setShowBorrowerContextStep(false);
+      setShowContactsStep(false);
+      setShowVideoCallStep(false);
+      setShowJobStep(false);
+      setShowSocialStep(false);
+      setShowRulesStep(true);
+      trackLoanFormRule('loan_form_rules_card', { amount: Number(loanAmount), full: Boolean(rulesView.levelUp) });
+   };
+   const agreeToRules = () => {
+      setRulesAgreed(true);
+      void recordLoanRulesAgreed({
+         amount: Number(loanAmount),
+         total: fixedTermTotal,
+         dueIso: selectedDate,
+         levelUpTo: rulesView.levelUp?.to ?? null
+      });
+      trackLoanFormRule('loan_form_rules_agreed', { amount: Number(loanAmount) });
+   };
+   // Re-fire the submit once rulesAgreed is in state (the handler reads it from the render).
+   const [rulesResubmit, setRulesResubmit] = useState(0);
+   useEffect(() => {
+      if (!rulesResubmit) return;
+      submitHandlerRef.current?.({ preventDefault: () => {} } as FormEvent<HTMLFormElement>);
+   }, [rulesResubmit]);
 
    // Synchronous guard — prevents double-tap on "Save bio info" from firing twice
    // before isSavingProfile state has a chance to re-render and disable the button.
@@ -3336,6 +3394,20 @@ export default function LoanRequestModal({
                      <GhostButton onClick={() => setIncomeGate(null)}>Change the amount</GhostButton>
                   </div>
                </div>
+            ) : showRulesStep ? (
+               <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain">
+                  <LoanRulesStep
+                     view={rulesView}
+                     ctaLabel={rulesCta}
+                     busy={isSubmitting || isCheckingBeforeVerify}
+                     onBack={() => setShowRulesStep(false)}
+                     onAgree={() => {
+                        agreeToRules();
+                        setShowRulesStep(false);
+                        setRulesResubmit((n) => n + 1);
+                     }}
+                  />
+               </div>
             ) : showSocialStep ? (
                <SocialHandlesStep initial={socialHandles} onContinue={handleSocialStepContinue} onBack={() => setShowSocialStep(false)} />
             ) : showVideoCallStep ? (
@@ -3431,6 +3503,16 @@ export default function LoanRequestModal({
                            />
                         ) : (
                            <>
+                           {/* Card 1 (2026-11-25): what they're asking for, in pesos. The amount field hides
+                               behind "Borrow less" until they want less or it has an error. */}
+                           <LoanRequestCard
+                              amount={Number(loanAmount)}
+                              total={fixedTermTotal}
+                              dueIso={selectedDate}
+                              isFirstLoan={!isExistingBorrower}
+                              limit={limitAmount}
+                              showEditor={Boolean(termErrors.amount) || (Boolean(loanAmount) && Number(loanAmount) !== limitAmount)}
+                              amountEditor={
                            <div className="flex flex-col gap-md-1" data-tour-target="loan-borrow-amount">
                               <div className="flex items-center justify-between gap-md-2">
                                  <label className="text-md-b2 font-[590] text-md-heading" htmlFor="borrow-amount">
@@ -3503,28 +3585,10 @@ export default function LoanRequestModal({
                                  <span>All loans are issued and repaid in USDC.</span>
                               </div>
                            </div>
-
-                           {/* Fixed terms (2026-11-25): shown, not typed. 10% on top, due in 30 days. */}
-                           <div className="flex flex-col gap-md-1" data-tour-target="loan-repayment-amount">
-                              <span className="text-md-b2 font-[590] text-md-heading">Your loan terms</span>
-                              <div className="flex flex-col gap-md-1 rounded-md-input border border-md-primary-900 bg-md-primary-100 px-md-3 py-md-2 dark:border-[#7c4ed8]/60 dark:bg-[#2a1740]">
-                                 <div className="flex items-center justify-between gap-md-2 text-md-b1">
-                                    <span className="font-normal text-md-heading">You pay back</span>
-                                    <span className="font-semibold text-md-primary-1200 dark:text-[#d9c8ff]">
-                                       {fixedTermTotal === null ? '-' : `$${fixedTermTotal.toFixed(2)}`}
-                                    </span>
-                                 </div>
-                                 <div className="flex items-center justify-between gap-md-2 text-md-b1">
-                                    <span className="font-normal text-md-heading">Due</span>
-                                    <span className="font-semibold text-md-heading">{selectedDateLabel || '-'}</span>
-                                 </div>
-                              </div>
-                              {termErrors.repayment ? <FieldError message={termErrors.repayment} /> : null}
-                              {termErrors.date ? <FieldError message={termErrors.date} /> : null}
-                              <p className="text-md-b3 font-normal leading-[18px] text-md-neutral-1200">
-                                 Every loan is {FIXED_TERM_DAYS} days with 10% on top. Want less? Change the amount above.
-                              </p>
-                           </div>
+                              }
+                           />
+                           {termErrors.repayment ? <FieldError message={termErrors.repayment} /> : null}
+                           {termErrors.date ? <FieldError message={termErrors.date} /> : null}
 
                            {splitAvailable ? (
                               <div className="flex flex-col gap-md-1" data-tour-target="loan-pay-in-parts">
@@ -3807,7 +3871,7 @@ export default function LoanRequestModal({
                            type="submit"
                            disabled={isSubmitting || idNoRate}
                         >
-                           {isSubmitting ? 'Submitting...' : isCheckingBeforeVerify ? 'Checking...' : verifyAtSubmit ? 'Verify ID & send request' : 'Make Your Request'}
+                           {isSubmitting ? 'Submitting...' : isCheckingBeforeVerify ? 'Checking...' : needsRulesStep ? 'Continue' : verifyAtSubmit ? 'Verify ID & send request' : 'Make Your Request'}
                         </button>
                      </>
                   )}
