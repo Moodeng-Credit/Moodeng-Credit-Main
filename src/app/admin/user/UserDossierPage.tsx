@@ -564,6 +564,30 @@ function TeamSummaries({ d }: { d: Dossier }) {
          )
       });
    }
+   for (const p of d.team_posts ?? []) {
+      // Telegram HTML (<b>, <i>, links) shown as plain text; the first line is the title.
+      const rest = p.body
+         .replace(/<[^>]+>/g, '')
+         .split('\n')
+         .slice(1)
+         .join('\n')
+         .trim();
+      items.push({
+         key: `tp-${p.first_at}-${p.title}`,
+         title: `💬 ${p.title}${p.times > 1 ? ` · ×${p.times}` : ''}`,
+         at: p.last_at,
+         body: (
+            <>
+               {rest ? <p className="whitespace-pre-wrap break-words text-sm text-[#d9c9f5]">{rest}</p> : null}
+               <p className="mt-1 text-xs text-[#6f6385]">
+                  Telegram{' '}
+                  {p.times > 1 ? `· first ${bkkDateTime(p.first_at)} · last ${bkkDateTime(p.last_at)}` : `· ${bkkDateTime(p.last_at)}`}
+                  {p.edited_at ? ' · updated' : ''}
+               </p>
+            </>
+         )
+      });
+   }
    for (const a of d.risk_alerts) {
       items.push({
          key: `ra-${a.created_at}`,
@@ -593,7 +617,7 @@ function TeamSummaries({ d }: { d: Dossier }) {
    return (
       <Card title="📝 What the team was told">
          <p className="mb-3 text-xs text-[#6f6385]">
-            AI reads, call summaries and alerts saved for this person. Exact past Telegram posts aren't stored.
+            Team Telegram posts about this person (saved from Nov 25, 2026; repeats counted once), plus AI reads, call summaries and alerts.
          </p>
          {!items.length ? <Empty>No summaries yet.</Empty> : null}
          <div className="space-y-3">

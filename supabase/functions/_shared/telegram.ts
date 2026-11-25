@@ -1,3 +1,5 @@
+import { logTeamPost, type TeamPost, teamPost } from './teamFacebook.ts';
+
 // A button opens a link (url), calls back into telegram-webhook (callback_data, ≤64 bytes), or copies
 // text to the tapper's clipboard (copy_text, ≤256 characters).
 export type TelegramButton =
@@ -14,15 +16,29 @@ type TelegramApiResult<T> = {
    description?: string;
 };
 
-import { withTeamFacebook } from './teamFacebook.ts';
-
 const getTelegramToken = () => Deno.env.get('TELEGRAM_API_TOKEN') ?? Deno.env.get('TELEGRAM_BOT_TOKEN');
 
+// Finish work after the response when the edge runtime allows it, else wait (it's capped at ~2.5s).
+const afterResponse = async (work: Promise<void>) => {
+   const rt = (globalThis as { EdgeRuntime?: { waitUntil?: (p: Promise<unknown>) => void } }).EdgeRuntime;
+   if (rt?.waitUntil) rt.waitUntil(work);
+   else await work;
+};
+
 // aboutUserIds: the borrower(s) a team post is about, when the text has no @username or email to find
-// them by — gets them the Facebook line (teamFacebook.ts) all the same.
-export const callTelegramApi = async <T = unknown>(method: string, payload: Record<string, unknown>, options: { aboutUserIds?: string[] } = {}) => {
+// them by — gets them the Facebook line (teamFacebook.ts) all the same, and the post saved on their
+// Admin page (team_posts, via log_team_post).
+export const callTelegramApi = async <T = unknown>(
+   method: string,
+   payload: Record<string, unknown>,
+   options: { aboutUserIds?: string[] } = {}
+) => {
+   let post: TeamPost | null = null;
    if ((method === 'sendMessage' || method === 'editMessageText') && typeof payload.text === 'string') {
-      payload = { ...payload, text: await withTeamFacebook(payload.chat_id, payload.text, options.aboutUserIds) };
+      const original = payload.text;
+      post = await teamPost(payload.chat_id, original, options.aboutUserIds);
+      payload = { ...payload, text: post.text };
+      post = { ...post, text: original };
    }
    const telegramApiUrl = Deno.env.get('TELEGRAM_API_URL');
    const telegramToken = getTelegramToken();
@@ -48,6 +64,12 @@ export const callTelegramApi = async <T = unknown>(method: string, payload: Reco
       throw new Error(result?.description ?? `Telegram ${method} failed with ${response.status}`);
    }
 
+   if (post?.team) {
+      const sent = result.result as { message_id?: number } | undefined;
+      const messageId = method === 'editMessageText' ? payload.message_id : sent?.message_id;
+      await afterResponse(logTeamPost(post, payload.chat_id, messageId, method === 'editMessageText'));
+   }
+
    return result.result as T;
 };
 
@@ -56,15 +78,19 @@ export const sendTelegramMessage = async (
    text: string,
    options: { inlineKeyboard?: TelegramInlineKeyboard; messageThreadId?: number; replyToMessageId?: number; aboutUserIds?: string[] } = {}
 ) => {
-   return callTelegramApi('sendMessage', {
-      chat_id: chatId,
-      text,
-      disable_web_page_preview: true,
-      ...(options.messageThreadId ? { message_thread_id: options.messageThreadId } : {}),
-      // allow_sending_without_reply: still post if the card was deleted.
-      ...(options.replyToMessageId ? { reply_to_message_id: options.replyToMessageId, allow_sending_without_reply: true } : {}),
-      ...(options.inlineKeyboard ? { reply_markup: { inline_keyboard: options.inlineKeyboard } } : {})
-   }, { aboutUserIds: options.aboutUserIds });
+   return callTelegramApi(
+      'sendMessage',
+      {
+         chat_id: chatId,
+         text,
+         disable_web_page_preview: true,
+         ...(options.messageThreadId ? { message_thread_id: options.messageThreadId } : {}),
+         // allow_sending_without_reply: still post if the card was deleted.
+         ...(options.replyToMessageId ? { reply_to_message_id: options.replyToMessageId, allow_sending_without_reply: true } : {}),
+         ...(options.inlineKeyboard ? { reply_markup: { inline_keyboard: options.inlineKeyboard } } : {})
+      },
+      { aboutUserIds: options.aboutUserIds }
+   );
 };
 
 export type TelegramUpload = { name: string; mime: string; bytes: Uint8Array<ArrayBuffer> };
