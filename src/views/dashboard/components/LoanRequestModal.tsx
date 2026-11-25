@@ -1,9 +1,7 @@
 import {
    type ChangeEvent,
-   type ClipboardEvent,
    type FocusEvent,
    type FormEvent,
-   type KeyboardEvent,
    type PointerEvent,
    type RefObject,
    useCallback,
@@ -17,7 +15,6 @@ import {
    Briefcase,
    BriefcaseBusiness,
    Bus,
-   CalendarDays,
    Check,
    CheckCircle,
    ChevronLeft,
@@ -25,7 +22,6 @@ import {
    Clock3,
    FileText,
    HelpCircle,
-   Lightbulb,
    ShieldCheck,
    Stethoscope,
    Ticket,
@@ -72,7 +68,7 @@ import {
    idRepayIdrChoices,
    idUsdForIdr
 } from '@/lib/loanMarket';
-import { maximumRepayment, minimumRepayment, suggestedRepaymentRange } from '@/lib/loanPricing';
+import { FIXED_TERM_DAYS, fixedRepayment, minimumRepayment } from '@/lib/loanPricing';
 import { checkLoanReason, getCachedReasonVerdict, type ReasonAttempt, type ReasonCategory, type ReasonCheckLocale } from '@/lib/loanReasonCheck';
 import { isLikelyPhilippines } from '@/lib/isLikelyPhilippines';
 import { checkReasonQuality, looksNotEnglish } from '@/lib/reasonQuality';
@@ -352,43 +348,6 @@ const formatDateDigits = (date: Date, allowYearEditing: boolean) => {
    const day = String(date.getDate()).padStart(2, '0');
    const month = String(date.getMonth() + 1).padStart(2, '0');
    return allowYearEditing ? `${day}${month}${date.getFullYear()}` : `${day}${month}`;
-};
-
-const getTypedDateDigits = (value: string, allowYearEditing: boolean, assumedYear: number) => {
-   if (allowYearEditing) return value.replace(/\D/g, '').slice(0, 8);
-
-   const [dayPart = '', monthPart = ''] = value.replace(new RegExp(`/${assumedYear}$`), '').split('/');
-   return `${dayPart}${monthPart}`.replace(/\D/g, '').slice(0, 4);
-};
-
-const formatDateMask = (digits: string, allowYearEditing: boolean, assumedYear: number) => {
-   if (!digits) return '';
-
-   if (digits.length < 2) return allowYearEditing ? `${digits}/MM/YYYY` : `${digits}/MM/${assumedYear}`;
-   if (digits.length === 2) return allowYearEditing ? `${digits}/MM/YYYY` : `${digits}/MM/${assumedYear}`;
-   if (digits.length < 4) {
-      const value = `${digits.slice(0, 2)}/${digits.slice(2)}`;
-      return allowYearEditing ? `${value}/YYYY` : `${value}/${assumedYear}`;
-   }
-
-   const day = digits.slice(0, 2);
-   const month = digits.slice(2, 4);
-   if (!allowYearEditing) return `${day}/${month}/${assumedYear}`;
-
-   const year = digits.slice(4, 8);
-   if (!year) return `${day}/${month}/`;
-   return `${day}/${month}/${year}`;
-};
-
-const getDateCaretPosition = (digits: string, allowYearEditing: boolean) => {
-   if (allowYearEditing) {
-      if (digits.length <= 2) return digits.length;
-      if (digits.length <= 4) return digits.length + 1;
-      return digits.length + 2;
-   }
-
-   if (digits.length <= 2) return digits.length;
-   return Math.min(digits.length + 1, 5);
 };
 
 const addDays = (date: Date, days: number) => {
@@ -1616,7 +1575,6 @@ export default function LoanRequestModal({
    const formLocked = !isPending && journey.onboarding && (!isIdLoan || journey.stage === 'wallet');
    const verifyAtSubmit = !isIdLoan && !isPending && !journey.onboarding && journey.stage === 'apply';
    const formRef = useRef<HTMLFormElement | null>(null);
-   const dateInputRef = useRef<HTMLInputElement | null>(null);
    const reasonTextareaRef = useRef<HTMLTextAreaElement | null>(null);
    const dismissGestureRef = useRef<{ x: number; y: number; mode: DismissGestureMode } | null>(null);
    const dismissOffsetRef = useRef({ x: 0, y: 0 });
@@ -1840,11 +1798,8 @@ export default function LoanRequestModal({
    const todayDate = parseIsoDate(today) ?? new Date();
    const maxLoanDate = addDays(todayDate, idLoanRules ? idLoanRules.maxTermDays : 120);
    const allowYearEditing = shouldAllowDateYearEditing(todayDate);
-   const assumedYear = todayDate.getFullYear();
-   const datePlaceholder = allowYearEditing ? 'DD/MM/YYYY' : `DD/MM/${assumedYear}`;
    const selectedDateLabel = selectedCalendarDate ? formatDateLabel(selectedCalendarDate) : '';
    const selectedDateDigits = selectedCalendarDate ? formatDateDigits(selectedCalendarDate, allowYearEditing) : '';
-   const [typedDate, setTypedDate] = useState(selectedDateLabel);
    const [typedDateDigits, setTypedDateDigits] = useState(selectedDateDigits);
    const [calendarMonth, setCalendarMonth] = useState(selectedCalendarDate ?? todayDate);
    const isRepaymentDateFilled = Boolean(inferLoanDate(typedDateDigits, todayDate, maxLoanDate, allowYearEditing));
@@ -1961,7 +1916,6 @@ export default function LoanRequestModal({
    const showStepProgress = isVerified && !isLoanAccessGated && !shouldShowReferralStep && requestSteps.length > 1;
 
    useEffect(() => {
-      setTypedDate(selectedDateLabel);
       setTypedDateDigits(selectedDateDigits);
    }, [selectedDateLabel, selectedDateDigits]);
 
@@ -2205,66 +2159,36 @@ export default function LoanRequestModal({
       return () => document.removeEventListener('keydown', onKeyDown);
    }, [isOpen, isCalendarOpen, activeTooltip, onClose]);
 
-   const keepDateCursorInEditablePart = (digits = typedDateDigits) => {
-      window.requestAnimationFrame(() => {
-         const input = dateInputRef.current;
-         if (!input) return;
-
-         const caretPosition = getDateCaretPosition(digits, allowYearEditing);
-         input.setSelectionRange(caretPosition, caretPosition);
-      });
-   };
-
-   const applyTypedDateDigits = (digits: string) => {
-      const maxLength = allowYearEditing ? 8 : 4;
-      const cleanDigits = digits.replace(/\D/g, '').slice(0, maxLength);
-      const value = formatDateMask(cleanDigits, allowYearEditing, assumedYear);
-      setTypedDateDigits(cleanDigits);
-      setTypedDate(value);
-      keepDateCursorInEditablePart(cleanDigits);
-
-      const inferredDate = inferLoanDate(cleanDigits, todayDate, maxLoanDate, allowYearEditing);
-      if (!inferredDate) return;
-
-      const normalizedDate = formatDateInputValue(inferredDate);
-      handleDays({ target: { value: normalizedDate } } as ChangeEvent<HTMLInputElement>);
-   };
-
-   const handleTypedDate = (event: ChangeEvent<HTMLInputElement>) => {
-      const digits = getTypedDateDigits(event.target.value, allowYearEditing, assumedYear);
-      applyTypedDateDigits(digits);
-   };
-
-   const handleDateKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
-      if (/^\d$/.test(event.key)) {
-         event.preventDefault();
-         applyTypedDateDigits(`${typedDateDigits}${event.key}`);
-         return;
-      }
-
-      if (event.key === 'Backspace' || event.key === 'Delete') {
-         event.preventDefault();
-         applyTypedDateDigits(typedDateDigits.slice(0, -1));
-      }
-   };
-
-   const handleDatePaste = (event: ClipboardEvent<HTMLInputElement>) => {
-      const pastedDigits = event.clipboardData.getData('text').replace(/\D/g, '');
-      if (!pastedDigits) return;
-
-      event.preventDefault();
-      applyTypedDateDigits(`${typedDateDigits}${pastedDigits}`);
-   };
-
    const selectCalendarDate = (date: Date | undefined) => {
       if (!date) return;
 
       const normalizedDate = formatDateInputValue(date);
-      setTypedDate(formatDateLabel(date));
       setTypedDateDigits(formatDateDigits(date, allowYearEditing));
       handleDays({ target: { value: normalizedDate } } as ChangeEvent<HTMLInputElement>);
       setIsCalendarOpen(false);
    };
+
+   // Fixed terms (George, 2026-11-25): Philippines requests are always 30 days at 10%. The form still
+   // runs on RequestBoard's amount/repayment/date state (drafts, auto-submit and the /documents return
+   // all read it), so the terms are written into that state instead of being typed. The amount starts
+   // at their full limit; borrowing less is the only choice. Indonesia keeps its own fields.
+   const fixedTermDate = formatDateInputValue(addDays(todayDate, FIXED_TERM_DAYS));
+   const fixedTermTotal = isIdLoan ? null : fixedRepayment(Number(loanAmount), { split: splitOn });
+   useEffect(() => {
+      if (!isOpen || isIdLoan) return;
+      if (!loanAmount && limitAmount > 0) setLoanAmount(String(limitAmount));
+      // eslint-disable-next-line react-hooks/exhaustive-deps -- on open (or a new limit) only; a cleared field stays cleared
+   }, [isOpen, isIdLoan, limitAmount]);
+   useEffect(() => {
+      if (!isOpen || isIdLoan) return;
+      if (selectedDate !== fixedTermDate) selectCalendarDate(parseIsoDate(fixedTermDate) ?? undefined);
+      // eslint-disable-next-line react-hooks/exhaustive-deps -- selectCalendarDate is recreated every render
+   }, [isOpen, isIdLoan, selectedDate, fixedTermDate]);
+   useEffect(() => {
+      if (!isOpen || isIdLoan) return;
+      const next = fixedTermTotal === null ? '' : fixedTermTotal.toFixed(2);
+      if (totalRepaymentAmount !== next) setTotalRepaymentAmount(next);
+   }, [isOpen, isIdLoan, fixedTermTotal, totalRepaymentAmount, setTotalRepaymentAmount]);
 
    const scrollFieldIntoView = (event: FocusEvent<HTMLElement>) => {
       const field = event.currentTarget;
@@ -2496,33 +2420,13 @@ export default function LoanRequestModal({
    // Per-field "valid" flags — drive the green success border so each box confirms when it's
    // correctly filled (feedback the borrower can see), separate from the red error state.
    const parsedAmountNum = Number(loanAmount);
-   const parsedRepayNum = Number(totalRepaymentAmount);
    const amountValid = Boolean(loanAmount) && !Number.isNaN(parsedAmountNum) && parsedAmountNum > 0 && parsedAmountNum <= limitAmount;
-   // At most 20% on top per 31 days (George, 2026-11-18). Indonesia keeps its own 1.5× cap.
-   const maxRepayment = isIdLoan ? null : maximumRepayment(parsedAmountNum, days);
-   const repaymentOverCap = maxRepayment !== null && Boolean(totalRepaymentAmount) && Number.isFinite(parsedRepayNum) && parsedRepayNum > maxRepayment;
-   const repaymentValid =
-      Boolean(totalRepaymentAmount) &&
-      !Number.isNaN(parsedRepayNum) &&
-      !Number.isNaN(parsedAmountNum) &&
-      parsedRepayNum >= parsedAmountNum + 1 &&
-      !repaymentOverCap;
    // Length is necessary but not sufficient: 46 characters of "dwadwadwad" used to earn a
    // green "Looks good". Two checks now stand between the borrower and that tick:
    //   1. checkReasonQuality — instant, offline, catches text that isn't words yet;
    //   2. check-loan-input (DeepSeek) — the same judge that runs on submit, pulled forward so
    //      the tick means what it says instead of appearing and then being contradicted.
    // Both only withhold the tick; neither blocks. The submit gate stays the enforcement point.
-   // What to put in the empty repayment field: the typical return for this size (and at least the
-   // 10%-a-month minimum once a date is picked), so the first try is one lenders will fund instead
-   // of "$16 back on $15", which opened the low-return popup. Shown as the placeholder only.
-   // One number: exactly 10% a month ($13 → "$14.30"). George, 2026-11-23: the old "$14.50–$16" range
-   // led a $13 borrower to offer $15.
-   const suggestedRepayment = (() => {
-      const borrow = Number(loanAmount);
-      if (!loanAmount || !Number.isFinite(borrow) || borrow <= 0) return null;
-      return suggestedRepaymentRange(borrow, days, undefined, { split: splitOn });
-   })();
    const reasonMeetsLength = reason.trim().length >= REASON_MIN_LENGTH;
    const reasonQuality = checkReasonQuality(reason);
    const reasonShapeOk = reasonMeetsLength && reasonQuality.ok;
@@ -3600,155 +3504,26 @@ export default function LoanRequestModal({
                               </div>
                            </div>
 
+                           {/* Fixed terms (2026-11-25): shown, not typed. 10% on top, due in 30 days. */}
                            <div className="flex flex-col gap-md-1" data-tour-target="loan-repayment-amount">
-                              <label className="text-md-b2 font-[590] text-md-heading" htmlFor="repayment-amount">
-                                 Set Repayment Amount
-                              </label>
-                              <input
-                                 onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                                    const next = e.target.value.replace(/,/g, '');
-                                    if (!/^\d*(\.\d{0,2})?$/.test(next)) return;
-                                    setTotalRepaymentAmount(next);
-                                    if (termErrors.repayment) setTermErrors((prev) => ({ ...prev, repayment: undefined }));
-                                 }}
-                                 onFocus={scrollFieldIntoView}
-                                 onBlur={() => {
-                                    const borrow = Number(loanAmount);
-                                    const repay = Number(totalRepaymentAmount);
-                                    if (totalRepaymentAmount && Number.isFinite(borrow) && Number.isFinite(repay) && borrow > 0 && repay < borrow + 1) {
-                                       // Deferred so the tap that left the field still lands where it was aimed.
-                                       window.setTimeout(
-                                          () => setTermErrors((prev) => ({ ...prev, repayment: 'Repayment must be at least $1 more than you borrow.' })),
-                                          250
-                                       );
-                                    }
-                                 }}
-                                 className={`${inputShellClass} px-md-3 py-md-2 text-md-b1 font-normal text-md-heading placeholder:text-md-neutral-1200 focus:outline-none ${
-                                    termErrors.repayment ? '!border-md-red-500' : repaymentValid ? '!border-md-primary-900' : ''
-                                 }`}
-                                 id="repayment-amount"
-                                 inputMode="decimal"
-                                 placeholder={
-                                    suggestedRepayment
-                                       ? `Suggested: $${Number.isInteger(suggestedRepayment.lo) ? suggestedRepayment.lo : suggestedRepayment.lo.toFixed(2)}`
-                                       : 'Must be more than the borrowed amount'
-                                 }
-                                 type="text"
-                                 value={totalRepaymentAmount}
-                              />
-                              {termErrors.repayment ? (
-                                 <FieldError message={termErrors.repayment} />
-                              ) : repaymentOverCap && maxRepayment !== null ? (
-                                 <FieldError message={`Too high. For this date you can repay at most $${maxRepayment.toFixed(2)} (20% on top per month).`} />
-                              ) : null}
-                              {repaymentOverCap ? null : (() => {
-                                 // Live clarity: once both amounts are valid, spell out what the borrower will
-                                 // repay and how much of that is the lender's return — Moodeng adds $0, so this
-                                 // makes the deal transparent while they set their own terms.
-                                 const borrowNum = Number(loanAmount);
-                                 const repayNum = Number(totalRepaymentAmount);
-                                 const extra = repayNum - borrowNum;
-                                 if (termErrors.repayment || !loanAmount || !totalRepaymentAmount) return null;
-                                 if (Number.isNaN(borrowNum) || Number.isNaN(repayNum) || borrowNum <= 0 || extra <= 0) return null;
-                                 const fmt = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(2));
-                                 return (
-                                    <p className="text-md-b3 font-normal leading-[18px] text-md-neutral-1200">
-                                       You’ll repay <span className="font-semibold text-md-heading">${fmt(repayNum)}</span> — that’s{' '}
-                                       <span className="font-semibold text-md-primary-1200">${fmt(extra)}</span> to your moo-lender.
-                                    </p>
-                                 );
-                              })()}
-                              {(() => {
-                                 const borrowNum = Number(loanAmount);
-                                 const repayNum = Number(totalRepaymentAmount);
-                                 const min = minimumRepayment(borrowNum, days, undefined, { split: splitOn });
-                                 if (!termErrors.repayment && Boolean(totalRepaymentAmount) && min && Number.isFinite(repayNum) && repayNum < min.amount) {
-                                    return (
-                                       <div className="flex items-start gap-1.5 rounded-md-md bg-md-yellow-100 px-md-2 py-md-1 text-md-b3 font-normal leading-[18px] text-md-yellow-700">
-                                          <Lightbulb className="mt-[1px] size-4 shrink-0" strokeWidth={2} aria-hidden="true" />
-                                          <span>
-                                             For this date, moo-lenders usually look for at least{' '}
-                                             <span className="font-semibold">${min.amount.toFixed(2)}</span> back (about 10% a month).
-                                          </span>
-                                       </div>
-                                    );
-                                 }
-                                 return null;
-                              })()}
-                           </div>
-
-                           <div className="flex flex-col gap-md-1" data-tour-target="loan-repayment-date">
-                              <label className="text-md-b2 font-[590] text-md-heading" htmlFor="repaymentDate">
-                                 Set Repayment Date
-                              </label>
-                              <div className="relative">
-                                 <div
-                                    className={`relative flex items-center ${inputShellClass} ${termErrors.date ? '!border-md-red-500' : isRepaymentDateFilled ? '!border-md-primary-900' : ''}`}
-                                 >
-                                    <input
-                                       ref={dateInputRef}
-                                       aria-label="Selected repayment date"
-                                       onChange={handleTypedDate}
-                                       onClick={() => keepDateCursorInEditablePart()}
-                                       onBlur={() => {
-                                          if (!typedDate.replace(/\D/g, '')) setTypedDate('');
-                                       }}
-                                       onFocus={(event) => {
-                                          scrollFieldIntoView(event);
-                                          keepDateCursorInEditablePart();
-                                       }}
-                                       onKeyDown={handleDateKeyDown}
-                                       onPaste={handleDatePaste}
-                                       onSelect={() => keepDateCursorInEditablePart()}
-                                       placeholder={datePlaceholder}
-                                       type="text"
-                                       value={typedDate}
-                                       id="repaymentDate"
-                                       className="min-w-0 flex-1 bg-transparent px-md-3 py-md-2 pr-[64px] text-md-b1 font-normal text-md-heading placeholder:text-md-neutral-1200 focus:outline-none"
-                                    />
-                                    <button
-                                       aria-expanded={isCalendarOpen}
-                                       aria-label="Open repayment date calendar"
-                                       className={`absolute inset-y-0 right-0 flex w-[56px] items-center justify-center border-l border-md-primary-1200 transition duration-150 ease-out active:bg-[#4b00b8] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-2 ${
-                                          isCalendarOpen || isRepaymentDateFilled
-                                             ? 'bg-md-primary-1200 text-md-neutral-100 hover:bg-[#5200c8]'
-                                             : 'bg-md-neutral-100 text-md-primary-900 hover:bg-md-primary-100'
-                                       }`}
-                                       onClick={() => setIsCalendarOpen((isOpen) => !isOpen)}
-                                       type="button"
-                                    >
-                                       <CalendarDays aria-hidden="true" className="h-6 w-6" strokeWidth={1.6} />
-                                    </button>
+                              <span className="text-md-b2 font-[590] text-md-heading">Your loan terms</span>
+                              <div className="flex flex-col gap-md-1 rounded-md-input border border-md-primary-900 bg-md-primary-100 px-md-3 py-md-2 dark:border-[#7c4ed8]/60 dark:bg-[#2a1740]">
+                                 <div className="flex items-center justify-between gap-md-2 text-md-b1">
+                                    <span className="font-normal text-md-heading">You pay back</span>
+                                    <span className="font-semibold text-md-primary-1200 dark:text-[#d9c8ff]">
+                                       {fixedTermTotal === null ? '-' : `$${fixedTermTotal.toFixed(2)}`}
+                                    </span>
+                                 </div>
+                                 <div className="flex items-center justify-between gap-md-2 text-md-b1">
+                                    <span className="font-normal text-md-heading">Due</span>
+                                    <span className="font-semibold text-md-heading">{selectedDateLabel || '-'}</span>
                                  </div>
                               </div>
+                              {termErrors.repayment ? <FieldError message={termErrors.repayment} /> : null}
                               {termErrors.date ? <FieldError message={termErrors.date} /> : null}
-                              {/* Quick-pick common short terms — typing DD/MM on mobile is the fiddliest field.
-                                  Each fills a valid future date via the same handler the calendar uses. */}
-                              <div className="mt-md-0 flex flex-wrap gap-md-1">
-                                 {[
-                                    { label: '2 weeks', days: 14 },
-                                    { label: '1 month', days: 30 },
-                                    { label: '2 months', days: 60 }
-                                 ].map(({ label, days: offset }) => {
-                                    const date = addDays(todayDate, offset);
-                                    const isActive = selectedDate === formatDateInputValue(date);
-                                    return (
-                                       <button
-                                          key={label}
-                                          type="button"
-                                          aria-pressed={isActive}
-                                          onClick={() => selectCalendarDate(date)}
-                                          className={`inline-flex min-h-[32px] items-center justify-center rounded-md-pill border px-md-2 py-[5px] text-md-b3 font-medium leading-[18px] transition active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-md-primary-900 focus-visible:ring-offset-1 ${
-                                             isActive
-                                                ? 'border-md-primary-900 bg-md-primary-100 text-md-primary-1200 shadow-[0_5px_12px_rgba(105,48,232,0.08)]'
-                                                : 'border-md-neutral-700 bg-md-neutral-100 text-md-neutral-1400'
-                                          }`}
-                                       >
-                                          {label}
-                                       </button>
-                                    );
-                                 })}
-                              </div>
+                              <p className="text-md-b3 font-normal leading-[18px] text-md-neutral-1200">
+                                 Every loan is {FIXED_TERM_DAYS} days with 10% on top. Want less? Change the amount above.
+                              </p>
                            </div>
 
                            {splitAvailable ? (

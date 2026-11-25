@@ -136,3 +136,20 @@ export function maximumRepayment(principal: number, dueDate: string | Date | nul
    const cap = Math.floor(principal * (1 + MAX_RETURN_PER_31_DAYS * periods) * 100 + 1e-6) / 100;
    return Math.max(cap, principal + 1);
 }
+
+// ---- Fixed terms: 10% for 30 days ---------------------------------------------------------------
+// George, 2026-11-25: borrowers no longer type their own repayment or date. Every Philippines request
+// is 30 days at 10% (half the 14-day loans paid the same 10% for half the time, and odd totals like
+// $15 → $17 confused the dashboard and reminders). The only choice left is borrowing less than the
+// limit. Two-part loans (over $60) keep their declining-balance price (SPLIT_RETURN_FACTOR, 11-15).
+// Never under the "$1 more than you borrow" rule ($5 → $6). Mirrored by app_private.fixed_loan_repayment
+// (20261125200000_fixed_loan_terms.sql); src/test/fixedLoanTerms.test.ts checks the table.
+
+export const FIXED_TERM_DAYS = 30;
+
+export function fixedRepayment(principal: number, options: RepaymentOptions = {}): number | null {
+   if (!Number.isFinite(principal) || principal <= 0) return null;
+   const factor = options.split ? SPLIT_RETURN_FACTOR : 1;
+   const total = toCentsUp(principal * (1 + MIN_MONTHLY_RETURN * factor));
+   return Math.max(total, Math.round((principal + 1) * 100) / 100);
+}
