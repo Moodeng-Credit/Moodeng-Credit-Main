@@ -183,38 +183,40 @@ describe('email first inside Facebook/Messenger', () => {
       expect(analytics.capture).toHaveBeenCalledWith('signin_inapp_email_submitted', { app: 'Facebook', os: 'android' });
    });
 
-   it('/sign-in in Chrome: bold Facebook, centered tiles and "Use email instead"; email opens a code form with password one tap away', async () => {
+   it('/sign-in in Chrome: bold Facebook, "or your email", the email box with an arrow, tiles under it', async () => {
       await render(SignInPage, CHROME_ANDROID_UA);
       const facebook = buttonWithText('Continue with Facebook') as HTMLButtonElement;
-      const google = googleTile('Sign In with Google') as HTMLButtonElement;
       expect(container.querySelector('button, a, input')).toBe(facebook);
       expect(facebook.className).toContain('bg-[#1877F2]');
-      expect(isBefore(facebook, google)).toBe(true);
-      // Short page: no form, no subtitle, no Remember Me or tour until they ask for email.
-      expect(container.querySelector('form')).toBeNull();
+      expect(container.textContent).toContain('or your email');
+      const box = container.querySelector('#otp-input') as HTMLInputElement;
+      expect(box.type).toBe('email');
+      expect(isBefore(facebook, box)).toBe(true);
+      const google = googleTile('Sign In with Google') as HTMLButtonElement;
+      expect(isBefore(box, google)).toBe(true);
+      // The box sends with an arrow inside it: no full-width button, no label, no "Use email instead" step.
+      expect((container.querySelector('button[aria-label="Email me a code"]') as HTMLButtonElement).type).toBe('submit');
+      expect(buttonWithText('Send code')).toBeNull();
+      expect(buttonWithText('Use email instead')).toBeNull();
+      // Outside the Philippines the email box doesn't offer a phone number (SMS is PH-only).
+      expect(buttonWithText('phone number')).toBeNull();
       expect(container.textContent).toContain('Welcome back');
       expect(container.textContent).not.toContain('Remember Me');
       expect(container.textContent).not.toContain('Take a tour first');
+      expect(container.textContent).not.toContain('Colorado');
       expect(container.textContent).toContain('Need help?');
-      await act(async () => buttonWithText('Use email instead')?.click());
-      expect((container.querySelector('#otp-input') as HTMLInputElement).type).toBe('email');
-      expect(buttonWithText('Send code')).not.toBeNull();
-      expect(buttonWithText('Continue with Facebook')).toBeNull();
       await act(async () => buttonWithText('password')?.click());
       expect(container.querySelector('input[type="password"]')).not.toBeNull();
       expect(buttonWithText('Use a code instead')).not.toBeNull();
-      await act(async () => buttonWithText('Other ways to sign in')?.click());
-      expect(buttonWithText('Continue with Facebook')).not.toBeNull();
-      expect(container.querySelector('form')).toBeNull();
       expect(events()).toEqual([]);
    });
 
-   it('/sign-in in Chrome on a phone that last used email: the email code form shows straight away', async () => {
+   it('/sign-in in Chrome on a phone that last used email: Facebook steps back to the white button', async () => {
       window.localStorage.setItem('moodeng:last-auth-method', 'email');
       try {
          await render(SignInPage, CHROME_ANDROID_UA);
          expect((container.querySelector('#otp-input') as HTMLInputElement).type).toBe('email');
-         expect(buttonWithText('Other ways to sign in')).not.toBeNull();
+         expect(buttonWithText('Continue with Facebook')?.className).not.toContain('bg-[#1877F2]');
       } finally {
          window.localStorage.removeItem('moodeng:last-auth-method');
       }
@@ -226,6 +228,7 @@ describe('email first inside Facebook/Messenger', () => {
       const phone = container.querySelector('#otp-input') as HTMLInputElement;
       expect(phone.type).toBe('tel');
       expect(container.textContent).toContain('+63');
+      expect(container.textContent).toContain('or your number');
       // The number box sends with an arrow inside it: no full-width "Text me a code" button, no label or helper.
       const arrow = container.querySelector('button[aria-label="Text me a code"]') as HTMLButtonElement;
       expect(arrow.type).toBe('submit');

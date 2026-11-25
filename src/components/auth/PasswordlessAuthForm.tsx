@@ -44,6 +44,8 @@ type Props = {
     * inside it and shows "Globe ✓" / "DITO ✓" in the box. Warnings and errors still show below.
     */
    compact?: boolean;
+   /** Told which box shows (phone or email), on mount and on every switch. */
+   onChannelChange?: (channel: OtpChannel) => void;
 };
 
 // Same screen a brand-new account lands on after verifying a code.
@@ -87,7 +89,8 @@ export function PasswordlessAuthForm({
    initialPhone = '',
    onUsePassword,
    quietSubmit = false,
-   compact = false
+   compact = false,
+   onChannelChange
 }: Props) {
    const navigate = useNavigate();
    const dispatch = useDispatch<AppDispatch>();
@@ -127,8 +130,15 @@ export function PasswordlessAuthForm({
    const network = phoneCheck?.kind === 'ok' ? phNetwork(phoneCheck.e164) : null;
    const smartBlocked = network === 'smart';
    const networkOk = network === 'globe' || network === 'dito';
-   // Compact phone box: the send button is an arrow inside the box (Smart numbers get "Log in with email" instead).
-   const compactArrow = compact && isSms && !smartBlocked;
+   // Compact box: the send button is an arrow inside it, for phone and email alike (Smart numbers get
+   // "Log in with email" instead). Purple once what's typed can be sent.
+   const compactArrow = compact && !smartBlocked;
+   const readyToSend = isSms ? phoneCheck?.kind === 'ok' : /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+   // "Use phone number instead" is for the Philippines (SMS codes are PH-only): left off the compact email box elsewhere.
+   const offerSwitch = smsEnabled && !smartBlocked && (!compact || isSms || isLikelyPhilippines());
+   useEffect(() => {
+      onChannelChange?.(channel);
+   }, [channel, onChannelChange]);
    useEffect(() => {
       if (mode !== 'signup' || !inApp.isInApp || isFacebookPrimaryHere(inApp)) return;
       let cancelled = false;
@@ -361,9 +371,9 @@ export function PasswordlessAuthForm({
                   key="arrow-submit"
                   type="submit"
                   disabled={isSending}
-                  aria-label="Text me a code"
+                  aria-label={isSms ? 'Text me a code' : 'Email me a code'}
                   className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white transition-opacity hover:opacity-95 disabled:opacity-70 ${
-                     phoneCheck?.kind === 'ok' ? 'bg-[#6010D2]' : 'bg-[#CFC6DA] dark:bg-[#3D2D5A]'
+                     readyToSend ? 'bg-[#6010D2]' : 'bg-[#CFC6DA] dark:bg-[#3D2D5A]'
                   }`}
                >
                   {isSending ? (
@@ -486,10 +496,10 @@ export function PasswordlessAuthForm({
 
          {/* One line of "instead" links: phone screen offers email; email screen offers phone and,
              on sign-in, a password (passwords go with an email). */}
-         {(smsEnabled && !smartBlocked) || (onUsePassword && !isSms) ? (
+         {offerSwitch || (onUsePassword && !isSms) ? (
             <p className="self-center text-center text-sm text-[#70617F] dark:text-[#A89BB8]">
                Use{' '}
-               {smsEnabled && !smartBlocked ? (
+               {offerSwitch ? (
                   <button
                      type="button"
                      onClick={() => switchTo(isSms ? 'email' : 'sms')}
@@ -498,7 +508,7 @@ export function PasswordlessAuthForm({
                      {isSms ? 'email' : 'phone number'}
                   </button>
                ) : null}
-               {smsEnabled && !smartBlocked && onUsePassword && !isSms ? ' or ' : null}
+               {offerSwitch && onUsePassword && !isSms ? ' or ' : null}
                {onUsePassword && !isSms ? (
                   <button
                      type="button"
