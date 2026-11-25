@@ -46,6 +46,7 @@ import { isIndonesianLoan } from '@/lib/loanMarket';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { isBaseWalletProvider, isOpenfortWalletProvider } from '@/lib/walletProvider';
 import { computePointsDelta, formatPointsMajor } from '@/shared/points';
+import { fetchUserProfiles } from '@/store/slices/authSlice';
 import { confirmLoanPayment, fetchLoans, type LoanSideEffectError } from '@/store/slices/loanSlice';
 import type { AppDispatch, RootState } from '@/store/store';
 import { ERROR_CODES } from '@/types/errorCodes';
@@ -227,6 +228,17 @@ export default function UserCard(loan: UserCardProps) {
    const userId = currentUserId || storeUserId;
    const userProfiles = useSelector((state: RootState) => state.auth.userProfiles);
    const borrowerProfile = borrowerUserId ? userProfiles[borrowerUserId] : undefined;
+   // The board loads profiles after the loan list; if that fetch missed (or a request arrived in
+   // between), this card showed "Unknown user" until the next 60s refresh. Fetch its own, twice at most.
+   const [profileTries, setProfileTries] = useState(0);
+   useEffect(() => {
+      if (!borrowerUserId || borrowerProfile || tourBorrowerUsername || profileTries >= 2) return;
+      const timer = window.setTimeout(() => {
+         setProfileTries((n) => n + 1);
+         void dispatch(fetchUserProfiles([borrowerUserId]));
+      }, profileTries === 0 ? 300 : 3000);
+      return () => window.clearTimeout(timer);
+   }, [borrowerUserId, borrowerProfile, tourBorrowerUsername, profileTries, dispatch]);
    // Unknown on the lender side: the loan list here is RLS-limited to the viewer's own loans, so
    // counting it made repeat borrowers look like first-timers. No server source exposes these yet.
    const borrowerFundedLoanCount: number | undefined = undefined;
@@ -241,7 +253,8 @@ export default function UserCard(loan: UserCardProps) {
       tourBorrowerUsername && (import.meta.env.DEV || isPreviewRequest || forceTourBorrowerLink || !borrowerProfile)
          ? `/user/${borrowerUsername}?demo=rich&lenderTourPreview=1&tourPreview=1`
          : `/user/${borrowerUsername}`;
-   const borrowerDisplayName = getSafeProfileText(borrowerProfile?.displayName) || borrowerUsername || 'Unknown user';
+   const borrowerDisplayName =
+      getSafeProfileText(borrowerProfile?.displayName) || borrowerUsername || (borrowerUserId && profileTries < 2 ? '…' : 'Unknown user');
    const due = parseISO(loanData.dueDate);
 
    const handleFetch = async () => {
