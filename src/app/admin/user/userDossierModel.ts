@@ -165,6 +165,8 @@ export interface Dossier {
       form_check: unknown;
    }>;
    call_events: Array<{ kind: string; call_at: string | null; recorded_at: string }>;
+   /** Team Telegram posts about them, saved from 2026-11-25 (log_team_post); repeats folded into `times`. */
+   team_posts?: Array<{ title: string; body: string; times: number; first_at: string; last_at: string; edited_at: string | null }>;
    no_shows: Array<{ kind: string | null; recorded_at: string; active: boolean }>;
    bot_answers: Array<{ kind: string | null; items: unknown; fit_verdict: string | null; fit_reason: string | null; created_at: string }>;
    prescreens: Array<{

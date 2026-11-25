@@ -41,7 +41,9 @@ export const facebookLine = (p: FacebookPerson, labelled = false): string | null
 // @handles not glued to a word (so emails don't count) and emails, lowercased, in order of appearance. Pure.
 export const mentionsIn = (text: string) => {
    const emails = [...new Set([...text.matchAll(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g)].map((m) => m[0].toLowerCase()))];
-   const handles = [...new Set([...text.matchAll(/(?<![\w.@])@([A-Za-z0-9_.]{3,40})/g)].map((m) => m[1].replace(/\.+$/, '').toLowerCase()))];
+   const handles = [
+      ...new Set([...text.matchAll(/(?<![\w.@])@([A-Za-z0-9_.]{3,40})/g)].map((m) => m[1].replace(/\.+$/, '').toLowerCase()))
+   ];
    return { handles, emails };
 };
 
@@ -84,7 +86,10 @@ const rest = async <T>(path: string): Promise<T | null> => {
    const url = Deno.env.get('SUPABASE_URL');
    const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
    if (!url || !key) return null;
-   const res = await fetch(`${url}/rest/v1/${path}`, { headers: { apikey: key, Authorization: `Bearer ${key}` }, signal: AbortSignal.timeout(3000) });
+   const res = await fetch(`${url}/rest/v1/${path}`, {
+      headers: { apikey: key, Authorization: `Bearer ${key}` },
+      signal: AbortSignal.timeout(3000)
+   });
    return res.ok ? ((await res.json()) as T) : null;
 };
 
@@ -110,7 +115,11 @@ const quote = (v: string) => `"${v.replace(/["\\]/g, '')}"`;
 const lookUpPeople = async (handles: string[], emails: string[], ids: string[]): Promise<FacebookPerson[]> => {
    const ors = [
       // ilike so case doesn't matter; pickPeople re-checks exact equality (ilike treats _ as a wildcard).
-      ...handles.flatMap((h) => [`username.ilike.${quote(h)}`, `telegram_username.ilike.${quote(h)}`, `telegram_username.ilike.${quote('@' + h)}`]),
+      ...handles.flatMap((h) => [
+         `username.ilike.${quote(h)}`,
+         `telegram_username.ilike.${quote(h)}`,
+         `telegram_username.ilike.${quote('@' + h)}`
+      ]),
       ...emails.map((e) => `email.ilike.${quote(e)}`),
       ...(ids.length ? [`id.in.(${ids.map(quote).join(',')})`] : [])
    ];
@@ -123,17 +132,64 @@ const lookUpPeople = async (handles: string[], emails: string[], ids: string[]):
    return (await rest<FacebookPerson[]>(`users?${params}`)) ?? [];
 };
 
-/** For callTelegramApi: the text to post in this chat. Never throws; unchanged outside team chats. */
-export const withTeamFacebook = async (chatId: unknown, text: string, aboutUserIds: string[] = []): Promise<string> => {
+/**
+ * A team post as it will go out: the text (with Facebook lines) and who it's about, for the post log.
+ * `about` = ids the sender passed; `mentioned` = people found by @username/email in the text (may
+ * include team members — log_team_post drops those). Never throws; `team` false outside team chats.
+ */
+export type TeamPost = { text: string; team: boolean; about: string[]; mentioned: string[] };
+
+export const teamPost = async (chatId: unknown, text: string, aboutUserIds: string[] = []): Promise<TeamPost> => {
+   const plain: TeamPost = { text, team: false, about: [], mentioned: [] };
    try {
-      if (chatId == null || !text) return text;
-      if (!(await teamChatIds()).has(String(chatId).trim())) return text;
+      if (chatId == null || !text) return plain;
+      if (!(await teamChatIds()).has(String(chatId).trim())) return plain;
       const { handles, emails } = mentionsIn(text);
-      if (!handles.length && !emails.length && !aboutUserIds.length) return text;
+      if (!handles.length && !emails.length && !aboutUserIds.length) return { ...plain, team: true };
       const people = await lookUpPeople(handles.slice(0, 10), emails.slice(0, 10), aboutUserIds.slice(0, 10));
-      return addFacebookLines(text, pickPeople(text, people, aboutUserIds));
+      const picked = pickPeople(text, people, aboutUserIds);
+      return {
+         text: addFacebookLines(text, picked),
+         team: true,
+         about: aboutUserIds.filter((id) => picked.some((p) => p.id === id)),
+         mentioned: picked.map((p) => p.id).filter((id) => !aboutUserIds.includes(id))
+      };
    } catch (err) {
       console.warn('teamFacebook: skipped', err instanceof Error ? err.message : err);
-      return text;
+      return plain;
+   }
+};
+
+/** For callTelegramApi: the text to post in this chat. Never throws; unchanged outside team chats. */
+export const withTeamFacebook = async (chatId: unknown, text: string, aboutUserIds: string[] = []): Promise<string> =>
+   (await teamPost(chatId, text, aboutUserIds)).text;
+
+/**
+ * Saves a sent team post on the person's Admin page (public.log_team_post decides what's kept,
+ * folded or skipped — see migration 20261125090000_team_post_log.sql). Never throws, never slows a
+ * post by more than ~2.5s, and does nothing if the database function isn't there.
+ */
+export const logTeamPost = async (post: TeamPost, chatId: unknown, messageId: unknown, isEdit: boolean): Promise<void> => {
+   try {
+      if (!post.team || (!post.about.length && !post.mentioned.length)) return;
+      const url = Deno.env.get('SUPABASE_URL');
+      const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+      if (!url || !key) return;
+      const res = await fetch(`${url}/rest/v1/rpc/log_team_post`, {
+         method: 'POST',
+         headers: { apikey: key, Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+         body: JSON.stringify({
+            p_chat_id: String(chatId),
+            p_message_id: typeof messageId === 'number' ? messageId : null,
+            p_text: post.text,
+            p_about: post.about,
+            p_mentioned: post.mentioned,
+            p_is_edit: isEdit
+         }),
+         signal: AbortSignal.timeout(2500)
+      });
+      if (!res.ok) console.warn('teamPostLog: not saved', res.status);
+   } catch (err) {
+      console.warn('teamPostLog: skipped', err instanceof Error ? err.message : err);
    }
 };
