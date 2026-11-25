@@ -1,6 +1,6 @@
 import { assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
-import { buildCallConfirmTemplate, RUNG, shouldReleaseSlot, skipsDayBeforeReminder, skipsConfirmAsk, targetRung } from './lib.ts';
+import { buildCallConfirmTemplate, countdownTitle, minutesLeft, RUNG, shouldReleaseSlot, skipsDayBeforeReminder, skipsConfirmAsk, targetRung } from './lib.ts';
 
 const H = 60 * 60 * 1000;
 const start = Date.parse('2026-09-25T08:00:00Z');
@@ -25,7 +25,10 @@ Deno.test('the ladder: each window maps to its rung', () => {
    assertEquals(targetRung(65), RUNG.CONFIRM);
    assertEquals(targetRung(45), RUNG.CONFIRM);
    assertEquals(targetRung(30), RUNG.RELEASE);
-   assertEquals(targetRung(10), RUNG.RELEASE);
+   assertEquals(targetRung(16), RUNG.RELEASE);
+   assertEquals(targetRung(15), RUNG.SOON);
+   assertEquals(targetRung(10), RUNG.SOON);
+   assertEquals(targetRung(6), RUNG.SOON);
    assertEquals(targetRung(4), RUNG.STARTING);
    assertEquals(targetRung(-2), RUNG.STARTING);
    assertEquals(targetRung(-5), RUNG.WAITING);
@@ -52,4 +55,13 @@ Deno.test('WhatsApp confirm template: name, time and the confirm token as the bu
    assertEquals(t.components[0].parameters.map((p) => p.text), ['Maria', 'Thu, Oct 30, 7:00 PM (Manila time)']);
    assertEquals(t.components[1], { type: 'button', sub_type: 'url', index: 0, parameters: [{ type: 'text', text: 'abc123' }] });
    assertEquals(buildCallConfirmTemplate('  ', 'x', 't').components[0].parameters[0].text, 'there');
+});
+
+Deno.test('countdown: the real minutes left, singular for 1, "starting now" at 0', () => {
+   assertEquals(minutesLeft(29.6), 30);
+   assertEquals(minutesLeft(14.2), 14);
+   assertEquals(minutesLeft(-2), 0);
+   assertEquals(countdownTitle(30), 'Your Moodeng call starts in 30 minutes ⏰');
+   assertEquals(countdownTitle(1), 'Your Moodeng call starts in 1 minute ⏰');
+   assertEquals(countdownTitle(0), 'Your Moodeng call is starting now 👋');
 });

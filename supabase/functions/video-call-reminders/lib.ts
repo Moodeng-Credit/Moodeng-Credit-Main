@@ -7,8 +7,10 @@
 //   CONFIRM      ≤ 1h before    unconfirmed: "Tap ✅ I'll be there in the next 30 min or the call is
 //                               cancelled" (the booking confirmation + page told them to expect it);
 //                               already confirmed / booked under 75 min ahead: "starts in under an hour"
-//   RELEASE      ≤ 30 min before still unconfirmed after that ask → call cancelled, slot freed
-//   STARTING     ≤ 5 min before "Starting now 👋 tap to join" (skipped if Zoom already saw them);
+//   RELEASE      ≤ 30 min before still unconfirmed after that ask → call cancelled, slot freed;
+//                               otherwise "starts in 30 minutes" (+ sorry for the reminders)
+//   SOON         ≤ 15 min before "starts in 15 minutes" (+ sorry for the reminders)
+//   STARTING     ≤ 5 min before "starts in 5 minutes, tap to join" (skipped if Zoom already saw them);
 //                               admins get the Showed up / No-show card now, to decide right after
 //   WAITING      ≥ 3 min after  Zoom wired up and hasn't seen them: "We're ready for you!"
 //   PROMPT       ≥ 20 min after still undecided: admins re-asked "Did Maria show up?" + Zoom evidence
@@ -22,10 +24,11 @@ export const RUNG = {
    DAY: 1,
    CONFIRM: 2,
    RELEASE: 3,
-   STARTING: 4,
-   WAITING: 5,
-   PROMPT: 6,
-   AUTO_NO_SHOW: 7
+   SOON: 4,
+   STARTING: 5,
+   WAITING: 6,
+   PROMPT: 7,
+   AUTO_NO_SHOW: 8
 } as const;
 export type Rung = (typeof RUNG)[keyof typeof RUNG];
 
@@ -35,11 +38,22 @@ export const CONFIRM_OPENS_MIN = 60;
 export const CONFIRM_CLOSES_MIN = 30;
 
 // minutesUntil: minutes from now to the call's start (negative once it has started).
+// The 30 / 15 / 5-minute countdown (George 2026-11-25). The cron runs every 5 min, so a tick lands
+// anywhere in the window: say the real minutes left, never a number that's already wrong.
+export const minutesLeft = (minutesUntil: number): number => Math.max(0, Math.round(minutesUntil));
+
+export const COUNTDOWN_SORRY = "Sorry for all the reminders 🙏 we just don't want you to miss your call!";
+
+// "Your Moodeng call starts in 15 minutes" / "starts in 1 minute" / "is starting now".
+export const countdownTitle = (minutes: number): string =>
+   minutes <= 0 ? 'Your Moodeng call is starting now 👋' : `Your Moodeng call starts in ${minutes} minute${minutes === 1 ? '' : 's'} ⏰`;
+
 export const targetRung = (minutesUntil: number): Rung => {
    if (minutesUntil <= -60) return RUNG.AUTO_NO_SHOW;
    if (minutesUntil <= -20) return RUNG.PROMPT;
    if (minutesUntil <= -3) return RUNG.WAITING;
    if (minutesUntil <= 5) return RUNG.STARTING;
+   if (minutesUntil <= 15) return RUNG.SOON;
    if (minutesUntil <= CONFIRM_CLOSES_MIN) return RUNG.RELEASE;
    // 65 = the 60-min target plus a cron tick of slack, so the ask is never skipped.
    if (minutesUntil <= CONFIRM_OPENS_MIN + 5) return RUNG.CONFIRM;
