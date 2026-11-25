@@ -26,6 +26,7 @@ import {
    sendMessengerMessage,
    TIKTOK_BOT_ID
 } from '../_shared/sendpulse.ts';
+import { metaWebhookChallenge } from '../_shared/metaMessenger.ts';
 import { parseSendPulseEvents, type SendPulseEvent } from '../_shared/sendpulseEvents.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
 import { openTikTokTicket } from '../_shared/tiktokSupport.ts';
@@ -266,6 +267,18 @@ const eventsSecret = async (svc: Svc) => {
 };
 
 serve(async (req) => {
+   // Meta's own Messenger webhook for our app (Moodeng Messaging), so it can be a partner app in the
+   // Page's conversation routing and send utility templates itself (_shared/metaMessenger.ts). SendPulse
+   // still receives and answers every message; we only acknowledge Meta's events here.
+   const reqUrl = new URL(req.url);
+   if (reqUrl.searchParams.get('meta')) {
+      if (!SUPABASE_URL || !SERVICE_KEY) return new Response('not configured', { status: 503 });
+      if (req.method === 'GET') {
+         const challenge = await metaWebhookChallenge(createClient(SUPABASE_URL, SERVICE_KEY), reqUrl);
+         return challenge ? new Response(challenge, { status: 200 }) : new Response('forbidden', { status: 403 });
+      }
+      return new Response('ok', { status: 200 });
+   }
    if (req.method !== 'POST') return json({ ok: false, error: 'method_not_allowed' }, 405);
    if (!SUPABASE_URL || !SERVICE_KEY) return json({ ok: false, error: 'not_configured' }, 503);
    const svc = createClient(SUPABASE_URL, SERVICE_KEY);

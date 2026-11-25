@@ -3,6 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { loadDiditMedia } from '../_shared/diditMedia.ts';
 import { saveFacebookName, syncMessengerHistory } from '../_shared/messengerContactLog.ts';
+import { sendUtilityTemplate } from '../_shared/metaMessenger.ts';
 import {
    createWhatsAppTemplate,
    findMessengerContactIdByCode,
@@ -181,6 +182,16 @@ serve(async (req) => {
          );
       }
       return json({ results });
+   }
+
+   // Test only: one Messenger utility template straight through Meta (our app, not SendPulse) to one
+   // Page-scoped id. Body { psid, name?, params[] }. See _shared/metaMessenger.ts.
+   if (body.action === 'meta_utility_test') {
+      const psid = typeof body.psid === 'string' ? body.psid.trim() : '';
+      const name = typeof body.name === 'string' && body.name.trim() ? body.name.trim() : 'moodeng_repay_reminder';
+      const params = (Array.isArray(body.params) ? body.params : []).map((p: unknown) => String(p ?? '').slice(0, 200));
+      if (!psid || !params.length) return json({ ok: false, reason: 'missing_fields' }, 400);
+      return json(await sendUtilityTemplate(svc, psid, { name, params }));
    }
 
    if (body.action === 'msg_template_probe') {
