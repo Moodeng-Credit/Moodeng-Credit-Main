@@ -377,7 +377,7 @@ function DueRow({ due, streak }: { due: DashboardV2Due; streak: RepayStreak | nu
    );
 }
 
-export function UpcomingDuesSection({ model }: { model: DashboardV2Model }) {
+export function UpcomingDuesSection({ model, limit = 0, nextLimit = 0 }: { model: DashboardV2Model; limit?: number; nextLimit?: number }) {
    const nextDueId = [...model.dues].filter((due) => !due.isOverdue).sort((a, b) => a.daysRemaining - b.daysRemaining)[0]?.id;
    return (
       <section className="mx-5 rounded-[8px] bg-dv2-card px-2.5 pb-3.5 pt-5" aria-labelledby="dv2-dues-title">
@@ -396,7 +396,7 @@ export function UpcomingDuesSection({ model }: { model: DashboardV2Model }) {
                />
             </Link>
          </div>
-         <RepayStreakCard streak={model.rewards.streak} />
+         <RepayStreakCard streak={model.rewards.streak} limit={limit} nextLimit={nextLimit} />
          <div className="mt-4">
             <Divider />
          </div>

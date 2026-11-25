@@ -62,22 +62,118 @@ export function StreakSteps({ streak }: { streak: RepayStreak }) {
    );
 }
 
-/** Dashboard: the streak and what the next on-time repayment brings, above the loans that are due. */
-export function RepayStreakCard({ streak }: { streak: RepayStreak }) {
+/** The tracker's dots: small, purple when done, the ₱ voucher under the steps that pay one. */
+function TrackerSteps({ streak }: { streak: RepayStreak }) {
+   return (
+      <ol className="flex items-start" aria-label={`${streak.current} on time in a row`}>
+         {Array.from({ length: STREAK_LENGTH }, (_, index) => {
+            const step = index + 1;
+            const voucher = STREAK_VOUCHERS.find((item) => item.step === step);
+            const isDone = step <= streak.current;
+            const isNext = step === streak.current + 1;
+            return (
+               <li key={step} className="flex flex-1 flex-col items-center gap-1">
+                  <div className="flex w-full items-center">
+                     <span
+                        className={clsx(
+                           'h-[2px] flex-1',
+                           index === 0 ? 'bg-transparent' : isDone ? 'bg-[#6010D2]' : 'bg-[#E7E0F0] dark:bg-[#3A2F55]'
+                        )}
+                     />
+                     <span
+                        className={clsx(
+                           'flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[12px] font-semibold',
+                           isDone
+                              ? 'bg-[#6010D2] text-white'
+                              : isNext
+                                ? 'border-2 border-[#6010D2] bg-white text-[#6010D2] dark:bg-dv2-page dark:text-[#C4B8FF]'
+                                : 'border border-[#E7E0F0] bg-white text-[#A89BB8] dark:border-[#3A2F55] dark:bg-dv2-page'
+                        )}
+                     >
+                        {isDone ? <Check className="h-3.5 w-3.5" strokeWidth={3} aria-hidden="true" /> : step}
+                     </span>
+                     <span
+                        className={clsx(
+                           'h-[2px] flex-1',
+                           step === STREAK_LENGTH
+                              ? 'bg-transparent'
+                              : step < streak.current
+                                ? 'bg-[#6010D2]'
+                                : 'bg-[#E7E0F0] dark:bg-[#3A2F55]'
+                        )}
+                     />
+                  </div>
+                  <span
+                     className={clsx(
+                        'h-4 text-[11px] font-semibold leading-4',
+                        voucher ? 'text-[#B07A00] dark:text-[#F5C451]' : 'text-transparent'
+                     )}
+                  >
+                     {voucher ? `₱${voucher.amountPhp}` : '·'}
+                  </span>
+               </li>
+            );
+         })}
+      </ol>
+   );
+}
+
+const TRACKER_COPY = {
+   en: {
+      title: 'Pay on time',
+      inARow: (n: number) => `🔥 ${n} in a row`,
+      limit: (from: number, to: number) => `Repay your full $${from} → $${to} limit`
+   },
+   fil: {
+      title: 'Magbayad on time',
+      inARow: (n: number) => `🔥 ${n} sunod-sunod`,
+      limit: (from: number, to: number) => `Bayaran ang buong $${from} → $${to} limit`
+   }
+};
+
+/**
+ * Dashboard "Pay on time" tracker (Abby, 2026-11-26: show what paying on time gets you, on the home
+ * screen). Two real perks only — the next food voucher and the next credit limit; the price stays the
+ * same for everyone, so it never promises a cheaper loan. Crisp white card like the sign-in screen.
+ */
+export function RepayStreakCard({ streak, limit = 0, nextLimit = 0 }: { streak: RepayStreak; limit?: number; nextLimit?: number }) {
    const { locale } = useLocalization();
-   if (!hasStreakToShow(streak)) return null;
+   const showStreak = hasStreakToShow(streak);
+   const showLimit = limit > 0 && nextLimit > limit;
+   if (!showStreak && !showLimit) return null;
    const copy = getStreakCardCopy(streak, locale);
+   const t = TRACKER_COPY[locale === 'fil' ? 'fil' : 'en'];
    return (
       <div
-         className="mt-3 flex flex-col gap-2 rounded-[8px] px-3 py-3"
-         style={{ backgroundImage: 'linear-gradient(90deg, #fff3a3 0%, #ffe27a 100%)' }}
+         className="mt-3 flex flex-col gap-3 rounded-[16px] border border-[#EEE8F5] bg-white px-4 py-4 dark:border-[#3A2F55] dark:bg-dv2-page"
          data-testid="repay-streak-card"
       >
-         <p className="text-[18px] font-black italic leading-6 text-[#3c8248]">{copy.title}</p>
-         <StreakSteps streak={streak} />
-         <p className="text-[14px] font-medium leading-[18px] text-[#6f7d1d]">{copy.caption}</p>
-         {streak.nextStep !== null ? (
-            <p className="text-[12px] leading-[16px] text-[#6f7d1d]">{getRewardRuleCopy(locale).halfwayRule}</p>
+         <div className="flex items-center gap-2">
+            <img src="/auth-screen.png" alt="" aria-hidden="true" className="h-7 w-7 object-contain" />
+            <p className="text-[17px] font-bold leading-6 tracking-[-0.03em] text-[#040033] dark:text-[#F0EAFF]">{t.title}</p>
+            {streak.current > 0 ? (
+               <span className="ml-auto rounded-full bg-[#F3EEFB] px-2.5 py-1 text-[12px] font-semibold leading-none text-[#6010D2] dark:bg-[#2A2138] dark:text-[#C4B8FF]">
+                  {t.inARow(streak.current)}
+               </span>
+            ) : null}
+         </div>
+         {showStreak ? <TrackerSteps streak={streak} /> : null}
+         <ul className="flex flex-col gap-1.5 text-[14px] leading-[18px] tracking-[-0.01em] text-[#40344F] dark:text-[#D9CFEA]">
+            {showStreak ? (
+               <li className="flex items-start gap-2">
+                  <span aria-hidden="true">🍗</span>
+                  <span>{copy.caption}</span>
+               </li>
+            ) : null}
+            {showLimit ? (
+               <li className="flex items-start gap-2">
+                  <span aria-hidden="true">⬆️</span>
+                  <span>{t.limit(limit, nextLimit)}</span>
+               </li>
+            ) : null}
+         </ul>
+         {showStreak && streak.nextStep !== null ? (
+            <p className="text-[12px] leading-[16px] text-[#70617F] dark:text-[#A89BB8]">{getRewardRuleCopy(locale).halfwayRule}</p>
          ) : null}
       </div>
    );

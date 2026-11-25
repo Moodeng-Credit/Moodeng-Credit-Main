@@ -629,6 +629,19 @@ export const filipinoCoverageB: Record<string, string> = {
    'Join the Moodeng borrower group on Facebook or Telegram so we can introduce you to great moo-lenders.':
       'Sumali sa Moodeng borrower group sa Facebook o Telegram para maipakilala ka namin sa mahuhusay na moo-lender.',
    'Join on Telegram': 'Sumali sa Telegram',
+   'Request sent': 'Naipadala na ang request',
+   "Moo-lenders review every request. Once they've looked at yours, they may fund it. This can take some time.":
+      'Sinusuri ng mga moo-lender ang bawat request. Kapag natingnan na nila ang sa iyo, puwede nila itong pondohan. Puwedeng tumagal ito nang kaunti.',
+   'Meet moo-lenders in our group': 'Kilalanin ang mga moo-lender sa group namin',
+   'Questions? Message us': 'May tanong? Mag-message sa amin',
+   'Emma & George · Moodeng team': 'Emma & George · Moodeng team',
+   // src/components/verification/VerifyYourselfModal.tsx (accepted IDs)
+   'Verify with your ID': 'Mag-verify gamit ang ID mo',
+   'IDs that work': 'Mga ID na puwede',
+   "My ID isn't listed": 'Wala sa listahan ang ID ko',
+   'Continue with my ID': 'Ituloy gamit ang ID ko',
+   // src/views/dashboard/components/LoanRequestModal.tsx (fixed terms)
+   '30 days to pay. On time = a bigger limit next time.': '30 araw para magbayad. On time = mas mataas na limit sa susunod.',
    'Join on Facebook': 'Sumali sa Facebook',
 
    // src/views/dashboard/components/TrustScoreSection.tsx
