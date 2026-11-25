@@ -469,6 +469,22 @@ const trackLoanFormRule = (event: string, properties: Record<string, unknown>) =
 };
 
 /**
+ * Under the prefilled repayment box: what they get and what they pay back, in pesos in the Philippines
+ * (Abby, 2026-11-26: borrowers think in pesos, not percentages). Dollars elsewhere.
+ */
+function PayBackLine({ amount, total }: { amount: number; total: number }) {
+   const phpRate = useUsdcRate('php');
+   const inPhilippines = useMemo(() => isLikelyPhilippines(), []);
+   const money =(usd: number) => (inPhilippines ? `≈ ₱${Math.round(usd * phpRate.value).toLocaleString()}` : `$${usd.toFixed(2)}`);
+   return (
+      <p className="text-md-b3 font-normal leading-[18px] text-md-neutral-1200" data-testid="pay-back-line">
+         You get <span className="font-semibold text-md-heading">{money(amount)}</span> · you pay back{' '}
+         <span className="font-semibold text-md-primary-1200">{money(total)}</span>
+      </p>
+   );
+}
+
+/**
  * The USDC chip on the amount field. 5 people tapped it expecting something; now it flips in place
  * to the amount in pesos (or "1 USDC = $1" outside the Philippines) and flips back after 3s.
  */
@@ -3523,11 +3539,7 @@ export default function LoanRequestModal({
                               />
                               {termErrors.repayment ? <FieldError message={termErrors.repayment} /> : null}
                               {fixedTermTotal && Number(loanAmount) > 0 ? (
-                                 <p className="text-md-b3 font-normal leading-[18px] text-md-neutral-1200">
-                                    You’ll repay <span className="font-semibold text-md-heading">${fixedTermTotal.toFixed(2)}</span> — that’s{' '}
-                                    <span className="font-semibold text-md-primary-1200">${(fixedTermTotal - Number(loanAmount)).toFixed(2)}</span> to your
-                                    moo-lender.
-                                 </p>
+                                 <PayBackLine amount={Number(loanAmount)} total={fixedTermTotal} />
                               ) : null}
                            </div>
 
@@ -3553,7 +3565,9 @@ export default function LoanRequestModal({
                                  </span>
                               </div>
                               {termErrors.date ? <FieldError message={termErrors.date} /> : null}
-                              <p className="text-md-b3 font-normal leading-[18px] text-md-neutral-1200">Every loan is {FIXED_TERM_DAYS} days with 10% on top.</p>
+                              <p className="text-md-b3 font-normal leading-[18px] text-md-neutral-1200">
+                                 {`${FIXED_TERM_DAYS} days to pay. On time = a bigger limit next time.`}
+                              </p>
                            </div>
 
                            {splitAvailable ? (

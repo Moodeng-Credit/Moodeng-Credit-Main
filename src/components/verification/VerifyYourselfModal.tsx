@@ -1,12 +1,19 @@
 import { ArrowLeft, ArrowRight, ChevronDown, Download, MapPin } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useNavigate } from 'react-router-dom';
 
+import { messengerSupportLinkProps } from '@/components/support/MessengerChatButton';
 import { SUPPORTED_DIDIT_COUNTRIES } from '@/components/verification/CountryFlags';
 import { EXTERNAL_LINKS } from '@/config/externalLinks';
 import { PRE_KYC_CONNECT_PATH, usePreKycGate } from '@/hooks/usePreKycGate';
+import { isLikelyPhilippines } from '@/lib/isLikelyPhilippines';
 import { clearVerifyFlow, type VerifyMethod } from '@/lib/verifyFlow';
+
+// Didit's live workflow (Philippines): national/digital ID, UMID, senior citizen, voter's ID, driver's
+// license, passport, resident card. Kept to the ones borrowers recognise.
+const PH_ACCEPTED_IDS = ['PhilSys / ePhilID', 'UMID', "Driver's license", 'Passport', "Voter's ID", 'Senior citizen ID'];
+const ACCEPTED_IDS = ['National ID', "Driver's license", 'Passport', 'Residence card'];
 
 type VerifyYourselfModalProps = {
    isOpen: boolean;
@@ -72,6 +79,8 @@ function OpenVerifyYourselfModal({ isOpen, onClose, returnTo }: VerifyYourselfMo
    const [step, setStep] = useState<'choose' | 'orb-info' | 'passport-info'>('choose');
    const [showCountries, setShowCountries] = useState(false);
    const preKycGate = usePreKycGate();
+   const inPhilippines = useMemo(() => isLikelyPhilippines(), []);
+   const idHelpLink = messengerSupportLinkProps('id_not_listed');
 
    // Not met the team yet (pre-KYC gate): every "Verify" button leads to Messenger + the intro call
    // first, so the chooser never opens — /onboarding/connect sends them on to KYC once approved.
@@ -308,7 +317,7 @@ function OpenVerifyYourselfModal({ isOpen, onClose, returnTo }: VerifyYourselfMo
                   </span>
                   <div className="flex-1 min-w-0">
                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-md-b1 font-semibold text-md-heading">Verify with your National ID</span>
+                        <span className="text-md-b1 font-semibold text-md-heading">Verify with your ID</span>
                         {/* A quiet tag, not a solid purple pill — that read as a second button. */}
                         <span className="inline-flex items-center text-md-b3 font-medium px-2 py-0.5 rounded-full bg-md-green-100 text-md-green-900">
                            Recommended
@@ -331,12 +340,31 @@ function OpenVerifyYourselfModal({ isOpen, onClose, returnTo }: VerifyYourselfMo
                   ))}
                </div>
 
+               {/* Which IDs work (2026-11-26: a borrower with a UMID thought hers wasn't accepted — the screen
+                   only said "National ID"). Matches Didit's live workflow for the Philippines. */}
+               <div className="flex flex-col gap-2 border-t border-md-neutral-300 pt-3" data-testid="accepted-ids">
+                  <p className="text-md-b3 font-semibold text-md-heading">IDs that work</p>
+                  <div className="flex flex-wrap gap-1.5">
+                     {(inPhilippines ? PH_ACCEPTED_IDS : ACCEPTED_IDS).map((id) => (
+                        <span
+                           key={id}
+                           className="rounded-full border border-[#E7E0F0] bg-white px-2.5 py-1 text-[12px] font-medium leading-4 text-[#40344F] dark:border-[#3A2F55] dark:bg-transparent dark:text-[#D9CFEA]"
+                        >
+                           {id}
+                        </span>
+                     ))}
+                  </div>
+                  <a {...idHelpLink} className="self-start text-md-b3 font-medium text-md-primary-1200 underline underline-offset-2">
+                     My ID isn&apos;t listed
+                  </a>
+               </div>
+
                <button
                   type="button"
                   onClick={() => start('didit')}
                   className="w-full rounded-md-lg bg-md-primary-1200 text-md-neutral-100 p-4 flex items-center justify-center gap-2 text-md-b1 font-semibold transition-all duration-150 active:scale-[0.99]"
                >
-                  Continue with National ID
+                  Continue with my ID
                   <ArrowRight size={18} aria-hidden="true" />
                </button>
             </div>

@@ -32,7 +32,8 @@ export default function LoanRequestPreview() {
    const [totalRepaymentAmount, setTotalRepaymentAmount] = useState('');
    const [reason, setReason] = useState('');
    const [days, setDays] = useState('');
-   const [submitted, setSubmitted] = useState(false);
+   // ?sent opens straight on the "Request sent" popup.
+   const [submitted, setSubmitted] = useState(() => new URLSearchParams(window.location.search).has('sent'));
    const today = toLocalDateString();
    const params = new URLSearchParams(window.location.search);
    // ?unverified renders the not-yet-verified state (verify blocker + inert submit button).

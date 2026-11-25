@@ -15,6 +15,7 @@ import { useIsBorrower } from '@/hooks/useIsBorrower';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useVerificationJourney } from '@/hooks/useVerificationJourney';
 
+import { getNextCreditTier } from '@/config/creditTiers';
 import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
 import type { ClaimableVoucher } from '@/lib/friendReferrals';
 import { recordGuidedTourEvent } from '@/lib/guidedTourEvents';
@@ -170,6 +171,11 @@ export default function DashboardV2() {
       Number.isInteger(tourStepsParam) && tourStepsParam > 0 ? tourStepsParam : REQUEST_BOARD_TOUR_STEP_COUNT;
    const trackParam = searchParams.get('track');
    const creditLimitNow = model.isVerified ? getEffectiveCreditLimit(authUser?.cs, true) : 0;
+   // The "Pay on time" card's limit line: repay a full-limit loan → this next limit.
+   const payOnTimeLimit = model.creditLimit > 0 ? model.creditLimit : 0;
+   const payOnTimeNextLimit = payOnTimeLimit
+      ? getNextCreditTier(payOnTimeLimit, authUser?.createdAt, findOpenFullLimitLoan(myLoans, payOnTimeLimit)?.fundedAt ?? null)
+      : 0;
    const previewTrack = isPreviewHost() && (trackParam === 'A' || trackParam === 'B') ? trackParam : undefined;
    const showTour = searchParams.has('tour') && shouldShowGuidedTour(BORROWER_GUIDED_TOUR_ID, userId, false);
    // "Before you repay" carousel for a loan funded under 48 hours ago. Preview: ?fast=1.
@@ -300,7 +306,9 @@ export default function DashboardV2() {
                      />
                   ) : null}
                   {/* Anything to repay sits near the top, with the streak and what paying on time earns. */}
-                  {model.dues.length ? <UpcomingDuesSection model={model} /> : null}
+                  {model.dues.length ? (
+                     <UpcomingDuesSection model={model} limit={payOnTimeLimit} nextLimit={payOnTimeNextLimit} />
+                  ) : null}
                   {voucherFollowUp ? (
                      <VoucherFollowUpCard
                         claim={voucherFollowUp}
@@ -312,7 +320,9 @@ export default function DashboardV2() {
                   ) : null}
                   {milestonesAndVoucher}
                   <LoanSummarySection model={model} />
-                  {!model.dues.length ? <UpcomingDuesSection model={model} /> : null}
+                  {!model.dues.length ? (
+                     <UpcomingDuesSection model={model} limit={payOnTimeLimit} nextLimit={payOnTimeNextLimit} />
+                  ) : null}
                </div>
             )}
          </div>
