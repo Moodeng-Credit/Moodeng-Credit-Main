@@ -34,7 +34,7 @@ const pickRoute = (): Route => {
 const hrefFor = (route: Route) =>
    route === 'android_app' ? MESSENGER_APP_CHAT_LINK : route === 'desktop' ? MESSENGER_DESKTOP_CHAT_LINK : IOS_LINK;
 
-const MessengerGlyph = (): JSX.Element => (
+export const MessengerGlyph = (): JSX.Element => (
    <svg viewBox="0 0 24 24" aria-hidden="true" className="block h-full w-full">
       <path
          fill="#0a7cff"
@@ -63,11 +63,19 @@ const SupportAvatar = (): JSX.Element => (
    </span>
 );
 
-export default function MessengerChatButton(): JSX.Element {
+/**
+ * Props for any link that opens the Moodeng Page chat (the floating button, the sign-in page's "Need help?",
+ * the code screen's "Still no code?"). `source` tells PostHog which one was tapped.
+ */
+export function messengerSupportLinkProps(source = 'support_button'): {
+   href: string;
+   onClick: (event: MouseEvent<HTMLAnchorElement>) => void;
+   target?: string;
+   rel?: string;
+} {
    const route = pickRoute();
-
    const onClick = (event: MouseEvent<HTMLAnchorElement>) => {
-      posthog.capture('support_messenger_tapped', { route });
+      posthog.capture('support_messenger_tapped', { route, source });
       if (route === 'web_chat') {
          event.preventDefault();
          openSupportChat();
@@ -78,19 +86,26 @@ export default function MessengerChatButton(): JSX.Element {
          // still here — give them the web chat rather than a dead tap.
          window.setTimeout(() => {
             if (document.visibilityState === 'visible') {
-               posthog.capture('support_messenger_fallback', { route });
+               posthog.capture('support_messenger_fallback', { route, source });
                openSupportChat();
             }
          }, ANDROID_FALLBACK_MS);
       }
    };
+   return {
+      href: hrefFor(route),
+      onClick,
+      target: route === 'desktop' ? '_blank' : undefined,
+      rel: route === 'desktop' ? 'noopener noreferrer' : undefined
+   };
+}
+
+export default function MessengerChatButton(): JSX.Element {
+   const link = messengerSupportLinkProps();
 
    return (
       <a
-         href={hrefFor(route)}
-         onClick={onClick}
-         target={route === 'desktop' ? '_blank' : undefined}
-         rel={route === 'desktop' ? 'noopener noreferrer' : undefined}
+         {...link}
          aria-label="Chat with Moodeng on Messenger"
          className="fixed bottom-5 right-4 z-[60] inline-flex items-center gap-2 rounded-full bg-gradient-to-br from-[#00b2ff] to-[#006aff] py-1.5 pl-1.5 pr-4 text-[15px] font-semibold text-white shadow-lg shadow-[#006aff]/30 transition-transform active:scale-95"
          style={{ marginBottom: 'env(safe-area-inset-bottom)' }}

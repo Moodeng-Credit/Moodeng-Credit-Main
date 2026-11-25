@@ -183,25 +183,55 @@ describe('email first inside Facebook/Messenger', () => {
       expect(analytics.capture).toHaveBeenCalledWith('signin_inapp_email_submitted', { app: 'Facebook', os: 'android' });
    });
 
-   it('/sign-in in Chrome: Facebook first, Google tile, then the email + password form, which offers a code instead', async () => {
+   it('/sign-in in Chrome: bold Facebook, centered tiles and "Use email instead"; email opens a code form with password one tap away', async () => {
       await render(SignInPage, CHROME_ANDROID_UA);
       const facebook = buttonWithText('Continue with Facebook') as HTMLButtonElement;
       const google = googleTile('Sign In with Google') as HTMLButtonElement;
       expect(container.querySelector('button, a, input')).toBe(facebook);
+      expect(facebook.className).toContain('bg-[#1877F2]');
       expect(isBefore(facebook, google)).toBe(true);
-      expect(isBefore(google, container.querySelector('form') as HTMLFormElement)).toBe(true);
+      // Short page: no form, no subtitle, no Remember Me or tour until they ask for email.
+      expect(container.querySelector('form')).toBeNull();
+      expect(container.textContent).toContain('Welcome back');
+      expect(container.textContent).not.toContain('Remember Me');
+      expect(container.textContent).not.toContain('Take a tour first');
+      expect(container.textContent).toContain('Need help?');
+      await act(async () => buttonWithText('Use email instead')?.click());
+      expect((container.querySelector('#otp-input') as HTMLInputElement).type).toBe('email');
+      expect(buttonWithText('Send code')).not.toBeNull();
+      expect(buttonWithText('Continue with Facebook')).toBeNull();
+      await act(async () => buttonWithText('password')?.click());
       expect(container.querySelector('input[type="password"]')).not.toBeNull();
-      expect(buttonWithText('Email me a code')).not.toBeNull();
+      expect(buttonWithText('Use a code instead')).not.toBeNull();
+      await act(async () => buttonWithText('Other ways to sign in')?.click());
+      expect(buttonWithText('Continue with Facebook')).not.toBeNull();
+      expect(container.querySelector('form')).toBeNull();
       expect(events()).toEqual([]);
    });
-   it('/sign-in in Chrome, in the Philippines: Facebook, then the +63 number box, Google tile under it', async () => {
+
+   it('/sign-in in Chrome on a phone that last used email: the email code form shows straight away', async () => {
+      window.localStorage.setItem('moodeng:last-auth-method', 'email');
+      try {
+         await render(SignInPage, CHROME_ANDROID_UA);
+         expect((container.querySelector('#otp-input') as HTMLInputElement).type).toBe('email');
+         expect(buttonWithText('Other ways to sign in')).not.toBeNull();
+      } finally {
+         window.localStorage.removeItem('moodeng:last-auth-method');
+      }
+   });
+
+   it('/sign-in in Chrome, in the Philippines: Facebook, then the +63 box with an arrow inside, Google tile under it', async () => {
       where.inPh = true;
       await render(SignInPage, CHROME_ANDROID_UA);
       const phone = container.querySelector('#otp-input') as HTMLInputElement;
       expect(phone.type).toBe('tel');
       expect(container.textContent).toContain('+63');
-      // Facebook is the bold blue button; "Text me a code" is outlined under it.
-      expect(buttonWithText('Text me a code')?.className).toContain('border-2');
+      // The number box sends with an arrow inside it: no full-width "Text me a code" button, no label or helper.
+      const arrow = container.querySelector('button[aria-label="Text me a code"]') as HTMLButtonElement;
+      expect(arrow.type).toBe('submit');
+      expect(buttonWithText('Text me a code')).toBeNull();
+      // The label stays for screen readers only.
+      expect(container.querySelector('label[for="otp-input"]')?.className).toBe('sr-only');
       expect(container.querySelector('input[type="password"]')).toBeNull();
       const facebook = buttonWithText('Continue with Facebook') as HTMLButtonElement;
       expect(facebook.className).toContain('bg-[#1877F2]');
@@ -212,19 +242,25 @@ describe('email first inside Facebook/Messenger', () => {
       expect(container.querySelectorAll('button[aria-label="Continue with Facebook"]')).toHaveLength(0);
       const google = googleTile('Sign In with Google') as HTMLButtonElement;
       expect(isBefore(phone, google)).toBe(true);
+      // A Globe number shows "Globe ✓" inside the box.
+      await type(phone, '0917 123 4567');
+      expect(container.textContent).toContain('Globe ✓');
       // Password sign-in is one step away, on the email screen.
       expect(buttonWithText('password')).toBeNull();
       await act(async () => (buttonWithText('email') as HTMLButtonElement).click());
       expect(buttonWithText('password')).not.toBeNull();
    });
 
-   it('/sign-in in the Philippines on a phone that last used its number: "Text me a code" stays the bold button', async () => {
+   it('/sign-in in the Philippines on a phone that last used its number: Facebook steps back to the white button', async () => {
       where.inPh = true;
       window.localStorage.setItem('moodeng:last-auth-method', 'phone');
-      await render(SignInPage, CHROME_ANDROID_UA);
-      expect(buttonWithText('Text me a code')?.className).not.toContain('border-2');
-      expect(buttonWithText('Continue with Facebook')?.className).not.toContain('bg-[#1877F2]');
-      window.localStorage.removeItem('moodeng:last-auth-method');
+      try {
+         await render(SignInPage, CHROME_ANDROID_UA);
+         expect(container.querySelector('button[aria-label="Text me a code"]')).not.toBeNull();
+         expect(buttonWithText('Continue with Facebook')?.className).not.toContain('bg-[#1877F2]');
+      } finally {
+         window.localStorage.removeItem('moodeng:last-auth-method');
+      }
    });
 
    it('/sign-up in the Philippines: bold Facebook, "Use phone number" opens the +63 box, Google the only tile', async () => {

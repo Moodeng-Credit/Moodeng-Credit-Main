@@ -1,6 +1,6 @@
 import { type ChangeEvent, type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 
-import { ChevronDown, LoaderCircle } from 'lucide-react';
+import { ArrowRight, ChevronDown, LoaderCircle } from 'lucide-react';
 import posthog from 'posthog-js';
 import { useDispatch } from 'react-redux';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -39,6 +39,11 @@ type Props = {
    onUsePassword?: () => void;
    /** Outlined (not solid purple) submit: a bold Facebook button above is the main choice. */
    quietSubmit?: boolean;
+   /**
+    * Sign-in's short look (George, 2026-11-25): no label or helper line, the phone box sends with an arrow
+    * inside it and shows "Globe ✓" / "DITO ✓" in the box. Warnings and errors still show below.
+    */
+   compact?: boolean;
 };
 
 // Same screen a brand-new account lands on after verifying a code.
@@ -81,7 +86,8 @@ export function PasswordlessAuthForm({
    initialChannel,
    initialPhone = '',
    onUsePassword,
-   quietSubmit = false
+   quietSubmit = false,
+   compact = false
 }: Props) {
    const navigate = useNavigate();
    const dispatch = useDispatch<AppDispatch>();
@@ -120,6 +126,9 @@ export function PasswordlessAuthForm({
    const phoneCheck = isSms ? checkPhPhone(value) : null;
    const network = phoneCheck?.kind === 'ok' ? phNetwork(phoneCheck.e164) : null;
    const smartBlocked = network === 'smart';
+   const networkOk = network === 'globe' || network === 'dito';
+   // Compact phone box: the send button is an arrow inside the box (Smart numbers get "Log in with email" instead).
+   const compactArrow = compact && isSms && !smartBlocked;
    useEffect(() => {
       if (mode !== 'signup' || !inApp.isInApp || isFacebookPrimaryHere(inApp)) return;
       let cancelled = false;
@@ -309,10 +318,15 @@ export function PasswordlessAuthForm({
 
    return (
       <form onSubmit={handleSubmit} className="flex w-full max-w-[400px] flex-col gap-3" noValidate>
-         <label htmlFor="otp-input" className="text-base font-semibold tracking-[-0.02em] text-[#040033] dark:text-[#F8F4FF]">
+         <label
+            htmlFor="otp-input"
+            className={compact ? 'sr-only' : 'text-base font-semibold tracking-[-0.02em] text-[#040033] dark:text-[#F8F4FF]'}
+         >
             {isSms ? 'Mobile number' : 'Email address'}
          </label>
-         <div className="flex h-14 items-center gap-2 rounded-2xl border border-[#B5ACBE] bg-[#FBFAFD] pl-1.5 pr-4 shadow-[0_2px_4px_rgba(27,28,29,0.04)] focus-within:border-[#8336F0] dark:border-[#3D2D5A] dark:bg-[#1E1530]">
+         <div
+            className={`flex h-14 items-center gap-2 rounded-2xl border border-[#B5ACBE] bg-[#FBFAFD] pl-1.5 ${compactArrow ? 'pr-1.5' : 'pr-4'} shadow-[0_2px_4px_rgba(27,28,29,0.04)] focus-within:border-[#8336F0] dark:border-[#3D2D5A] dark:bg-[#1E1530]`}
+         >
             <button
                type="button"
                onClick={() => (smsEnabled ? switchTo(isSms ? 'email' : 'sms') : undefined)}
@@ -322,7 +336,8 @@ export function PasswordlessAuthForm({
             >
                {isSms ? <PhFlag /> : <span aria-hidden>✉️</span>}
                {isSms ? <span>+63</span> : null}
-               {smsEnabled ? <ChevronDown className="h-4 w-4 text-[#70617F]" aria-hidden /> : null}
+               {/* Compact phone box: no ▾ ("Use email instead" sits right under it), so the number has room. */}
+               {smsEnabled && !compactArrow ? <ChevronDown className="h-4 w-4 text-[#70617F]" aria-hidden /> : null}
             </button>
             <input
                id="otp-input"
@@ -336,8 +351,30 @@ export function PasswordlessAuthForm({
                aria-describedby="otp-help"
                className="min-w-0 flex-1 bg-transparent text-base text-[#040033] outline-none placeholder:text-[#70617F] dark:text-[#F0EAFF] dark:placeholder:text-[#6B5880]"
             />
+            {compactArrow && networkOk ? (
+               <span className="shrink-0 whitespace-nowrap rounded-full bg-[#E9F6EE] px-1.5 py-0.5 text-[11px] font-bold text-[#1B5E36] dark:bg-[#12301F] dark:text-[#8FE0AE]">
+                  {network === 'globe' ? 'Globe ✓' : 'DITO ✓'}
+               </span>
+            ) : null}
+            {compactArrow ? (
+               <button
+                  key="arrow-submit"
+                  type="submit"
+                  disabled={isSending}
+                  aria-label="Text me a code"
+                  className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white transition-opacity hover:opacity-95 disabled:opacity-70 ${
+                     phoneCheck?.kind === 'ok' ? 'bg-[#6010D2]' : 'bg-[#CFC6DA] dark:bg-[#3D2D5A]'
+                  }`}
+               >
+                  {isSending ? (
+                     <LoaderCircle className="h-5 w-5 animate-spin" aria-hidden />
+                  ) : (
+                     <ArrowRight className="h-5 w-5" aria-hidden />
+                  )}
+               </button>
+            ) : null}
          </div>
-         {isSms && (network === 'globe' || network === 'dito') ? (
+         {compact && !smartBlocked ? null : isSms && networkOk ? (
             <p
                id="otp-help"
                role="status"
@@ -423,7 +460,7 @@ export function PasswordlessAuthForm({
             >
                {mode === 'signup' ? 'Sign up with email' : 'Log in with email'}
             </button>
-         ) : (
+         ) : compactArrow ? null : (
             <button
                key="submit"
                type="submit"
@@ -435,7 +472,15 @@ export function PasswordlessAuthForm({
                }`}
             >
                {isSending ? <LoaderCircle className="h-5 w-5 animate-spin" aria-hidden /> : null}
-               {isSending ? 'Sending…' : mode === 'signup' ? 'Continue' : isSms ? 'Text me a code' : 'Email me a code'}
+               {isSending
+                  ? 'Sending…'
+                  : mode === 'signup'
+                    ? 'Continue'
+                    : isSms
+                      ? 'Text me a code'
+                      : compact
+                        ? 'Send code'
+                        : 'Email me a code'}
             </button>
          )}
 

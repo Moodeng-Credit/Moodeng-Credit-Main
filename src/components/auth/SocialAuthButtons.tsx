@@ -27,6 +27,8 @@ interface SocialAuthButtonsProps {
     * who signed up with it; LINE and TikTok go — 2 and 1 accounts ever, 2026-11-24).
     */
    philippines?: boolean;
+   /** Sign-in's short look: the small tiles sit centered under the Facebook button / number box. */
+   centered?: boolean;
 }
 
 const btnBase =
@@ -174,7 +176,7 @@ export function FacebookAuthButton({ isSignUp, variant, bold = false }: { isSign
    );
 }
 
-export function SocialAuthButtons({ isSignUp, hideFacebook = false, philippines = false }: SocialAuthButtonsProps) {
+export function SocialAuthButtons({ isSignUp, hideFacebook = false, philippines = false, centered = false }: SocialAuthButtonsProps) {
    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
    const [isGoogleLoading, setIsGoogleLoading] = useState(false);
    const [googleError, setGoogleError] = useState('');
@@ -340,7 +342,13 @@ export function SocialAuthButtons({ isSignUp, hideFacebook = false, philippines 
              an app's browser (Facebook, Messenger, Instagram…): there it's phone or email only, and the
              form says "Signed up with Telegram or LINE? Open in Chrome" (George, 2026-10-15).
              Exception: inside TikTok's browser the TikTok tile still shows, on its own. */}
-         <div className={inApp.isInApp && !tiktokInApp ? 'hidden' : 'flex w-full min-w-0 items-center justify-start gap-3'}>
+         <div
+            className={
+               inApp.isInApp && !tiktokInApp
+                  ? 'hidden'
+                  : `flex w-full min-w-0 items-center gap-3 ${centered ? 'justify-center' : 'justify-start'}`
+            }
+         >
             {/* Google as a small tile when Facebook leads */}
             {clientId && googleAsTile ? (
                <div className="relative">
