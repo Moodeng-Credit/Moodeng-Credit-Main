@@ -30,7 +30,8 @@ import {
    permitProblem,
    type PhotoCheck,
    type PhotoMeta,
-   photoRedFlags
+   photoRedFlags,
+   TEAM_ONLY_FLAG
 } from './prescreenV2.ts';
 import { sendPushToUser } from './pushDelivery.ts';
 import { sendMessengerMessage } from './sendpulse.ts';
@@ -210,7 +211,9 @@ export const shouldAutoGood = (r: AnswerRead | null, bar: number, warnings: stri
 /** The grade's ⚠️ warnings (shown on the card), deduped. Pure. */
 export const gradeWarnings = (grade: { flags?: unknown } | null | undefined): string[] => {
    const list = Array.isArray(grade?.flags) ? (grade!.flags as unknown[]) : [];
-   return [...new Set(list.filter((f): f is string => typeof f === 'string' && !!f.trim()).map((f) => f.trim()))];
+   // 👪 sign-up card vs later story: a note for the team, never a reason to hold or ask (George 2026-11-25).
+   const warnings = list.filter((f): f is string => typeof f === 'string' && !!f.trim()).map((f) => f.trim());
+   return [...new Set(warnings.filter((f) => !f.startsWith(TEAM_ONLY_FLAG)))];
 };
 
 async function geminiJson(svc: SupabaseClient, system: string, input: unknown, timeoutMs: number): Promise<unknown> {
@@ -246,7 +249,7 @@ const context = (row: Row, market: string | null) => ({
    market: market ?? 'PH',
    score: row.score,
    ai_summary: row.grade?.summary ?? null,
-   flags: row.grade?.flags ?? [],
+   flags: gradeWarnings(row.grade),
    answers: (row.questions ?? []).map((q) => {
       const a = row.grade?.answers?.find((x) => x.q === q.id);
       return { question: q.text, said: a?.transcript ?? null, ai_note: a?.note ?? null };
@@ -804,7 +807,7 @@ export const handlePreScreeningAnswer = async (svc: SupabaseClient, userId: stri
                {
                   questions: qs.map((q) => q.en),
                   ai_summary_before: row.grade?.summary ?? null,
-                  flags_before: row.grade?.flags ?? [],
+                  flags_before: gradeWarnings(row.grade),
                   score_before: row.score,
                   ...(earlierRounds(row.asks).length ? { earlier_rounds: earlierRounds(row.asks) } : {}),
                   their_replies: answers.map((a) => a.text)

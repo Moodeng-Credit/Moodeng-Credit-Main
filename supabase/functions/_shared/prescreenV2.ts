@@ -929,9 +929,12 @@ export const MONEY_GRADE_PROMPT = `Money and willingness to repay (many applican
  * the statement, ~40% of the income they claimed, and a selfie for the desk photo). Flags and a fairer
  * repay chance only, never a reject on its own: George wants it to learn, not get strict.
  */
+/** Story-check flags that start with this are for the team only: they never hold an auto ✅ or get asked about on Messenger. */
+export const TEAM_ONLY_FLAG = '👪';
+
 export const STORY_CHECK_PROMPT = `Does their story hold together:
 - "other_names" (when present) are the names on their account and Facebook. A nickname, short form, married name or a missing middle name is fine. A clearly different person's name across their account, Facebook, intro and the document is a flag: "different names: <the names>". Ask, don't accuse: there can be an honest reason.
-- "about_you" (when present) is what they tapped at sign-up: gender, age and how many kids. When the video, answers or document clearly say otherwise (0 kids but "I support my 3 children"; age 22 but 15 years at the same job), flag it: "said <x> at sign-up, <y> later". An age a year or two off is fine. This is a flag for the team only: do not lower "repay_chance" for it or count it toward the "two or more" below. Ask, don't accuse.
+- "about_you" (when present) is what they tapped at sign-up: gender, age and how many kids. When the video, answers or document clearly say otherwise (0 kids but "I support my 3 children"; age 22 but 15 years at the same job), flag it, starting with 👪: "👪 said <x> at sign-up, <y> later". An age a year or two off is fine. This is a note for the team only: do not lower "repay_chance" for it or count it toward the "two or more" below.
 - When the income they SAID is about double or more what the document shows coming in, that clearly contradicts it: score the document 2-4 and flag "says <amount>, document shows about <amount>".
 - A steady salary (same employer or client, about the same amount, on about the same days) is the best proof. Money mostly from friends, family or their own other accounts, or that comes in uneven bursts with no clear employer or client, shows less: say so in the income note. It is not a reason to fail them alone.
 - A job they describe only in general words, with no client, place or real detail, and no photo or document that shows it, is unproven: say so.
