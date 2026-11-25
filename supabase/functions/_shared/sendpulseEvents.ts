@@ -55,6 +55,8 @@ const NOT_FROM_PERSON = /outgoing|outbound|operator|bot_message|unsubscri|block|
 const FROM_PERSON = /subscri|incoming|message/i;
 
 const PAYLOAD_MAX_CHARS = 4000;
+// Messenger's 👍 like: small, medium, large.
+const LIKE_STICKERS = new Set(['369239263222822', '369239343222814', '369239383222810']);
 
 // The person's message. SendPulse doesn't document Messenger's shape; its examples put the platform
 // message under info.message.channel_data.message (WhatsApp) and the latest text on
@@ -74,13 +76,27 @@ const readMessage = (e: Json, contact: Json | null, incoming: boolean) => {
    // A button or ☰ menu tap: Messenger puts it under channel_data.message.postback.
    const isPostback = Boolean(platform?.postback || channelData?.postback || message?.postback || info?.postback);
    const isButtonTap = Boolean(platform?.quick_reply) || isPostback;
-   const imageUrls = (Array.isArray(attachments) ? attachments : [])
-      .map((a) => asObject(a))
+   const list = (Array.isArray(attachments) ? attachments : []).map((a) => asObject(a));
+   // Stickers come as type "image" with payload.sticker_id — the 👍 like button is one (369239263222822 and
+   // its bigger sizes). Never a photo: a 👍 to a call reminder became "Got your screenshot ✅" (2026-11-25).
+   const isSticker = (a: Json | null) => !!a && asString(asObject(a.payload)?.sticker_id) !== null;
+   const stickers = list.filter(isSticker);
+   const isLike = stickers.some((a) => LIKE_STICKERS.has(asString(asObject(a!.payload)?.sticker_id) ?? ''));
+   const others = list.filter((a) => !isSticker(a));
+   const imageUrls = others
       .filter((a) => a && /image/i.test(asString(a.type) ?? ''))
       .map((a) => asString(asObject(a!.payload)?.url))
       .filter((u): u is string => !!u && /^https:\/\//.test(u))
       .slice(0, 6);
-   return { text, hasAttachment: Array.isArray(attachments) && attachments.length > 0, imageUrls, isButtonTap, isPostback };
+   // A like counts as a typed 👍 (so "ok"-style handlers answer it); other stickers stay an attachment.
+   return {
+      // (contact.last_message for a sticker is no text of theirs, so the like wins over it.)
+      text: isLike && !others.length && !(asString(platform?.text) ?? asString(message?.text)) ? '👍' : text,
+      hasAttachment: others.length > 0 || (stickers.length > 0 && !isLike),
+      imageUrls,
+      isButtonTap,
+      isPostback
+   };
 };
 
 const trimPayload = (e: Json, contact: Json | null): Json | null => {

@@ -37,7 +37,7 @@ import { cancelUpcomingCall } from './callCancel.ts';
 import { openInAdminButton } from './adminCards.ts';
 import { lastPageInboxTypedAt, sendMessengerMessage } from './sendpulse.ts';
 import { sendTelegramMessage } from './telegram.ts';
-import { formatCallTime } from './videoCall.ts';
+import { buildWaitGameUrl, formatCallTime } from './videoCall.ts';
 
 // deno-lint-ignore no-explicit-any
 type Svc = any;
@@ -252,41 +252,69 @@ export const handleReminderNumber = async (svc: Svc, userId: string, contactId: 
 // "Reply OK to keep your spot" (the day-before reminder, videoCall.sendReminderMessenger). Their reply
 // is what reopens Messenger's 24h window, so the 1h ✅ ask can reach them; this just answers it.
 export const KEEP_SPOT_REPLY = /^\s*(ok(ay)?|oki|okie|k|yes|yup|yep|oo|opo|sige|g|game|noted|👍|✅)\s*[.!👍]*\s*$/i;
+// "Yes I'll be there", "ok po see you", "noted thank you" — a short yes to a call reminder (George 2026-11-25:
+// "when they reply with this say something relevant"). A 👍 like arrives as '👍' (sendpulseEvents isLike).
+const CONFIRM_PHRASE =
+   /^\s*(?:(?:ok(?:ay)?|oki|okie|yes|yup|yep|sure|oo|opo|sige|noted|copy|alright)[\s,.!]*(?:po)?[\s,.!]*)?(?:i'?ll be there|i will be there|will be there|i'?ll join|i will join|will join|see you(?: later| soon)?|ready|thank(?:s| you)(?: po)?|salamat(?: po)?)\s*(?:po)?[\s.!👍🙏😊✅]*$/iu;
+export const isCallConfirmReply = (text: string) => KEEP_SPOT_REPLY.test(text) || CONFIRM_PHRASE.test(text);
 const KEEP_SPOT_WITHIN_MS = 36 * 60 * 60 * 1000;
+const SOON_MS = 30 * 60 * 1000;
 
-/** True when it was the first OK to an upcoming call's reminder and we answered it. Never throws. */
+/**
+ * A short yes ("ok", 👍, "Yes I'll be there") to an upcoming call's reminders → one relevant line back, with
+ * Shark Chomp to pass the time. At most twice per booking: once before the last 30 minutes, once in them
+ * (the countdown reminders), so a stream of 👍s never gets a stream of replies. Never throws.
+ */
 export const handleKeepSpotReply = async (svc: Svc, userId: string, contactId: string, text: string): Promise<boolean> => {
    try {
-      if (!KEEP_SPOT_REPLY.test(text)) return false;
+      if (!isCallConfirmReply(text)) return false;
       const { data: user } = await svc
          .from('users')
-         .select('video_call_booking_uid, video_call_starts_at, video_call_timezone, loan_access_status')
+         .select('video_call_booking_uid, video_call_starts_at, video_call_timezone, video_call_join_url, video_call_keep_spot_ok_at, loan_access_status')
          .eq('id', userId)
          .maybeSingle();
       if (!user?.video_call_booking_uid || !user.video_call_starts_at || user.loan_access_status === 'rejected') return false;
-      const until = Date.parse(user.video_call_starts_at) - Date.now();
-      if (until <= 0 || until > KEEP_SPOT_WITHIN_MS) return false;
-      // Once per booking: a second "ok" (or a "yes" to someone on the team) gets no repeat of the same line.
-      // Claimed atomically so two messages arriving together can't both send it.
+      const startsAt = Date.parse(user.video_call_starts_at);
+      const until = startsAt - Date.now();
+      // Up to 10 minutes in: they may still be on their way.
+      if (until <= -10 * 60_000 || until > KEEP_SPOT_WITHIN_MS) return false;
+      const soon = until <= SOON_MS;
+      // Claimed atomically so two messages arriving together can't both send it. In the last 30 minutes an
+      // earlier "ok" (from the day-before reminder) doesn't block one more, relevant, reply.
+      const soonFrom = new Date(startsAt - SOON_MS).toISOString();
       const { data: claimed } = await svc
          .from('users')
          .update({ video_call_keep_spot_ok_at: new Date().toISOString() })
          .eq('id', userId)
          .eq('video_call_booking_uid', user.video_call_booking_uid)
-         .is('video_call_keep_spot_ok_at', null)
+         .or(soon ? `video_call_keep_spot_ok_at.is.null,video_call_keep_spot_ok_at.lt.${soonFrom}` : 'video_call_keep_spot_ok_at.is.null')
          .select('id');
       if (!claimed?.length) return false;
-      const when = formatCallTime(user.video_call_starts_at, user.video_call_timezone);
-      const res = await sendMessengerMessage(contactId, {
-         text: `👍 Got it! See you ${when}.\n⏰ 1 hour before, we'll send ✅ here. Tap it to keep your spot.`
-      });
+      const res = await sendMessengerMessage(contactId, { text: keepSpotText(user, until, Date.now()) });
       if (!res.ok) console.error('messenger-booking-bot: keep-spot reply failed', res.reason);
-      console.log('messenger-booking-bot: keep-spot OK from', userId);
+      console.log('messenger-booking-bot: keep-spot reply to', userId, soon ? 'soon' : 'early');
       return true;
    } catch (err) {
       console.error('messenger-booking-bot: keep-spot reply failed', err instanceof Error ? err.message : err);
       return false;
    }
+};
+
+/** The reply to their yes: how long until the call (+ Join when it's close) and the wait game, one line. Pure. */
+export const keepSpotText = (
+   u: { video_call_starts_at: string; video_call_timezone?: string | null; video_call_join_url?: string | null },
+   untilMs: number,
+   _now: number
+): string => {
+   const game = `🦈 While you wait, play Shark Chomp: ${buildWaitGameUrl(u)}`;
+   const join = u.video_call_join_url ? `Join here: ${u.video_call_join_url}` : 'The Zoom link is in your email.';
+   if (untilMs <= 0) return `🙌 We're on the call now! ${join}`;
+   if (untilMs <= SOON_MS) {
+      const mins = Math.max(1, Math.round(untilMs / 60_000));
+      return `🙌 See you in ${mins} minute${mins === 1 ? '' : 's'}! ${join}${mins >= 5 ? `\n\n${game}` : ''}`;
+   }
+   const when = formatCallTime(u.video_call_starts_at, u.video_call_timezone);
+   return `👍 Got it! See you ${when}.\n⏰ 1 hour before, we'll send ✅ here. Tap it to keep your spot.\n\n${game}`;
 };
 
 const ENDED_TEXT: Record<Bot.Lang, string> = {

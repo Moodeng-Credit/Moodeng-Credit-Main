@@ -8,7 +8,9 @@ import {
    holdColumns,
    extractPhMobile,
    isPhMobile,
+   isCallConfirmReply,
    KEEP_SPOT_REPLY,
+   keepSpotText,
    START,
    TEAM_QUIET_MS,
    teamHasChat,
@@ -150,4 +152,23 @@ Deno.test('extractPhMobile: the number out of a short reply with a network or a 
    assertEquals(extractPhMobile('+63 917 123 4567'), '+63 917 123 4567');
    assertEquals(extractPhMobile('hi po I need help with my loan payment, my number 09171234567 is not getting texts from you guys'), null);
    assertEquals(extractPhMobile('15000 pesos'), null);
+});
+
+Deno.test('call confirm reply: "Yes I\'ll be there" and friends match, questions do not', () => {
+   for (const t of ["Yes I'll be there", 'yes i will be there po', 'Ok po see you', 'noted thank you', 'Salamat po 🙏', 'ill join', '👍', 'ok'])
+      assertEquals(isCallConfirmReply(t), true, t);
+   for (const t of ['can I move it?', "I'll be late", 'yes but my ID is lost', 'see you tomorrow instead?', 'okay na ba?'])
+      assertEquals(isCallConfirmReply(t), false, t);
+});
+
+Deno.test('keep-spot text: close to the call = minutes + Join + game; earlier = the time + game; started = Join only', () => {
+   const u = { video_call_starts_at: '2026-11-25T15:15:00Z', video_call_timezone: 'Asia/Manila', video_call_join_url: 'https://zoom.us/j/1' };
+   const soon = keepSpotText(u, 4 * 60_000, 0);
+   assert(soon.startsWith('🙌 See you in 4 minutes!') && soon.includes('https://zoom.us/j/1') && !soon.includes('/chomp'), soon);
+   const twenty = keepSpotText(u, 20 * 60_000, 0);
+   assert(twenty.includes('/chomp?') && twenty.includes('https://zoom.us/j/1'), twenty);
+   const early = keepSpotText(u, 5 * 3600_000, 0);
+   assert(early.startsWith('👍 Got it! See you') && early.includes('/chomp?'), early);
+   const live = keepSpotText(u, -60_000, 0);
+   assert(live.startsWith("🙌 We're on the call now!") && !live.includes('/chomp'), live);
 });
