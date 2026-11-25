@@ -1,6 +1,5 @@
 import { type ChangeEvent, type FormEvent, useEffect, useMemo, useState } from 'react';
 
-import { ArrowLeft } from 'lucide-react';
 import posthog from 'posthog-js';
 import { useDispatch } from 'react-redux';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
@@ -77,20 +76,14 @@ export default function SignInPage() {
    const phoneFirst = useMemo(() => showPhoneFirst(inApp.isInApp), [inApp.isInApp]);
    // Facebook is the bold blue button and the code form's button is outlined — unless this phone last logged
    // in with a phone/email code (then their usual way stays bold).
-   const facebookLeads = useMemo(
-      () => (inApp.isInApp || phoneFirst) && facebookLeadsCodeLayout(facebookPrimary, getLastUsedAuth()),
-      [inApp.isInApp, phoneFirst, facebookPrimary]
-   );
-   // Normal browsers outside the Philippines (George, 2026-11-25): Facebook, the small tiles and "Use email
-   // instead". Email opens a code form (password one tap away), or opens straight away for people who used
-   // email or a phone code last time, or came back from the code screen (?method=).
-   const emailCollapsible = facebookPrimary && !inApp.isInApp && !phoneFirst;
-   const [emailOpen, setEmailOpen] = useState(() => {
-      const method = searchParams.get('method');
-      const lastUsed = getLastUsedAuth();
-      return method === 'email' || method === 'phone' || lastUsed === 'email' || lastUsed === 'phone';
-   });
-   const [usePassword, setUsePassword] = useState(() => !emailCollapsible && !phoneFirst && !showPasswordlessSignup(inApp.isInApp));
+   const facebookLeads = useMemo(() => facebookLeadsCodeLayout(facebookPrimary, getLastUsedAuth()), [facebookPrimary]);
+   // Wherever Facebook leads (normal browsers + Facebook/Messenger), one layout (George, 2026-11-25: "the
+   // left one is nicer"): Facebook, a light "or your number/email" line, one box with the send arrow inside
+   // (+63 in the Philippines, email elsewhere; password one tap away), then the small tiles.
+   const codeLayout = facebookPrimary;
+   const [usePassword, setUsePassword] = useState(() => !codeLayout && !phoneFirst && !showPasswordlessSignup(inApp.isInApp));
+   // Which box the form shows, for the "or your number" / "or your email" line above it.
+   const [formChannel, setFormChannel] = useState<OtpChannel>(phoneFirst ? 'sms' : 'email');
    const [codeChannel, setCodeChannel] = useState<OtpChannel | undefined>(phoneFirst ? 'sms' : undefined);
    const [codePhone, setCodePhone] = useState('');
    const smsEnabled = useMemo(() => isSmsLoginEnabled(), []);
@@ -257,21 +250,26 @@ export default function SignInPage() {
 
    if (isLoading || redirectingSignedIn) return <Loading />;
 
-   const showFacebookOnTop = facebookPrimary && (inApp.isInApp || phoneFirst || emailCollapsible);
    const socialAuth = (
       <SocialAuthButtons
          isSignUp={false}
-         hideFacebook={showFacebookOnTop}
+         hideFacebook={codeLayout}
          philippines={phoneFirst}
-         centered={phoneFirst || emailCollapsible}
+         centered={codeLayout}
          onGoogleSuccess={handleGoogleAuth}
          onGoogleError={() => setShowAccount(true)}
          onTelegramAuth={handleTelegramAuth}
       />
    );
    const orDivider = <DividerWithText text="OR" lineColor="#D9D2E1" textColor="#877897" />;
-   // Normal browser, email not opened yet: only Facebook, the tiles and "Use email instead".
-   const emailHidden = emailCollapsible && !emailOpen;
+   const lightDivider = (
+      <DividerWithText
+         text={usePassword || formChannel === 'email' ? 'or your email' : 'or your number'}
+         lineColor="#ECE8F1"
+         textColor="#9A93A8"
+         className="[&>span]:text-[13px] [&>span]:font-normal"
+      />
+   );
    const helpLink = messengerSupportLinkProps('signin_help');
 
    const passwordForm = (
@@ -374,43 +372,27 @@ export default function SignInPage() {
             {/* Content sits low (thumb reach); one short title, no subtitle (George, 2026-11-25: fewer words). */}
             <div className="flex flex-1 flex-col items-center justify-end sm:justify-center w-full px-5 py-6 sm:py-10">
                <img src="/auth-screen.png" alt="Moodeng Mascot" className="w-[80px] h-[70px] object-contain mb-4" />
-               <h1 className="text-[32px] font-semibold leading-[1.2] tracking-[-0.04em] text-[#040033] text-center mb-7 dark:text-[#F0EAFF]">
+               <h1 className="text-[32px] font-bold leading-[1.2] tracking-[-0.04em] text-[#040033] text-center mb-7 dark:text-[#F0EAFF]">
                   Welcome back
                </h1>
 
                <div className="w-full flex flex-col gap-4">
                   {/* Kill switch off (no Facebook login): the older Google-button layout. */}
-                  {!showFacebookOnTop && !inApp.isInApp && !phoneFirst ? socialAuth : null}
-                  {!showFacebookOnTop && !inApp.isInApp && !phoneFirst ? orDivider : null}
+                  {!codeLayout && !inApp.isInApp && !phoneFirst ? socialAuth : null}
+                  {!codeLayout && !inApp.isInApp && !phoneFirst ? orDivider : null}
 
-                  {/* Facebook leads: bold where the rest is quiet; on the +63 page and in Messenger it steps back
-                      for people who last used a phone/email code (facebookLeads). */}
-                  {showFacebookOnTop && !(emailCollapsible && emailOpen) ? (
-                     <div className="flex justify-center">
-                        <FacebookAuthButton isSignUp={false} variant="full" bold={emailCollapsible || facebookLeads} />
-                     </div>
-                  ) : null}
-                  {showFacebookOnTop && (inApp.isInApp || phoneFirst) ? orDivider : null}
-
-                  {emailHidden ? (
+                  {/* Facebook leads: solid blue, except on a phone that last used a phone/email code, where that box
+                      stays the obvious way (facebookLeads). */}
+                  {codeLayout ? (
                      <>
-                        {socialAuth}
-                        <button
-                           type="button"
-                           onClick={() => {
-                              handleRetry();
-                              setUsePassword(false);
-                              setCodeChannel('email');
-                              setEmailOpen(true);
-                           }}
-                           className="self-center text-[15px] font-semibold text-[#6010D2] underline-offset-4 hover:underline dark:text-[#C084FC]"
-                        >
-                           Use email instead
-                        </button>
+                        <div className="flex justify-center">
+                           <FacebookAuthButton isSignUp={false} variant="full" bold={facebookLeads} />
+                        </div>
+                        {lightDivider}
                      </>
                   ) : null}
 
-                  {!emailHidden && !usePassword ? (
+                  {!usePassword ? (
                      <div className="flex justify-center">
                         <PasswordlessAuthForm
                            key={`${codeChannel ?? 'default'}-${codePhone}`}
@@ -418,36 +400,22 @@ export default function SignInPage() {
                            inApp={inApp}
                            initialChannel={codeChannel}
                            initialPhone={codePhone}
-                           quietSubmit={facebookLeads}
-                           compact
+                           quietSubmit={codeLayout && facebookLeads}
+                           compact={codeLayout}
+                           onChannelChange={setFormChannel}
                            // Facebook/Messenger: kept short; anyone with a password can still use a code.
                            onUsePassword={facebookInApp ? undefined : () => setUsePassword(true)}
                         />
                      </div>
-                  ) : null}
+                  ) : (
+                     passwordForm
+                  )}
 
-                  {!emailHidden && usePassword ? passwordForm : null}
-
-                  {/* +63 page: the small tiles right under the number box (no second OR). */}
-                  {phoneFirst ? socialAuth : null}
-
-                  {emailCollapsible && emailOpen ? (
-                     <button
-                        type="button"
-                        onClick={() => {
-                           handleRetry();
-                           setEmailOpen(false);
-                        }}
-                        className="flex items-center gap-1.5 self-center text-sm font-medium text-[#70617F] hover:text-[#6010D2] dark:text-[#A89BB8]"
-                     >
-                        <ArrowLeft className="h-4 w-4" aria-hidden />
-                        Other ways to sign in
-                     </button>
-                  ) : null}
-
-                  {/* Google and Telegram can't sign in inside Facebook/Messenger: left out there. */}
-                  {inApp.isInApp && !facebookInApp ? orDivider : null}
-                  {inApp.isInApp && !facebookInApp ? socialAuth : null}
+                  {/* Normal browsers: the small tiles under the box (no second OR). Not inside Facebook/Messenger. */}
+                  {codeLayout && !inApp.isInApp ? socialAuth : null}
+                  {/* Other apps' browsers (TikTok, LINE…): what works there, under an OR. */}
+                  {!codeLayout && inApp.isInApp && !facebookInApp ? orDivider : null}
+                  {!codeLayout && inApp.isInApp && !facebookInApp ? socialAuth : null}
 
                   {/* One quiet line: sign up, and help on Messenger (the team answers in Discord tickets). */}
                   <div className="mt-3 flex w-full items-center justify-between text-sm tracking-[-0.02em] text-[#70617F] dark:text-[#A89BB8]">
@@ -467,7 +435,8 @@ export default function SignInPage() {
                </div>
             </div>
 
-            <AuthFooter short={facebookInApp} />
+            {/* Short footer on sign-in everywhere (Privacy · Terms · How it works), like Facebook/Messenger's. */}
+            <AuthFooter short />
          </div>
       </div>
    );

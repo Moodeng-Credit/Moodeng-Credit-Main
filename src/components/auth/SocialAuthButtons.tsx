@@ -151,7 +151,7 @@ export function FacebookAuthButton({ isSignUp, variant, bold = false }: { isSign
             type="button"
             onClick={handleClick}
             disabled={isLoading}
-            className={`${btnBase} font-semibold shadow-[0px_2px_4px_rgba(27,28,29,0.04)] ${
+            className={`${bold ? btnBase.replace('rounded-xl', 'rounded-2xl') : btnBase} font-semibold shadow-[0px_2px_4px_rgba(27,28,29,0.04)] ${
                bold
                   ? 'border border-[#1877F2] bg-[#1877F2]'
                   : 'border border-[#B5ACBE] bg-[#FDFCFD] dark:border-[#40354F] dark:bg-[#17121F]'
@@ -162,7 +162,7 @@ export function FacebookAuthButton({ isSignUp, variant, bold = false }: { isSign
                 the one obvious choice: Philippines +63 page and Facebook/Messenger (facebookLeadsCodeLayout). */}
             <FacebookLogo size={24} color={bold ? '#FFFFFF' : '#1877F2'} />
             <span
-               className={`min-w-0 truncate text-base font-semibold tracking-[-0.02em] ${bold ? 'text-white' : 'text-[#141218] dark:text-[#F8F4FF]'}`}
+               className={`min-w-0 truncate tracking-[-0.02em] ${bold ? 'text-[17px] font-bold text-white' : 'text-base font-semibold text-[#141218] dark:text-[#F8F4FF]'}`}
                style={{ fontFamily: 'SF Pro Display, sans-serif' }}
             >
                {isLoading ? 'Opening Facebook...' : label}
