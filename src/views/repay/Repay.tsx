@@ -631,13 +631,19 @@ export default function Repay() {
       paidAmount: number;
       coin: string;
       trustPoints: number;
-      creditLevelUp?: { toLevel: number; newLimit: number } | null;
+      creditLevelUp?: { toLevel: number; newLimit: number; fromLimit?: number } | null;
       /** Repaid within 48h of getting it: their limit stays (the 48-hour rule). */
       fastRepayLimit?: number | null;
    } | null>(() =>
       // Preview: ?paid=1 shows the "you're paid" screen (screenshots / design review).
       usePreviewLoans && new URLSearchParams(location.search).get('paid') === '1'
-         ? { reason: 'Medical appointment', paidAmount: 121, coin: 'USDC', trustPoints: 10, creditLevelUp: { toLevel: 3, newLimit: 40 } }
+         ? {
+              reason: 'Medical appointment',
+              paidAmount: 121,
+              coin: 'USDC',
+              trustPoints: 10,
+              creditLevelUp: { toLevel: 3, newLimit: 35, fromLimit: 25 }
+           }
          : null
    );
    const [showCompletionDetails, setShowCompletionDetails] = useState(false);
@@ -1249,7 +1255,7 @@ export default function Repay() {
                   paidAmount: toNumber(selectedLoan.totalRepaymentAmount),
                   coin: transferCoin,
                   trustPoints: earnedTrustPoints,
-                  creditLevelUp: { toLevel: getCreditLevelNumber(demoNext), newLimit: demoNext }
+                  creditLevelUp: { toLevel: getCreditLevelNumber(demoNext), newLimit: demoNext, fromLimit: demoUser?.cs || 15 }
                });
             } else {
                const remainingAfter = Math.max(0, toNumber(selectedLoan.totalRepaymentAmount) - newRepaidAmount);
@@ -1381,7 +1387,11 @@ export default function Repay() {
                coin: transferCoin,
                trustPoints: earnedTrustPoints,
                creditLevelUp: serverLevelUp
-                  ? { toLevel: getCreditLevelNumber(serverLevelUp.toLimit), newLimit: serverLevelUp.toLimit }
+                  ? {
+                       toLevel: getCreditLevelNumber(serverLevelUp.toLimit),
+                       newLimit: serverLevelUp.toLimit,
+                       fromLimit: serverLevelUp.fromLimit
+                    }
                   : null,
                fastRepayLimit:
                   !serverLevelUp && isFastRepay(selectedLoan.fundedAt ?? null, new Date().toISOString())
@@ -2101,8 +2111,10 @@ export default function Repay() {
                         </span>
                      ) : null}
                   </div>
+                  {completion.creditLevelUp ? (
+                     <NewLimitCard from={completion.creditLevelUp.fromLimit ?? null} to={completion.creditLevelUp.newLimit} />
+                  ) : null}
                   <div className="flex w-full flex-col gap-2 text-left">
-                     {completion.creditLevelUp ? <DoneRow>New limit: ${completion.creditLevelUp.newLimit}</DoneRow> : null}
                      {completion.fastRepayLimit ? (
                         <p
                            className="rounded-[14px] bg-[#fff6dc] px-4 py-3 text-[14px] leading-[20px] text-[#6b4a00] dark:bg-[#3a2e10] dark:text-[#ffe27a]"
@@ -2121,7 +2133,7 @@ export default function Repay() {
                         <GoldButton onClick={() => setCompletion(null)}>Pay next loan</GoldButton>
                      ) : (
                         <GoldButton onClick={() => navigate('/request-board', { state: { openLoanRequest: true } })}>
-                           Borrow again
+                           {completion.creditLevelUp ? `Borrow up to $${completion.creditLevelUp.newLimit}` : 'Borrow again'}
                         </GoldButton>
                      )}
                      <SoftButton onClick={() => navigate('/dashboard')}>Home</SoftButton>
@@ -3220,5 +3232,33 @@ export default function Repay() {
 
          {howToVideoModal}
       </main>
+   );
+}
+
+// "You're paid" screen: the limit just went up. Old → new, the new one big and gold (it's money).
+function NewLimitCard({ from, to }: { from: number | null; to: number }) {
+   return (
+      <div
+         className="flex w-full items-center gap-4 rounded-[20px] border-2 border-[#ffd35a] bg-[#fff6dc] px-5 py-4 text-left shadow-[0_3px_0_#f2c443] animate-[repaySuccessIn_0.4s_cubic-bezier(0.16,1,0.3,1)_0.2s_both] dark:border-[#7a5c12] dark:bg-[#2a2210] dark:shadow-none"
+         data-testid="repay-new-limit"
+      >
+         <span className="grid size-12 shrink-0 place-items-center rounded-full bg-gradient-to-b from-[#ffe27a] to-[#ffbe1a] text-[#4a2a00]">
+            <TrendingUp aria-hidden="true" className="size-6" strokeWidth={2.75} />
+         </span>
+         <div className="min-w-0 flex-1">
+            <p className="text-[15px] font-extrabold text-[#6b4a00] dark:text-[#ffe27a]">New limit!</p>
+            <p className="mt-0.5 flex items-baseline gap-2">
+               {from && from < to ? (
+                  <>
+                     <span className="text-[18px] font-bold text-[#a08a5c] line-through decoration-2 dark:text-[#8f8366]">${from}</span>
+                     <span aria-hidden="true" className="text-[18px] font-bold text-[#a08a5c] dark:text-[#8f8366]">
+                        →
+                     </span>
+                  </>
+               ) : null}
+               <span className="text-[32px] font-black leading-[36px] text-[#b07800] dark:text-[#ffd35a]">${to}</span>
+            </p>
+         </div>
+      </div>
    );
 }
