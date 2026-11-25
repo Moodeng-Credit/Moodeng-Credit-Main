@@ -121,6 +121,18 @@ Deno.test('what the person wrote: platform text first, then last_message; attach
    };
    assertEquals(parseSendPulseEvents([photos], NOW)[0].imageUrls, ['https://scontent.xx.fbcdn.net/v/a.jpg?x=1', 'https://scontent.xx.fbcdn.net/v/b.jpg?x=2']);
 
+   // The 👍 like is an "image" sticker: never a photo, and it reads as a typed 👍 (2026-11-25).
+   const sticker = (id: string) => ({
+      ...subscribe,
+      title: 'incoming_message',
+      contact: { ...subscribe.contact, last_message: 'https://scontent.xx.fbcdn.net/v/like.png' },
+      info: { message: { channel_data: { message: { attachments: [{ type: 'image', payload: { url: 'https://scontent.xx.fbcdn.net/v/s.png', sticker_id: id } }] } } } }
+   });
+   const [like] = parseSendPulseEvents([sticker('369239263222822')], NOW);
+   assertEquals([like.text, like.hasAttachment, like.imageUrls], ['👍', false, []]);
+   const [other] = parseSendPulseEvents([sticker('126361874215276')], NOW);
+   assertEquals([other.hasAttachment, other.imageUrls], [true, []]);
+
    const tap = { ...subscribe, title: 'incoming_message', info: { message: { channel_data: { postback: { payload: 'GET_STARTED' } } } } };
    assertEquals(parseSendPulseEvents([tap], NOW)[0].isButtonTap, true);
    const menuTap = {
