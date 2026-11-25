@@ -15,6 +15,7 @@ import {
    Briefcase,
    BriefcaseBusiness,
    Bus,
+   CalendarDays,
    Check,
    CheckCircle,
    ChevronLeft,
@@ -3504,26 +3505,55 @@ export default function LoanRequestModal({
                               </div>
                            </div>
 
-                           {/* Fixed terms (2026-11-25): shown, not typed. 10% on top, due in 30 days. */}
+                           {/* Fixed terms (2026-11-25): the original two fields, prefilled and locked — 10% on top,
+                               due in 30 days (George: "I just wanted it prefilled"). The amount is the only choice. */}
                            <div className="flex flex-col gap-md-1" data-tour-target="loan-repayment-amount">
-                              <span className="text-md-b2 font-[590] text-md-heading">Your loan terms</span>
-                              <div className="flex flex-col gap-md-1 rounded-md-input border border-md-primary-900 bg-md-primary-100 px-md-3 py-md-2 dark:border-[#7c4ed8]/60 dark:bg-[#2a1740]">
-                                 <div className="flex items-center justify-between gap-md-2 text-md-b1">
-                                    <span className="font-normal text-md-heading">You pay back</span>
-                                    <span className="font-semibold text-md-primary-1200 dark:text-[#d9c8ff]">
-                                       {fixedTermTotal === null ? '-' : `$${fixedTermTotal.toFixed(2)}`}
-                                    </span>
-                                 </div>
-                                 <div className="flex items-center justify-between gap-md-2 text-md-b1">
-                                    <span className="font-normal text-md-heading">Due</span>
-                                    <span className="font-semibold text-md-heading">{selectedDateLabel || '-'}</span>
-                                 </div>
-                              </div>
+                              <label className="text-md-b2 font-[590] text-md-heading" htmlFor="repayment-amount">
+                                 Set Repayment Amount
+                              </label>
+                              <input
+                                 readOnly
+                                 aria-readonly="true"
+                                 className={`${inputShellClass} px-md-3 py-md-2 text-md-b1 font-normal text-md-heading focus:outline-none ${
+                                    termErrors.repayment ? '!border-md-red-500' : fixedTermTotal ? '!border-md-primary-900' : ''
+                                 }`}
+                                 id="repayment-amount"
+                                 type="text"
+                                 value={fixedTermTotal ? fixedTermTotal.toFixed(2) : ''}
+                              />
                               {termErrors.repayment ? <FieldError message={termErrors.repayment} /> : null}
+                              {fixedTermTotal && Number(loanAmount) > 0 ? (
+                                 <p className="text-md-b3 font-normal leading-[18px] text-md-neutral-1200">
+                                    You’ll repay <span className="font-semibold text-md-heading">${fixedTermTotal.toFixed(2)}</span> — that’s{' '}
+                                    <span className="font-semibold text-md-primary-1200">${(fixedTermTotal - Number(loanAmount)).toFixed(2)}</span> to your
+                                    moo-lender.
+                                 </p>
+                              ) : null}
+                           </div>
+
+                           <div className="flex flex-col gap-md-1" data-tour-target="loan-repayment-date">
+                              <label className="text-md-b2 font-[590] text-md-heading" htmlFor="repaymentDate">
+                                 Set Repayment Date
+                              </label>
+                              <div className={`relative flex items-center ${inputShellClass} ${termErrors.date ? '!border-md-red-500' : '!border-md-primary-900'}`}>
+                                 <input
+                                    readOnly
+                                    aria-readonly="true"
+                                    aria-label="Repayment date"
+                                    id="repaymentDate"
+                                    type="text"
+                                    value={selectedDateLabel}
+                                    className="min-w-0 flex-1 bg-transparent px-md-3 py-md-2 pr-[64px] text-md-b1 font-normal text-md-heading focus:outline-none"
+                                 />
+                                 <span
+                                    aria-hidden="true"
+                                    className="absolute inset-y-0 right-0 flex w-[56px] items-center justify-center border-l border-md-primary-1200 bg-md-primary-1200 text-md-neutral-100"
+                                 >
+                                    <CalendarDays className="h-6 w-6" strokeWidth={1.6} />
+                                 </span>
+                              </div>
                               {termErrors.date ? <FieldError message={termErrors.date} /> : null}
-                              <p className="text-md-b3 font-normal leading-[18px] text-md-neutral-1200">
-                                 Every loan is {FIXED_TERM_DAYS} days with 10% on top. Want less? Change the amount above.
-                              </p>
+                              <p className="text-md-b3 font-normal leading-[18px] text-md-neutral-1200">Every loan is {FIXED_TERM_DAYS} days with 10% on top.</p>
                            </div>
 
                            {splitAvailable ? (
