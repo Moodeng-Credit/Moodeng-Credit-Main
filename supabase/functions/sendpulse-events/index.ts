@@ -343,7 +343,7 @@ serve(async (req) => {
          // The call-booking bot (who it answers: 'messenger_booking_bot', see bookingBotSwitch.ts): a message it
          // answers isn't also a support ticket. "menu" and ☰ / card-button taps belong to the SendPulse menu flow.
          const forMenu = event.isPostback || /^\s*menu\s*$/i.test(event.text ?? '');
-         const typed = known?.userId && event.text && !forMenu && !event.hasAttachment && !event.codes.length ? event.text : null;
+         const typed = known?.userId && event.text && !forMenu && !event.hasAttachment && !event.typedCodes.length ? event.text : null;
          // "PROOF" (the "Open our Messenger chat" button when the photo picker won't open): ask for the photo here.
          // First: it's an exact keyword, and an earlier handler waiting for an answer mustn't take it.
          if (typed && (await handleProofKeyword(svc, known!.userId, contactId, typed))) continue;
@@ -378,7 +378,7 @@ serve(async (req) => {
                }));
             if (taken) continue;
          }
-         if (isSupportMessage(event)) {
+         if (isSupportMessage({ ...event, codes: event.typedCodes })) {
             await openMessengerTicket(svc, {
                contactId,
                facebookName: remembered.facebookName,
@@ -390,7 +390,8 @@ serve(async (req) => {
          }
 
          if (event.codes.length) {
-            for (const code of event.codes) await confirmCode(code, event.contactId, event.contactName);
+            // Already linked: only a code they typed is worth confirming, not the one their link saved.
+            for (const code of known?.userId ? event.typedCodes : event.codes) await confirmCode(code, event.contactId, event.contactName);
             continue;
          }
          await matchByName(svc, event, event.contactId);

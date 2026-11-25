@@ -20,6 +20,10 @@ export type SendPulseEvent = {
    contactId: string | null;
    contactName: string | null;
    codes: string[];
+   // Only the codes in what they sent (not the mdng_code their link saved on the contact). That saved
+   // code stays on the contact forever, so it must not make every later message look like a code
+   // attempt: a linked borrower's "YES" got no cash-out steps because of it (2026-11-25).
+   typedCodes: string[];
    at: number;
    // A subscribe or a message FROM the person — never the bot's own outgoing messages.
    fromPerson: boolean;
@@ -121,9 +125,8 @@ export const parseSendPulseEvents = (body: unknown, now = Date.now()): SendPulse
       // Codes only count when the person sent them (or their link set mdng_code on the contact).
       const incoming = fromPerson && /incoming|message/i.test(title) && !/subscri/i.test(title);
       const message = incoming ? readMessage(e, contact, true) : { text: null, hasAttachment: false, imageUrls: [] as string[], isButtonTap: false, isPostback: false };
-      const codeSources = fromPerson
-         ? [JSON.stringify(contact?.last_message ?? ''), JSON.stringify(e.info ?? ''), asString(variables?.mdng_code)]
-         : [];
+      const sentSources = fromPerson ? [JSON.stringify(contact?.last_message ?? ''), JSON.stringify(e.info ?? '')] : [];
+      const codeSources = fromPerson ? [...sentSources, asString(variables?.mdng_code)] : [];
       return [
          {
             title,
@@ -133,6 +136,7 @@ export const parseSendPulseEvents = (body: unknown, now = Date.now()): SendPulse
             contactId: asString(contact?.id),
             contactName: asString(contact?.name),
             codes: [...new Set(codeSources.flatMap((s) => extractMessengerCodes(s)))],
+            typedCodes: [...new Set(sentSources.flatMap((s) => extractMessengerCodes(s)))],
             at: eventTime(e.date, now),
             fromPerson,
             ...message,

@@ -22,6 +22,7 @@ Deno.test('a first-time "Get Started" without a code', () => {
          contactId: 'sp-contact-1',
          contactName: 'Aya Albarracin',
          codes: [],
+         typedCodes: [],
          at: Date.parse('2026-09-29T07:22:40Z'),
          fromPerson: true,
          text: null,
@@ -45,6 +46,21 @@ Deno.test('codes from a typed message, the raw info, or the mdng_code the link s
    assertEquals(parseSendPulseEvents([info], NOW)[0].codes, ['MDNG-95BC0D']);
    const variable = { ...subscribe, contact: { ...subscribe.contact, variables: { mdng_code: 'MDNG-4CC380' } } };
    assertEquals(parseSendPulseEvents([variable], NOW)[0].codes, ['MDNG-4CC380']);
+});
+
+Deno.test('the saved mdng_code is not a typed code: a later "YES" is still just YES', () => {
+   const yes = {
+      ...subscribe,
+      title: 'incoming_message',
+      contact: { ...subscribe.contact, last_message: 'YES', variables: { mdng_code: 'MDNG-4CC380' } },
+      info: { message: { channel_data: { message: { text: 'YES', attachments: [] } } } }
+   };
+   const [event] = parseSendPulseEvents([yes], NOW);
+   assertEquals(event.text, 'YES');
+   assertEquals(event.codes, ['MDNG-4CC380']);
+   assertEquals(event.typedCodes, []);
+   const typed = { ...yes, contact: { ...yes.contact, last_message: 'MDNG-3D66AD' }, info: {} };
+   assertEquals(parseSendPulseEvents([typed], NOW)[0].typedCodes, ['MDNG-3D66AD']);
 });
 
 Deno.test("the bot's own outgoing messages never count as the person", () => {
