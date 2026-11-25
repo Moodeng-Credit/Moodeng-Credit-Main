@@ -8,6 +8,7 @@ import { sendTelegramMessage, type TelegramInlineKeyboard } from '../_shared/tel
 import { testAccountRow } from '../_shared/testAccount.ts';
 import {
    buildConfirmUrl,
+   buildWaitGameUrl,
    formatCallTime,
    formatCallTimeForTeam,
    sendConfirmAskMessenger,
@@ -192,10 +193,12 @@ const countdown = async (svc: Svc, u: ReminderUser, minutes: number) => {
    const title = countdownTitle(minutes);
    const body = `${minutes > 0 ? 'Tap to join when it starts.' : 'Tap to join now.'} Have your ID ready and video on.\n\n${COUNTDOWN_SORRY}`;
    await push(svc, u, title, body, u.video_call_join_url ?? `${SITE_URL}/request-board`);
+   const game: TelegramInlineKeyboard = minutes >= 10 ? [[{ text: '🦈 Play Shark Chomp while you wait', url: buildWaitGameUrl(u) }]] : [];
+   const buttons = [...(joinButton(u) ?? []), ...game];
    await telegram(
       u,
       `${title}\n\n${body}`,
-      joinButton(u),
+      buttons.length ? buttons : undefined,
       minutes > 0
          ? { svc, event: 'call_soon', data: { minutes, joinUrl: u.video_call_join_url } }
          : { svc, event: 'call_starting', data: { joinUrl: u.video_call_join_url } }
