@@ -92,5 +92,6 @@ export const ATTENDANCE_RESET = {
    video_call_joined_at: null,
    video_call_left_at: null,
    video_call_keep_spot_asked_at: null,
+   video_call_keep_spot_ok_at: null,
    video_call_zoom_seen_at: null
 };
