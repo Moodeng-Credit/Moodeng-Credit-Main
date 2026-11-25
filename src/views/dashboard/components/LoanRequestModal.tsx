@@ -3504,25 +3504,17 @@ export default function LoanRequestModal({
                               </div>
                            </div>
 
-                           {/* Fixed terms (2026-11-25): shown, not typed. 10% on top, due in 30 days. */}
+                           {/* Fixed terms (2026-11-25): shown, not typed — one quiet line, no box (George: keep it minimal). */}
                            <div className="flex flex-col gap-md-1" data-tour-target="loan-repayment-amount">
-                              <span className="text-md-b2 font-[590] text-md-heading">Your loan terms</span>
-                              <div className="flex flex-col gap-md-1 rounded-md-input border border-md-primary-900 bg-md-primary-100 px-md-3 py-md-2 dark:border-[#7c4ed8]/60 dark:bg-[#2a1740]">
-                                 <div className="flex items-center justify-between gap-md-2 text-md-b1">
-                                    <span className="font-normal text-md-heading">You pay back</span>
-                                    <span className="font-semibold text-md-primary-1200 dark:text-[#d9c8ff]">
-                                       {fixedTermTotal === null ? '-' : `$${fixedTermTotal.toFixed(2)}`}
-                                    </span>
-                                 </div>
-                                 <div className="flex items-center justify-between gap-md-2 text-md-b1">
-                                    <span className="font-normal text-md-heading">Due</span>
-                                    <span className="font-semibold text-md-heading">{selectedDateLabel || '-'}</span>
-                                 </div>
-                              </div>
+                              <span className="text-md-b2 font-[590] text-md-heading">You pay back</span>
+                              <p className="text-md-b1 font-normal text-md-heading">
+                                 <span className="font-semibold">{fixedTermTotal === null ? '-' : `$${fixedTermTotal.toFixed(2)}`}</span>
+                                 <span className="text-md-neutral-1200"> by {formatMilestoneDay(fixedTermDate)}</span>
+                              </p>
                               {termErrors.repayment ? <FieldError message={termErrors.repayment} /> : null}
                               {termErrors.date ? <FieldError message={termErrors.date} /> : null}
                               <p className="text-md-b3 font-normal leading-[18px] text-md-neutral-1200">
-                                 Every loan is {FIXED_TERM_DAYS} days with 10% on top. Want less? Change the amount above.
+                                 {FIXED_TERM_DAYS} days, 10% on top.
                               </p>
                            </div>
 
