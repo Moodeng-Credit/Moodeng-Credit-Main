@@ -3,8 +3,9 @@
 // drives them.
 //
 // A grid lagoon: rocks never move, seaweed blocks the way until it's chomped. Moodeng swims tile by
-// tile and CHOMPS in the way she faces — everything in a straight line up to `reach` tiles: sharks
-// are eaten, the first seaweed is eaten and stops the bite, a rock stops it. Eaten seaweed can leave
+// tile and CHOMPS: every shark right next to her (diagonals too), plus everything in a straight line
+// the way she faces up to `reach` tiles — sharks are eaten, the first seaweed is eaten and stops the
+// bite, a rock stops it. Eaten seaweed can leave
 // a 🍉 (longer bite) or a ❤️. A shark that swims into her costs a heart. Eat every shark → next wave,
 // with more and faster sharks.
 
@@ -128,18 +129,27 @@ export const moveHippo = (s: ChompState, dir: Dir, now: number): ChompState => {
    return next;
 };
 
-// The bite. Returns the same state if she's still on cooldown.
+// The bite: she DASHES forward up to `reach` tiles, eating everything on the way, and ends up where
+// the bite lands (George 2026-11-25: "it goes forward and eats"). Sharks on the path are eaten;
+// seaweed is eaten and ends the dash on its tile (it may leave a 🍉 / ❤️, which she grabs); a rock
+// stops her in front of it. Forgiving too: any shark right next to where she started or where she
+// lands (diagonals included) is eaten — sharks keep moving, and an exact line-up on a phone is too
+// fiddly. Returns the same state if she's still on cooldown.
 export const chomp = (s: ChompState, now: number, rng: Rng): ChompState => {
    if (s.over || now - s.lastChompAt < CHOMP_COOLDOWN_MS) return s;
    const grid = s.grid.map((r) => r.slice());
    let sharks = s.sharks;
    let score = s.score;
    const tiles: Pos[] = [];
+   const path: Pos[] = [];
+   let land = s.hippo;
    let p = s.hippo;
    for (let i = 0; i < s.reach; i++) {
       p = add(p, s.facing);
       if (!inBounds(p) || grid[p.y][p.x] === 'rock') break;
       tiles.push(p);
+      path.push(p);
+      land = p;
       const here = p;
       const eaten = sharks.filter((k) => same(k, here));
       if (eaten.length) {
@@ -153,7 +163,17 @@ export const chomp = (s: ChompState, now: number, rng: Rng): ChompState => {
          break;
       }
    }
+   const nextTo = (a: Pos, k: Pos) => Math.abs(k.x - a.x) <= 1 && Math.abs(k.y - a.y) <= 1;
+   const near = sharks.filter((k) => nextTo(s.hippo, k) || nextTo(land, k));
+   if (near.length) {
+      sharks = sharks.filter((k) => !near.includes(k));
+      score += POINTS_SHARK * near.length;
+      for (const k of near) if (!tiles.some((t) => same(t, k))) tiles.push({ x: k.x, y: k.y });
+   }
+   // Grab any 🍉 / ❤️ she dashed over (including one the seaweed just dropped).
    let next: ChompState = { ...s, grid, sharks, score, lastChompAt: now, chompTiles: tiles };
+   for (const t of path) next = pickUp({ ...next, hippo: t });
+   next = { ...next, hippo: land };
    if (sharks.length === 0) next = newWave(s.wave + 1, rng, { hearts: next.hearts, reach: next.reach, score: next.score + POINTS_WAVE });
    return next;
 };

@@ -38,8 +38,23 @@ describe('Shark Chomp rules', () => {
       expect(last.score).toBe(300 + 250);
    });
 
+   it('a shark right next to her is eaten whichever way she faces (diagonals too)', () => {
+      const s = { ...lagoon([{ x: 2, y: 2 }, { x: 9, y: 11 }]), hippo: { x: 1, y: 1 }, facing: 'up' as const };
+      const bitten = chomp(s, 1000, fixed(0.5));
+      expect(bitten.sharks.map((k) => k.x)).toEqual([9]);
+      expect(bitten.score).toBe(100);
+   });
+
+   it('the chomp dashes her forward to where the bite lands', () => {
+      const s = { ...lagoon([{ x: 9, y: 11 }]), facing: 'right' as const };
+      const bitten = chomp(s, 1000, fixed(0.5));
+      expect(bitten.hippo).toEqual({ x: 3, y: 1 });
+      const blocked = chomp({ ...s, facing: 'up' }, 1000, fixed(0.5));
+      expect(blocked.hippo).toEqual({ x: 1, y: 1 });
+   });
+
    it('seaweed stops the bite', () => {
-      const s = { ...lagoon([{ x: 3, y: 1 }]), facing: 'right' as const };
+      const s = { ...lagoon([{ x: 4, y: 1 }]), facing: 'right' as const, reach: 3 };
       s.grid = s.grid.map((r) => r.slice());
       s.grid[1][2] = 'weed';
       const bitten = chomp(s, 1000, fixed(0.5));
