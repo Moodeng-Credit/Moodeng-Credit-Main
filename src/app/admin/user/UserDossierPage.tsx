@@ -113,11 +113,18 @@ const age = (dob: string | null) => {
    return Number.isFinite(ms) ? Math.floor(ms / (365.25 * 86_400_000)) : null;
 };
 
-// Saved as a number or as a range like "10000-20000" depending on the form version.
-const peso = (v: unknown): string | null => {
+// Saved as a USD band slug ("200_400", "under_200", "700_plus") or, on old forms, a plain number.
+const moneyBand = (v: unknown): string | null => {
    if (v == null || v === '') return null;
-   const n = Number(v);
-   return Number.isFinite(n) ? `₱${n.toLocaleString()}` : `₱${String(v)}`;
+   const t = String(v);
+   const range = t.match(/^(\d+)_(\d+)$/);
+   if (range) return `$${range[1]}–${range[2]} / month`;
+   const under = t.match(/^under_(\d+)$/);
+   if (under) return `Under $${under[1]} / month`;
+   const plus = t.match(/^(\d+)_plus$/);
+   if (plus) return `$${plus[1]}+ / month`;
+   const n = Number(t);
+   return Number.isFinite(n) ? `$${n.toLocaleString()} / month` : t;
 };
 
 const riskTone = (band: string | null): 'good' | 'warn' | 'bad' | 'default' => {
@@ -482,8 +489,8 @@ function Income({ d }: { d: Dossier }) {
             {[...new Set([u.profession, d.call_screenings[0]?.answers?.role as string | undefined].filter(Boolean))].join(' · ') || null}
          </Row>
          <Row label="Income type">{u.income_type}</Row>
-         <Row label="Monthly income">{peso(u.monthly_income)}</Row>
-         <Row label="Monthly costs">{peso(u.monthly_expenses)}</Row>
+         <Row label="Monthly income">{moneyBand(u.monthly_income)}</Row>
+         <Row label="Monthly costs">{moneyBand(u.monthly_expenses)}</Row>
          <Row label="Other income">{u.other_income}</Row>
          <Row label="Payday">{payday}</Row>
          <Row label="About them">{u.income_description}</Row>
