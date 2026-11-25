@@ -46,7 +46,8 @@ export type AdminCardKind =
    | 'loan'
    | 'referral_payout'
    | 'referral_claim'
-   | 'interest_refund';
+   | 'interest_refund'
+   | 'affiliate_invoice';
 
 export type CardLink = { text: string; url: string };
 

@@ -31,6 +31,14 @@ import {
    splitCodes,
    submitReferralClaim
 } from '@/lib/affiliateDashboard';
+import {
+   type AffiliateInvoiceState,
+   fetchMyAffiliateInvoice,
+   invoiceCardMode,
+   invoiceErrorText,
+   invoiceMonthName,
+   submitAffiliateInvoice
+} from '@/lib/affiliateInvoice';
 import { EMPTY_INTEREST_REFUNDS, getMyInterestRefunds } from '@/lib/friendReferrals';
 import { txExplorerUrl } from '@/lib/txExplorer';
 import type { RootState } from '@/store/store';
@@ -937,6 +945,90 @@ function ClaimFriend({
    );
 }
 
+/* ---------- Monthly invoice (25th → 5th: send us what we owe you) ---------- */
+
+const shortWallet = (w: string) => `${w.slice(0, 6)}…${w.slice(-4)}`;
+
+function MonthlyInvoice({ state, sample }: { state: AffiliateInvoiceState; sample: boolean }) {
+   const queryClient = useQueryClient();
+   const [justSent, setJustSent] = useState(false);
+   const mutation = useMutation({
+      mutationFn: () => (sample ? Promise.resolve() : submitAffiliateInvoice('')),
+      onSuccess: () => {
+         setJustSent(true);
+         void queryClient.invalidateQueries({ queryKey: ['affiliate-invoice'] });
+      }
+   });
+   const mode = justSent ? 'sent' : invoiceCardMode(state);
+   if (mode === 'hidden') return null;
+
+   if (mode === 'waiting') {
+      return (
+         <p className="mt-3 px-1 text-[13px] leading-[18px] text-[#7b6b8c] dark:text-[#a99cba]">
+            🧾 Send us your invoice from the 25th. We pay at the end of the month.
+         </p>
+      );
+   }
+
+   if (mode === 'sent') {
+      const latest = state.invoices[0];
+      const month = latest ? invoiceMonthName(latest.month) : state.openMonth ? invoiceMonthName(state.openMonth) : '';
+      const paid = !justSent && latest?.paid;
+      return (
+         <section
+            className={clsx(
+               'mt-4 rounded-[14px] px-4 py-3 text-[14px] font-medium leading-5',
+               paid
+                  ? 'bg-emerald-50 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200'
+                  : 'bg-[#f1eefe] text-[#4b3db8] dark:bg-[#2a2442] dark:text-[#c9bfff]'
+            )}
+            aria-label="Your invoice"
+         >
+            {paid
+               ? `✅ ${month} invoice paid — ${money(latest.amount)}.`
+               : `🧾 ${month} invoice sent${latest && !justSent ? ` — ${money(latest.amount)}` : ''}. We’ll pay you soon.`}
+         </section>
+      );
+   }
+
+   const month = invoiceMonthName(state.openMonth ?? '');
+   const errorText = mutation.error ? invoiceErrorText((mutation.error as { message?: string }).message) : null;
+   return (
+      <section className="mt-4 rounded-[14px] bg-dv2-card p-4" aria-label="Send your invoice">
+         <h3 className="text-[17px] font-bold text-[#594d65] dark:text-[#e6def2]">🧾 Your {month} invoice</h3>
+         <p className="mt-1 text-[30px] font-bold leading-9 text-[#e39b12]">{money(state.amount)}</p>
+         <ul className="mt-2 flex flex-col gap-1 text-[13px] leading-[18px] text-[#7b6b8c] dark:text-[#a99cba]">
+            {state.items.slice(0, 8).map((i) => (
+               <li key={i.id} className="flex justify-between gap-3">
+                  <span className="truncate">{i.label}</span>
+                  <span className="shrink-0">{money(i.amount)}</span>
+               </li>
+            ))}
+            {state.items.length > 8 ? <li>…and {state.items.length - 8} more</li> : null}
+            {state.ahead > 0 ? (
+               <li className="flex justify-between gap-3">
+                  <span>Already paid ahead</span>
+                  <span className="shrink-0">−{money(state.ahead)}</span>
+               </li>
+            ) : null}
+         </ul>
+         <p className="mt-2 text-[13px] text-[#7b6b8c] dark:text-[#a99cba]">
+            {state.walletAddress ? `Paid in USDC to your Moodeng wallet ${shortWallet(state.walletAddress)}` : 'Paid in USDC to your Moodeng wallet'}
+         </p>
+         {errorText ? <p className="mt-2 text-[14px] text-red-600 dark:text-red-400">{errorText}</p> : null}
+         <button
+            type="button"
+            onClick={() => mutation.mutate()}
+            disabled={mutation.isPending}
+            className="mt-3 h-[48px] w-full rounded-full text-[16px] font-semibold text-white disabled:opacity-50"
+            style={{ backgroundImage: PURPLE_GRADIENT }}
+         >
+            {mutation.isPending ? 'Sending…' : 'Send my invoice'}
+         </button>
+      </section>
+   );
+}
+
 /* ---------- Money we sent (each transfer, and what's paid ahead) ---------- */
 
 function PaymentsSent({
@@ -1095,6 +1187,31 @@ export default function AffiliateDashboardPage({ sample = false }: { sample?: bo
    const aheadLeft = Math.max(0, ahead - totals.owed);
    const shownPaid = Math.max(totals.paid, sent?.sent ?? 0);
    const { main, others } = splitCodes(codes, referrals);
+   // Monthly invoice: partners (not everyday borrowers' $2 codes) send us what we owe them at month end.
+   const invoiceQuery = useQuery({
+      queryKey: ['affiliate-invoice'],
+      queryFn: fetchMyAffiliateInvoice,
+      staleTime: 30_000,
+      retry: false,
+      enabled: !sample && !adminView
+   });
+   // /affiliate-preview?invoice=1 shows a sample invoice ready to send.
+   const invoiceState: AffiliateInvoiceState | undefined =
+      sample && searchParams.get('invoice') === '1'
+         ? {
+              openMonth: '2026-11-01',
+              owed: 15,
+              ahead: 0,
+              amount: 15,
+              items: [
+                 { source: 'code', id: 's1', amount: 5, label: 'BELLE: Maria repaid', at: '' },
+                 { source: 'code', id: 's2', amount: 5, label: 'BELLE: Jun repaid', at: '' },
+                 { source: 'code', id: 's3', amount: 5, label: 'BELLE: Ana repaid', at: '' }
+              ],
+              walletAddress: '0x' + 'b'.repeat(40),
+              invoices: []
+           }
+         : invoiceQuery.data;
    const queryClient = useQueryClient();
    const [voucherFor, setVoucherFor] = useState<AffiliateReferral | null>(null);
    const voucherPhp = !adminView && data?.voucher.available ? data.voucher.amountPhp : null;
@@ -1217,6 +1334,7 @@ export default function AffiliateDashboardPage({ sample = false }: { sample?: bo
             )}
             <PosterQr code={main.code} />
             <MoneyRow owed={shownOwed} pending={totals.pending} paid={shownPaid} paused={paused} />
+            {invoiceState && !isShark ? <MonthlyInvoice state={invoiceState} sample={sample} /> : null}
             {sent?.payments.length ? <PaymentsSent payments={sent.payments} aheadLeft={aheadLeft} payout={main.payout_amount} /> : null}
             <Friends
                referrals={referrals}
