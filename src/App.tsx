@@ -95,6 +95,7 @@ import SignUp from '@/app/signup/page';
 import Simple from '@/app/simple/page';
 import SmsTestPage, { type SmsTestStage } from '@/app/sms-test/page';
 import SpinPage from '@/app/spin/page';
+import SharkChompPage from '@/app/chomp/page';
 import SupportFAQPage from '@/app/support/faq/page';
 import SupportGettingStartedPage from '@/app/support/getting-started/page';
 import SupportGuideDetailPage from '@/app/support/guides/[slug]/page';
@@ -582,6 +583,8 @@ export default function App() {
                   </ProtectedRoute>
                }
             />
+            {/* Public: Shark Chomp, the game the call reminders link to while they wait (?at=&join=). */}
+            <Route path="/chomp" element={<SharkChompPage />} />
             {/* Moo-Spin prize wheel; /spin/CODE is a Facebook post or video from Admin → Spin wheel. */}
             <Route
                path="/spin"

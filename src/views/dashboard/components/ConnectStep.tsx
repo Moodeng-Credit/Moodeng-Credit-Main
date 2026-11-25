@@ -665,6 +665,17 @@ export function LoanAccessPendingCard({
                   ) : null}
                </div>
 
+               {/* Shark Chomp: a little game while they wait (src/app/chomp), with the call countdown + Join. */}
+               {callOver ? null : (
+                  <a
+                     className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-full bg-[#ffb703] text-[16px] font-bold text-[#3b2a00] shadow-[0_6px_16px_rgba(255,183,3,0.35)] active:scale-[0.98]"
+                     href={`/chomp?${new URLSearchParams({ ...(meeting?.startsAt ? { at: meeting.startsAt } : {}), ...(meeting?.joinUrl ? { join: meeting.joinUrl } : {}) }).toString()}`}
+                     onClick={() => clarityEvent('call_wait_game_open')}
+                  >
+                     🦈 Play Shark Chomp while you wait
+                  </a>
+               )}
+
                {/* The call texted to their phone (PH numbers): asks for a number when we have none. */}
                {callOver ? null : <CallTextReminder />}
 

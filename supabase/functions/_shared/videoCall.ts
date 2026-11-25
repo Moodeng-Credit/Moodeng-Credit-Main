@@ -239,16 +239,25 @@ export const sendConfirmedMessenger = (u: CallUser) => {
    });
 };
 
+// Shark Chomp, the wait game, with this call's start time and Zoom link for its countdown + Join.
+export const buildWaitGameUrl = (u: Pick<CallUser, 'video_call_starts_at' | 'video_call_join_url'>) => {
+   const site = (Deno.env.get('VITE_SITE_URL') ?? Deno.env.get('MOODENG_APP_URL') ?? Deno.env.get('SITE_URL') ?? 'https://moodeng.app').replace(/\/$/, '');
+   const q = new URLSearchParams();
+   if (u.video_call_starts_at) q.set('at', u.video_call_starts_at);
+   if (u.video_call_join_url) q.set('join', u.video_call_join_url);
+   const qs = q.toString();
+   return `${site}/chomp${qs ? `?${qs}` : ''}`;
+};
+
 // The 30 / 15 / 5-minute countdown (video-call-reminders), each with a sorry for the nagging
 // (George 2026-11-25). minutes = real minutes left; 0 → "starting now".
 export const sendCountdownMessenger = (u: CallUser, minutes: number) => {
    if (!u.video_call_starts_at) return Promise.resolve({ ok: false as const, reason: 'no_call' });
    const head = minutes <= 0 ? "👋 We're starting now!" : `⏰ Your call starts in ${minutes} minute${minutes === 1 ? '' : 's'}!`;
+   // 10+ minutes to go: a little game to pass the time (moodeng.app/chomp), with the countdown + Join.
+   const game = minutes >= 10 ? `\n\n🦈 Bored waiting? Play Shark Chomp: ${buildWaitGameUrl(u)}` : '';
    return sendMessengerMessage(u.messenger_psid, {
-      text: `${head} ${joinLine(u)}
-🪪 Have your ID ready and 📷 video on.
-
-Sorry for all the reminders 🙏 we just don't want you to miss your call!`
+      text: `${head} ${joinLine(u)}\n🪪 Have your ID ready and 📷 video on.${game}\n\nSorry for all the reminders 🙏 we just don't want you to miss your call!`
    });
 };
 
