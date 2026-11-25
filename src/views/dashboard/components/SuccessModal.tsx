@@ -13,12 +13,6 @@ interface SuccessModalProps {
 const BORROWER_GROUP_TELEGRAM_URL = 'https://t.me/jimmymoodengcredit';
 const BORROWER_GROUP_FACEBOOK_URL = 'https://www.facebook.com/groups/1593629908540434';
 
-// The people borrowers actually talk to on Messenger and on their call.
-const TEAM_FACES = [
-   { name: 'Emma', src: '/team/emma-moodeng.jpeg' },
-   { name: 'George', src: '/team/george.jpeg' }
-];
-
 const GROUP_TILE =
    'flex h-12 items-center justify-center gap-2 rounded-2xl border border-[#E7E0F0] bg-white text-[15px] font-semibold tracking-[-0.02em] text-[#040033] active:scale-[0.98] dark:border-[#3A2F55] dark:bg-[#221A30] dark:text-[#F0EAFF]';
 
@@ -81,26 +75,11 @@ export default function SuccessModal({ clickOutsideRef, isOpen, onClose }: Succe
             onPointerCancel={endDismissGesture}
             style={{ transform: `translateY(${dismissOffset}px)` }}
          >
-            {/* 2026-11-26 (Mahjid): borrowers want to know who they're talking to, and never to hear "we can't
-                do many loans". Faces of the team + his wording; the sign-in screen's crisp look. */}
+            {/* 2026-11-26: Mahjid's wording (never "we can't do many loans"); the sign-in screen's crisp look with
+                the hippo. Team photos were tried and dropped (George: hippo only; no AI-made faces). */}
             <div className="flex flex-col items-center px-6 pb-6 pt-8 text-center">
-               <div className="flex -space-x-3" aria-hidden="true">
-                  {TEAM_FACES.map((face) => (
-                     <img
-                        key={face.name}
-                        alt=""
-                        src={face.src}
-                        className="h-[52px] w-[52px] rounded-full object-cover ring-4 ring-white dark:ring-[#1A1426]"
-                     />
-                  ))}
-                  <span className="flex h-[52px] w-[52px] items-center justify-center rounded-full bg-[#F3EEFB] ring-4 ring-white dark:bg-[#2A2138] dark:ring-[#1A1426]">
-                     <img alt="" src="/auth-screen.png" className="h-9 w-9 object-contain" />
-                  </span>
-               </div>
-               <p className="mt-2 text-[13px] font-medium tracking-[-0.01em] text-[#70617F] dark:text-[#A89BB8]">
-                  Emma &amp; George · Moodeng team
-               </p>
-               <h2 className="mt-5 text-[28px] font-bold leading-[1.15] tracking-[-0.04em] text-[#040033] dark:text-[#F0EAFF]">
+               <img src="/auth-screen.png" alt="" aria-hidden="true" className="h-[70px] w-[80px] object-contain" />
+               <h2 className="mt-4 text-[28px] font-bold leading-[1.15] tracking-[-0.04em] text-[#040033] dark:text-[#F0EAFF]">
                   Request sent
                </h2>
                <p className="mt-2 text-[15px] leading-[22px] tracking-[-0.01em] text-[#70617F] dark:text-[#A89BB8]">
