@@ -4,6 +4,8 @@ import { Video } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 
 import { clarityEvent } from '@/lib/analytics/clarity';
+import { earnGameSpin, GAME_SPIN_TEXT } from '@/lib/spinWheel';
+import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/supabase/client';
 import {
    applySnack,
    callStatus,
@@ -951,6 +953,70 @@ export default function SharkChompPage() {
 // Moodeng's House, after each level: Moo-Guard (our own chibi robot guardian, Gemini art) walks in
 // and explains that level's Moodeng rule in a speech bubble; then a small snack shop, the bonus
 // wheel every other level, and one button back out to the next level.
+// Shark Chomp → Moo-Spin: clearing this level earns one real Moo-Spin (server-drawn prizes, incl. food
+// vouchers), once per person (earn_game_spin). Signed in → saved right here; else /spin?game=1 after sign-in.
+const SPIN_LEVEL = 3;
+const SPIN_SAVED_KEY = 'md_chomp_spin';
+const spinAlreadySaved = () => {
+   try {
+      return window.localStorage.getItem(SPIN_SAVED_KEY) === 'saved';
+   } catch {
+      return false;
+   }
+};
+
+function MooSpinCard() {
+   const [note, setNote] = useState<string | null>(spinAlreadySaved() ? GAME_SPIN_TEXT.had : null);
+   const [busy, setBusy] = useState(false);
+   const save = async () => {
+      setBusy(true);
+      clarityEvent('chomp_spin_save');
+      try {
+         const session = isSupabaseBrowserConfigured() ? (await getSupabaseBrowserClient().auth.getSession()).data.session : null;
+         if (!session) {
+            window.location.href = '/spin?game=1';
+            return;
+         }
+         const r = await earnGameSpin();
+         setNote(GAME_SPIN_TEXT[r.saved ? 'saved' : r.had ? 'had' : (r.reason ?? 'no_call')]);
+         if (r.saved || r.had) {
+            try {
+               window.localStorage.setItem(SPIN_SAVED_KEY, 'saved');
+            } catch {
+               /* private mode */
+            }
+         }
+      } catch {
+         window.location.href = '/spin?game=1';
+      } finally {
+         setBusy(false);
+      }
+   };
+   return (
+      <div className="flex flex-col items-center gap-2 rounded-[18px] border-2 border-[#ffb703] bg-[#fff8e6] p-4 text-center text-[#594d65] shadow-sm">
+         <span className="text-[17px] font-bold">🎟️ You earned a Moo-Spin!</span>
+         <span className="text-[14px] leading-snug">Spin the real Moo-Spin wheel for a chance at a food voucher. One spin per person.</span>
+         {note ? (
+            <>
+               <span className="text-[15px] font-bold text-[#2f7a3a]">{note}</span>
+               <a className="text-[14px] font-bold text-[#6b55f7]" href="/spin">
+                  Open Moo-Spin ›
+               </a>
+            </>
+         ) : (
+            <button
+               className="min-h-[46px] w-full rounded-full bg-[#7661f9] text-[16px] font-bold text-white disabled:opacity-60"
+               disabled={busy}
+               onClick={() => void save()}
+               type="button"
+            >
+               {busy ? 'Saving…' : 'Save my spin'}
+            </button>
+         )}
+      </div>
+   );
+}
+
 function HouseRoom(props: {
    wave: number;
    coins: number;
@@ -1034,6 +1100,7 @@ function HouseRoom(props: {
 
             {done ? (
                <>
+                  {wave >= SPIN_LEVEL ? <MooSpinCard /> : null}
                   {wheel.due ? <PrizeWheel angle={wheel.angle} onSpin={onSpin} spun={wheel.spun} /> : null}
 
                   <div className="rounded-[18px] bg-white/95 p-3 text-[#594d65] shadow-sm">

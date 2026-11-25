@@ -251,11 +251,12 @@ export const buildWaitGameUrl = (u: Pick<CallUser, 'video_call_starts_at' | 'vid
 
 // The 30 / 15 / 5-minute countdown (video-call-reminders), each with a sorry for the nagging
 // (George 2026-11-25). minutes = real minutes left; 0 → "starting now".
-export const sendCountdownMessenger = (u: CallUser, minutes: number) => {
+export const sendCountdownMessenger = (u: CallUser, minutes: number, gameLine?: string) => {
    if (!u.video_call_starts_at) return Promise.resolve({ ok: false as const, reason: 'no_call' });
    const head = minutes <= 0 ? "👋 We're starting now!" : `⏰ Your call starts in ${minutes} minute${minutes === 1 ? '' : 's'}!`;
    // 10+ minutes to go: a little game to pass the time (moodeng.app/chomp), with the countdown + Join.
-   const game = minutes >= 10 ? `\n\n🦈 Bored waiting? Play Shark Chomp: ${buildWaitGameUrl(u)}` : '';
+   // gameLine comes from video-call-reminders (gameInvite: mentions the Moo-Spin while it's on).
+   const game = minutes >= 10 ? `\n\n${gameLine ?? `🦈 Bored waiting? Play Shark Chomp: ${buildWaitGameUrl(u)}`}` : '';
    return sendMessengerMessage(u.messenger_psid, {
       text: `${head} ${joinLine(u)}\n🪪 Have your ID ready and 📷 video on.${game}\n\nSorry for all the reminders 🙏 we just don't want you to miss your call!`
    });

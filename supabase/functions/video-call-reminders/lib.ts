@@ -42,6 +42,23 @@ export const CONFIRM_CLOSES_MIN = 30;
 // anywhere in the window: say the real minutes left, never a number that's already wrong.
 export const minutesLeft = (minutesUntil: number): number => Math.max(0, Math.round(minutesUntil));
 
+// The Shark Chomp line in the 30 / 15-minute reminders. While Moo-Spin is ON for borrowers (Admin →
+// Spin wheel: mode 'on'), it also says the game earns a Moo-Spin (one per person, level 3; the server
+// draws the prize). In 'team' / 'off' it stays a plain game invite: never promise a prize nobody can win.
+export const gameInvite = (url: string, spinOn: boolean): { text: string; button: string } =>
+   spinOn
+      ? { text: `🦈 While you wait: play Shark Chomp! Clear level 3 to win a Moo-Spin, with a chance at a food voucher 🎟️ ${url}`, button: '🦈 Play & win a Moo-Spin' }
+      : { text: `🦈 Bored waiting? Play Shark Chomp: ${url}`, button: '🦈 Play Shark Chomp while you wait' };
+
+// Moo-Spin's switch, as spin_config() reads it: telegram_bot_settings 'spin_wheel' JSON → mode.
+export const spinModeOn = (settingValue: string | null | undefined): boolean => {
+   try {
+      return JSON.parse(settingValue ?? '{}')?.mode === 'on';
+   } catch {
+      return false;
+   }
+};
+
 export const COUNTDOWN_SORRY = "Sorry for all the reminders 🙏 we just don't want you to miss your call!";
 
 // "Your Moodeng call starts in 15 minutes" / "starts in 1 minute" / "is starting now".

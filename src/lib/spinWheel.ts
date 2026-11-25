@@ -37,6 +37,8 @@ export interface SpinState {
    ready: number;
    nextAt: string | null;
    welcomeReady: boolean;
+   /** An unused Shark Chomp spin (moodeng.app/chomp, level 3): saved until they may spin. */
+   gameSpin: boolean;
    potLeft: { grab100: number; food50: number; locked50: number };
    campaign: SpinCampaign | null;
    campaignMissing: boolean;
@@ -72,6 +74,7 @@ export function parseSpinState(raw: unknown): SpinState {
       ready: num(value.ready),
       nextAt: str(value.nextAt),
       welcomeReady: value.welcomeReady === true,
+      gameSpin: value.gameSpin === true,
       potLeft: { grab100: num(pot.grab100), food50: num(pot.food50), locked50: num(pot.locked50) },
       campaign: campaign
          ? {
@@ -101,6 +104,25 @@ export async function getSpinState(campaign?: string | null): Promise<SpinState>
    if (error) throw error;
    return parseSpinState(data);
 }
+
+// Shark Chomp → Moo-Spin: clearing level 3 earns one spin, ever (earn_game_spin, 20261125230000).
+export type GameSpinResult = { saved: boolean; had: boolean; canSpin: boolean; reason: 'not_ph' | 'blocked' | 'no_call' | null };
+
+export async function earnGameSpin(): Promise<GameSpinResult> {
+   const { data, error } = await getSupabaseBrowserClient().rpc('earn_game_spin');
+   if (error) throw error;
+   const value = (data ?? {}) as Record<string, unknown>;
+   const reason = value.reason === 'not_ph' || value.reason === 'blocked' || value.reason === 'no_call' ? value.reason : null;
+   return { saved: value.saved === true, had: value.had === true, canSpin: value.canSpin === true, reason };
+}
+
+export const GAME_SPIN_TEXT: Record<'saved' | 'had' | 'not_ph' | 'blocked' | 'no_call', string> = {
+   saved: 'Your Shark Chomp spin is saved! 🎟️',
+   had: 'You already earned your Shark Chomp spin. 🎟️',
+   not_ph: 'Moo-Spin prizes are for the Philippines for now.',
+   blocked: 'Moo-Spin is not open for this account.',
+   no_call: 'Book your video call first, then play again to earn your spin.'
+};
 
 export type AnswerResult = { ok: true } | { ok: false; error: 'wrong_answer' | 'campaign_over' | SpinBlockReason };
 
@@ -208,6 +230,7 @@ export const SPIN_PREVIEW_STATE: SpinState = {
    ready: 2,
    nextAt: null,
    welcomeReady: true,
+   gameSpin: false,
    potLeft: { grab100: 0, food50: 6, locked50: 30 },
    campaign: {
       code: 'PAYDAY',
