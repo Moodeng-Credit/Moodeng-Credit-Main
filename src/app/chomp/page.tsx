@@ -59,7 +59,12 @@ const SPRITES = {
    mango: '/chomp/food-mango.webp',
    halohalo: '/chomp/food-halohalo.webp',
    turon: '/chomp/food-turon.webp',
-   hero: '/shark-fighter/fighter-moodeng.webp'
+   hero: '/shark-fighter/fighter-moodeng.webp',
+   // Moodeng's House: Moo-Guard + the room. Listed here so they download with the rest when the page
+   // opens, not when the door is reached (on a slow phone the robot was missing; 2026-11-25).
+   guardWave: '/chomp/guard-wave.webp',
+   guardThumbs: '/chomp/guard-thumbs.webp',
+   room: '/chomp/room.webp'
 };
 const BEST_KEY = 'md_chomp_best';
 // One tile of swimming. Held input repeats on exactly this beat, so a held direction is one continuous glide.
@@ -956,6 +961,7 @@ export default function SharkChompPage() {
 // Shark Chomp → Moo-Spin: clearing this level earns one real Moo-Spin (server-drawn prizes, incl. food
 // vouchers), once per person (earn_game_spin). Signed in → saved right here; else /spin?game=1 after sign-in.
 const SPIN_LEVEL = 3;
+const GUARD_FALLBACK = '/hippos/body/hippo-body.webp';
 const SPIN_SAVED_KEY = 'md_chomp_spin';
 const spinAlreadySaved = () => {
    try {
@@ -1044,7 +1050,7 @@ function HouseRoom(props: {
       <div
          className="absolute inset-0 z-10 overflow-y-auto bg-[#f3ecff] bg-cover bg-top"
          style={{
-            backgroundImage: "url('/chomp/room.webp')",
+            backgroundImage: `url('${SPRITES.room}')`,
             paddingTop: 'max(12px, env(safe-area-inset-top))',
             paddingBottom: 'max(16px, env(safe-area-inset-bottom))',
             touchAction: 'pan-y'
@@ -1093,7 +1099,12 @@ function HouseRoom(props: {
                   alt="Moo-Guard, the robot guardian of Moodeng's House"
                   className="h-[min(150px,18dvh)] w-auto drop-shadow-[0_10px_12px_rgba(60,40,90,0.3)]"
                   draggable={false}
-                  src={done ? '/chomp/guard-thumbs.webp' : '/chomp/guard-wave.webp'}
+                  onError={(e) => {
+                     // Still couldn't load: show plain Moodeng rather than a broken image.
+                     const img = e.currentTarget;
+                     if (!img.src.endsWith(GUARD_FALLBACK)) img.src = GUARD_FALLBACK;
+                  }}
+                  src={done ? SPRITES.guardThumbs : SPRITES.guardWave}
                   style={{ animation: done ? 'none' : 'guardBob 600ms ease-in-out infinite' }}
                />
             </div>
