@@ -152,7 +152,7 @@ describe('/auth/verify-code', () => {
       expect(JSON.parse(localStorage.getItem('moodeng:pending-code') ?? '{}').resends).toBe(1);
    });
 
-   it('waiting help: tips after 30s; after two resends, email instead or Messenger', async () => {
+   it('waiting help: tips after 30s; after two resends, Messenger, Facebook or email instead', async () => {
       const sentAt = Date.now() - 45_000;
       localStorage.setItem(
          'moodeng:pending-code',
@@ -160,8 +160,37 @@ describe('/auth/verify-code', () => {
       );
       await render('/auth/verify-code?phone=%2B639171234567');
       expect(container.textContent).toContain('Not here yet? Look for a text from Unisoft, check your signal and Messages › Spam.');
-      expect(container.textContent).toContain('Get the code by email instead');
-      expect(container.textContent).toContain('Message us on Messenger');
+      expect(container.textContent).toContain('No code yet?');
+      expect(container.textContent).toContain('Get help on Messenger');
+      expect(container.textContent).toContain('Use Facebook instead');
+      expect(container.textContent).toContain('Get it by email');
+   });
+
+   it('waiting help: after a minute the way out shows without any resend; not before', async () => {
+      const recent = Date.now() - 20_000;
+      localStorage.setItem(
+         'moodeng:pending-code',
+         JSON.stringify({
+            channel: 'sms',
+            target: '+639171234567',
+            mode: 'signin',
+            sentAt: recent,
+            expiresAt: recent + 600_000,
+            resends: 0
+         })
+      );
+      await render('/auth/verify-code?phone=%2B639171234567');
+      expect(container.textContent).not.toContain('No code yet?');
+      act(() => root.unmount());
+      root = createRoot(container);
+      const old = Date.now() - 65_000;
+      localStorage.setItem(
+         'moodeng:pending-code',
+         JSON.stringify({ channel: 'sms', target: '+639171234567', mode: 'signin', sentAt: old, expiresAt: old + 600_000, resends: 0 })
+      );
+      await render('/auth/verify-code?phone=%2B639171234567');
+      expect(container.textContent).toContain('No code yet?');
+      expect(container.textContent).toContain('Get help on Messenger');
    });
 
    it('a killed page comes back: no URL params, the saved code target is used', async () => {

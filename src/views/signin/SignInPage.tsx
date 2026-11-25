@@ -1,5 +1,6 @@
 import { type ChangeEvent, type FormEvent, useEffect, useMemo, useState } from 'react';
 
+import { ArrowLeft } from 'lucide-react';
 import posthog from 'posthog-js';
 import { useDispatch } from 'react-redux';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
@@ -15,6 +16,7 @@ import {
    useFacebookPrimary
 } from '@/components/auth';
 import Loading from '@/components/Loading';
+import { MessengerGlyph, messengerSupportLinkProps } from '@/components/support/MessengerChatButton';
 import { useToast } from '@/components/ToastSystem/hooks/useToast';
 
 import { useSignedInRedirect } from '@/hooks/useSignedInRedirect';
@@ -61,7 +63,8 @@ export default function SignInPage() {
    // Which social provider failed, for the provider_failed alert copy.
    const [errorProvider, setErrorProvider] = useState<string | null>(null);
    const [attemptsRemaining, setAttemptsRemaining] = useState(5);
-   const [rememberMe, setRememberMe] = useState(true);
+   // Always remembered: the "Remember Me" box went in the 2026-11-25 clean-up (nobody unticks it on their own phone).
+   const rememberMe = true;
    const [identifierError, setIdentifierError] = useState<string | null>(null);
    // Facebook/Messenger's browser: Google can't sign in there, so the email form comes first.
    const inApp = useMemo(() => detectInAppBrowser(), []);
@@ -78,7 +81,16 @@ export default function SignInPage() {
       () => (inApp.isInApp || phoneFirst) && facebookLeadsCodeLayout(facebookPrimary, getLastUsedAuth()),
       [inApp.isInApp, phoneFirst, facebookPrimary]
    );
-   const [usePassword, setUsePassword] = useState(() => !phoneFirst && !showPasswordlessSignup(inApp.isInApp));
+   // Normal browsers outside the Philippines (George, 2026-11-25): Facebook, the small tiles and "Use email
+   // instead". Email opens a code form (password one tap away), or opens straight away for people who used
+   // email or a phone code last time, or came back from the code screen (?method=).
+   const emailCollapsible = facebookPrimary && !inApp.isInApp && !phoneFirst;
+   const [emailOpen, setEmailOpen] = useState(() => {
+      const method = searchParams.get('method');
+      const lastUsed = getLastUsedAuth();
+      return method === 'email' || method === 'phone' || lastUsed === 'email' || lastUsed === 'phone';
+   });
+   const [usePassword, setUsePassword] = useState(() => !emailCollapsible && !phoneFirst && !showPasswordlessSignup(inApp.isInApp));
    const [codeChannel, setCodeChannel] = useState<OtpChannel | undefined>(phoneFirst ? 'sms' : undefined);
    const [codePhone, setCodePhone] = useState('');
    const smsEnabled = useMemo(() => isSmsLoginEnabled(), []);
@@ -245,17 +257,108 @@ export default function SignInPage() {
 
    if (isLoading || redirectingSignedIn) return <Loading />;
 
+   const showFacebookOnTop = facebookPrimary && (inApp.isInApp || phoneFirst || emailCollapsible);
    const socialAuth = (
       <SocialAuthButtons
          isSignUp={false}
-         hideFacebook={facebookPrimary && (inApp.isInApp || phoneFirst)}
+         hideFacebook={showFacebookOnTop}
          philippines={phoneFirst}
+         centered={phoneFirst || emailCollapsible}
          onGoogleSuccess={handleGoogleAuth}
          onGoogleError={() => setShowAccount(true)}
          onTelegramAuth={handleTelegramAuth}
       />
    );
-   const orDivider = <DividerWithText text="OR" lineColor="#9285A0" textColor="#877897" />;
+   const orDivider = <DividerWithText text="OR" lineColor="#D9D2E1" textColor="#877897" />;
+   // Normal browser, email not opened yet: only Facebook, the tiles and "Use email instead".
+   const emailHidden = emailCollapsible && !emailOpen;
+   const helpLink = messengerSupportLinkProps('signin_help');
+
+   const passwordForm = (
+      <form onSubmit={handleLogin} className="flex flex-col gap-4">
+         <AuthInputField
+            label={emailOrPhone ? 'Email or mobile number' : 'Email'}
+            type={emailOrPhone ? 'text' : 'email'}
+            placeholder={emailOrPhone ? 'Email or 0917 123 4567' : 'Email'}
+            value={email}
+            onChange={(e: ChangeEvent<HTMLInputElement>) => {
+               setIdentifierError(null);
+               handleEmailChange(e);
+            }}
+            error={Boolean(identifierError) || (showAccount && errorType !== 'provider_failed')}
+            errorMessage={
+               identifierError ??
+               (showAccount && errorType === 'too_many_attempts'
+                  ? 'Too many tries'
+                  : showAccount && errorType === 'new_user'
+                    ? 'No account with this email'
+                    : showAccount && errorType === 'email_not_found'
+                      ? 'No account with this email'
+                      : showAccount && errorType === 'incorrect_credentials'
+                        ? 'Wrong email or password'
+                        : undefined)
+            }
+            icon={<Icons.email />}
+            autoComplete={emailOrPhone ? 'username' : 'email'}
+         />
+         {/* Email-or-number box: the password shows once it's clearly an email. Kept on the
+             page (just out of sight) so saved passwords still fill in. */}
+         <div className={showPasswordFields ? 'flex flex-col gap-2' : 'sr-only'} aria-hidden={!showPasswordFields}>
+            <AuthInputField
+               label="Password"
+               type="password"
+               placeholder="Password"
+               value={password}
+               onChange={(e: ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
+               error={showAccount && errorType !== 'provider_failed'}
+               icon={<Icons.lock />}
+               showEyeToggle
+               autoComplete="current-password"
+            />
+            <Link
+               to="/forgot-password"
+               className="self-end text-sm font-medium leading-5 tracking-[-0.02em] text-[#70617F] underline-offset-4 hover:text-[#6010D2] hover:underline"
+            >
+               Forgot password?
+            </Link>
+         </div>
+
+         {showAccount && errorType && (
+            <AuthErrorAlert
+               type={errorType}
+               provider={errorProvider ?? undefined}
+               onRetry={
+                  errorType === 'incorrect_credentials' ||
+                  errorType === 'email_not_found' ||
+                  errorType === 'new_user' ||
+                  errorType === 'provider_failed'
+                     ? handleRetry
+                     : undefined
+               }
+               signupHref={`/sign-up?email=${encodeURIComponent(email.trim())}`}
+               resetPasswordHref={`/forgot-password?email=${encodeURIComponent(email.trim())}`}
+            />
+         )}
+
+         <button
+            type="submit"
+            className="w-full h-14 rounded-2xl font-semibold text-[#FDFCFD] text-base tracking-[-0.02em] transition-opacity hover:opacity-95"
+            style={{ backgroundColor: '#6010D2' }}
+         >
+            {showPasswordFields ? 'Sign in' : 'Continue'}
+         </button>
+
+         {/* Passwordless accounts (made in Facebook's browser) sign in here from any browser. A
+             number typed in the box above goes to the text-code form by itself. */}
+         <button
+            type="button"
+            onClick={() => switchToCode('email')}
+            className="self-center text-sm font-semibold text-[#6010D2] underline underline-offset-4 dark:text-[#C084FC]"
+         >
+            Use a code instead
+         </button>
+      </form>
+   );
 
    return (
       <div className="flex justify-center items-center min-h-screen py-6 sm:py-12 px-4">
@@ -268,35 +371,46 @@ export default function SignInPage() {
          >
             {/* From Indonesia: the Telegram sign-up at /id (other methods stay below). */}
             <IdEntryBanner />
-            <div className="flex flex-1 flex-col items-center justify-center w-full px-5 py-6 sm:py-10">
-               {/* Mascot - 110x96 per design */}
-               <img src="/auth-screen.png" alt="Moodeng Mascot" className="w-[88px] h-[77px] object-contain mb-5" />
-               <h1 className="text-[34px] font-semibold leading-[1.2] tracking-[-0.04em] text-[#040033] text-center mb-1">
-                  Welcome back to Moodeng
+            {/* Content sits low (thumb reach); one short title, no subtitle (George, 2026-11-25: fewer words). */}
+            <div className="flex flex-1 flex-col items-center justify-end sm:justify-center w-full px-5 py-6 sm:py-10">
+               <img src="/auth-screen.png" alt="Moodeng Mascot" className="w-[80px] h-[70px] object-contain mb-4" />
+               <h1 className="text-[32px] font-semibold leading-[1.2] tracking-[-0.04em] text-[#040033] text-center mb-7 dark:text-[#F0EAFF]">
+                  Welcome back
                </h1>
-               <p className="text-base font-medium leading-6 tracking-[-0.02em] text-[#6D6D6D] text-center mb-5">
-                  {usePassword
-                     ? 'Sign in to access your account.'
-                     : facebookLeads
-                       ? 'One tap with Facebook.'
-                       : "We'll send you a code. No password needed."}
-               </p>
 
-               {/* Social auth (below the email form inside Facebook/Messenger) */}
                <div className="w-full flex flex-col gap-4">
-                  {inApp.isInApp || phoneFirst ? null : socialAuth}
-                  {inApp.isInApp || phoneFirst ? null : orDivider}
-                  {/* Inside Facebook/Messenger and on the phone-first page the rest sits lower, but Facebook still leads */}
-                  {facebookPrimary && (inApp.isInApp || phoneFirst) ? (
+                  {/* Kill switch off (no Facebook login): the older Google-button layout. */}
+                  {!showFacebookOnTop && !inApp.isInApp && !phoneFirst ? socialAuth : null}
+                  {!showFacebookOnTop && !inApp.isInApp && !phoneFirst ? orDivider : null}
+
+                  {/* Facebook leads: bold where the rest is quiet; on the +63 page and in Messenger it steps back
+                      for people who last used a phone/email code (facebookLeads). */}
+                  {showFacebookOnTop && !(emailCollapsible && emailOpen) ? (
+                     <div className="flex justify-center">
+                        <FacebookAuthButton isSignUp={false} variant="full" bold={emailCollapsible || facebookLeads} />
+                     </div>
+                  ) : null}
+                  {showFacebookOnTop && (inApp.isInApp || phoneFirst) ? orDivider : null}
+
+                  {emailHidden ? (
                      <>
-                        <div className="flex justify-center">
-                           <FacebookAuthButton isSignUp={false} variant="full" bold={facebookLeads} />
-                        </div>
-                        {orDivider}
+                        {socialAuth}
+                        <button
+                           type="button"
+                           onClick={() => {
+                              handleRetry();
+                              setUsePassword(false);
+                              setCodeChannel('email');
+                              setEmailOpen(true);
+                           }}
+                           className="self-center text-[15px] font-semibold text-[#6010D2] underline-offset-4 hover:underline dark:text-[#C084FC]"
+                        >
+                           Use email instead
+                        </button>
                      </>
                   ) : null}
 
-                  {usePassword ? null : (
+                  {!emailHidden && !usePassword ? (
                      <div className="flex justify-center">
                         <PasswordlessAuthForm
                            key={`${codeChannel ?? 'default'}-${codePhone}`}
@@ -305,149 +419,51 @@ export default function SignInPage() {
                            initialChannel={codeChannel}
                            initialPhone={codePhone}
                            quietSubmit={facebookLeads}
+                           compact
                            // Facebook/Messenger: kept short; anyone with a password can still use a code.
                            onUsePassword={facebookInApp ? undefined : () => setUsePassword(true)}
                         />
                      </div>
-                  )}
-
-                  {/* Email / Password form (for people who set a password) */}
-                  {usePassword ? (
-                     <form onSubmit={handleLogin} className="flex flex-col gap-5">
-                        <div className="flex flex-col gap-5">
-                           <AuthInputField
-                              label={emailOrPhone ? 'Email or mobile number' : 'Email Address'}
-                              type={emailOrPhone ? 'text' : 'email'}
-                              placeholder={emailOrPhone ? 'Email or 0917 123 4567' : 'Enter your email address'}
-                              value={email}
-                              onChange={(e: ChangeEvent<HTMLInputElement>) => {
-                                 setIdentifierError(null);
-                                 handleEmailChange(e);
-                              }}
-                              error={Boolean(identifierError) || (showAccount && errorType !== 'provider_failed')}
-                              errorMessage={
-                                 identifierError ??
-                                 (showAccount && errorType === 'too_many_attempts'
-                                    ? 'Too many tries'
-                                    : showAccount && errorType === 'new_user'
-                                      ? 'No account with this email'
-                                      : showAccount && errorType === 'email_not_found'
-                                        ? 'No account with this email'
-                                        : showAccount && errorType === 'incorrect_credentials'
-                                          ? 'Wrong email or password'
-                                          : undefined)
-                              }
-                              icon={<Icons.email />}
-                              autoComplete={emailOrPhone ? 'username' : 'email'}
-                           />
-                           {/* Email-or-number box: the password shows once it's clearly an email. Kept on the
-                               page (just out of sight) so saved passwords still fill in. */}
-                           <div className={showPasswordFields ? 'flex flex-col gap-2' : 'sr-only'} aria-hidden={!showPasswordFields}>
-                              <AuthInputField
-                                 label="Password"
-                                 type="password"
-                                 placeholder="Enter your password"
-                                 value={password}
-                                 onChange={(e: ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
-                                 error={showAccount && errorType !== 'provider_failed'}
-                                 icon={<Icons.lock />}
-                                 showEyeToggle
-                                 autoComplete="current-password"
-                              />
-                              <Link
-                                 to="/forgot-password"
-                                 className="self-end text-sm font-medium leading-5 tracking-[-0.02em] text-[#70617F] underline-offset-4 hover:text-[#6010D2] hover:underline"
-                              >
-                                 Forgot password?
-                              </Link>
-                           </div>
-                        </div>
-
-                        {showAccount && errorType && (
-                           <AuthErrorAlert
-                              type={errorType}
-                              provider={errorProvider ?? undefined}
-                              onRetry={
-                                 errorType === 'incorrect_credentials' ||
-                                 errorType === 'email_not_found' ||
-                                 errorType === 'new_user' ||
-                                 errorType === 'provider_failed'
-                                    ? handleRetry
-                                    : undefined
-                              }
-                              signupHref={`/sign-up?email=${encodeURIComponent(email.trim())}`}
-                              resetPasswordHref={`/forgot-password?email=${encodeURIComponent(email.trim())}`}
-                           />
-                        )}
-
-                        <div className={`flex flex-row items-center gap-2 w-full max-w-[400px] h-6 ${showPasswordFields ? '' : 'hidden'}`}>
-                           <label className="flex flex-row items-center gap-2 cursor-pointer shrink-0">
-                              <span className="relative flex size-6 shrink-0">
-                                 <input
-                                    type="checkbox"
-                                    checked={rememberMe}
-                                    onChange={(e) => setRememberMe(e.target.checked)}
-                                    className="peer absolute inset-0 z-10 cursor-pointer appearance-none rounded-lg"
-                                 />
-                                 <span className="pointer-events-none absolute inset-0 rounded-lg border border-[#B5ACBE] bg-white peer-checked:border-[#8336F0] peer-checked:bg-[#8336F0]" />
-                                 <svg
-                                    className="pointer-events-none absolute inset-0 m-auto size-3.5 text-white opacity-0 peer-checked:opacity-100"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2.5"
-                                    viewBox="0 0 24 24"
-                                 >
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                                 </svg>
-                              </span>
-                              <span className="text-base font-normal leading-6 text-[#4D4359] tracking-[-0.02em]">Remember Me</span>
-                           </label>
-                        </div>
-
-                        <button
-                           type="submit"
-                           className="w-full h-14 rounded-2xl font-semibold text-[#FDFCFD] text-base tracking-[-0.02em] transition-opacity hover:opacity-95"
-                           style={{ backgroundColor: '#6010D2' }}
-                        >
-                           {showPasswordFields ? 'Sign In to Moodeng' : 'Continue'}
-                        </button>
-
-                        {/* Passwordless accounts (made in Facebook's browser) sign in here from any browser. A
-                            number typed in the box above goes to the text-code form by itself. */}
-                        <p className="text-center text-sm text-[#70617F] tracking-[-0.02em]">
-                           No password?{' '}
-                           <button
-                              type="button"
-                              onClick={() => switchToCode('email')}
-                              className="font-semibold text-[#6010D2] underline underline-offset-4 dark:text-[#C084FC]"
-                           >
-                              Email me a code
-                           </button>
-                        </p>
-                     </form>
                   ) : null}
 
-                  {phoneFirst ? orDivider : null}
+                  {!emailHidden && usePassword ? passwordForm : null}
+
+                  {/* +63 page: the small tiles right under the number box (no second OR). */}
                   {phoneFirst ? socialAuth : null}
 
-                  <p className="text-center text-sm text-[#70617F] tracking-[-0.02em]">
-                     Don&apos;t have an account?{' '}
-                     <Link to="/sign-up" className="font-semibold text-[#6010D2] underline-offset-4 hover:underline">
-                        Sign Up
-                     </Link>
-                  </p>
-                  {facebookInApp ? null : (
-                     <Link
-                        to="/request-board?tour=1"
-                        className="text-center text-sm font-medium tracking-[-0.02em] text-[#70617F] underline-offset-4 hover:text-[#6010D2] hover:underline"
+                  {emailCollapsible && emailOpen ? (
+                     <button
+                        type="button"
+                        onClick={() => {
+                           handleRetry();
+                           setEmailOpen(false);
+                        }}
+                        className="flex items-center gap-1.5 self-center text-sm font-medium text-[#70617F] hover:text-[#6010D2] dark:text-[#A89BB8]"
                      >
-                        Take a tour first
-                     </Link>
-                  )}
+                        <ArrowLeft className="h-4 w-4" aria-hidden />
+                        Other ways to sign in
+                     </button>
+                  ) : null}
 
                   {/* Google and Telegram can't sign in inside Facebook/Messenger: left out there. */}
                   {inApp.isInApp && !facebookInApp ? orDivider : null}
                   {inApp.isInApp && !facebookInApp ? socialAuth : null}
+
+                  {/* One quiet line: sign up, and help on Messenger (the team answers in Discord tickets). */}
+                  <div className="mt-3 flex w-full items-center justify-between text-sm tracking-[-0.02em] text-[#70617F] dark:text-[#A89BB8]">
+                     <span>
+                        New?{' '}
+                        <Link to="/sign-up" className="font-semibold text-[#6010D2] underline-offset-4 hover:underline dark:text-[#C084FC]">
+                           Sign up
+                        </Link>
+                     </span>
+                     <a {...helpLink} className="flex items-center gap-1.5 font-medium hover:text-[#6010D2]">
+                        <span className="size-[18px]">
+                           <MessengerGlyph />
+                        </span>
+                        Need help?
+                     </a>
+                  </div>
                </div>
             </div>
 

@@ -9,7 +9,7 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 
 import { useResendCooldown } from '@/hooks/useResendCooldown';
 
-import { EXTERNAL_LINKS } from '@/config/externalLinks';
+import { MessengerGlyph, messengerSupportLinkProps } from '@/components/support/MessengerChatButton';
 import { PENDING_VERIFICATION_EMAIL_KEY, SIGNUP_RESEND_STORAGE_KEY, SMS_RESEND_STORAGE_KEY } from '@/lib/authPaths';
 import { detectInAppBrowser, setInAppNoticeHidden } from '@/lib/inAppBrowser';
 import { describeOtpError } from '@/lib/otpErrors';
@@ -30,9 +30,11 @@ import type { AppDispatch } from '@/store/store';
 // New accounts go to the account-created step; ?new=1 lets it ask "New to Moodeng?" first.
 const CREATED_PATH = '/auth-success?type=created&new=1';
 
-// Waiting help for a code that hasn't arrived: tips after 30s, Resend at 60s (the cooldown),
-// and after two resends the way out (email instead, or a person on Messenger).
+// Waiting help for a code that hasn't arrived: tips after 30s, then at 60s (when Resend opens) the way out
+// too — a person on Messenger, Facebook, or email instead of a text (George, 2026-11-25: help comes to
+// them where they're stuck). Two resends also bring it up, whatever the time.
 const TIP_AFTER_SECONDS = 30;
+const WAY_OUT_AFTER_SECONDS = 60;
 const WAY_OUT_AFTER_RESENDS = 2;
 
 function onlyDigits(value: string, max: number): string {
@@ -214,8 +216,8 @@ export default function AuthVerifyCodePage(): JSX.Element {
       }
    };
 
-   const messengerHelp =
-      inApp.os === 'android' ? EXTERNAL_LINKS.support.messengerLoginCodeAndroid : EXTERNAL_LINKS.support.messengerLoginCode;
+   const messengerHelp = messengerSupportLinkProps('code_not_arrived');
+   const showWayOut = resends >= WAY_OUT_AFTER_RESENDS || waitedSeconds >= WAY_OUT_AFTER_SECONDS;
    const waitingHelp =
       waitedSeconds < TIP_AFTER_SECONDS
          ? 'Usually under a minute.'
@@ -403,26 +405,30 @@ export default function AuthVerifyCodePage(): JSX.Element {
                      </Link>
                   </div>
 
-                  {resends >= WAY_OUT_AFTER_RESENDS ? (
-                     <div className="mt-4 rounded-2xl border border-[#E7D8FF] bg-[#F8F4FC] px-4 py-3 text-sm leading-5 text-[#4D4359] dark:border-[#2D1F4A] dark:bg-[#1E1530] dark:text-[#A89BB8]">
-                        <p className="font-semibold">Still no code?</p>
-                        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-2">
+                  {showWayOut ? (
+                     <div className="mt-4 rounded-2xl border border-[#E7D8FF] bg-[#F8F4FC] p-4 text-sm leading-5 text-[#4D4359] dark:border-[#2D1F4A] dark:bg-[#1E1530] dark:text-[#A89BB8]">
+                        <p className="text-base font-semibold text-[#040033] dark:text-[#F0EAFF]">No code yet?</p>
+                        <a
+                           {...messengerHelp}
+                           className="mt-3 flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-[#FDFCFD] text-[15px] font-semibold text-[#0A5CD6] shadow-[0_2px_4px_rgba(27,28,29,0.06)] dark:bg-[#160F28] dark:text-[#7DB4FF]"
+                        >
+                           <span className="size-5">
+                              <MessengerGlyph />
+                           </span>
+                           Get help on Messenger
+                        </a>
+                        <div className="mt-3 flex flex-wrap justify-center gap-x-4 gap-y-2">
+                           <Link to="/sign-in" className="font-semibold text-[#6010D2] underline underline-offset-2 dark:text-[#C084FC]">
+                              Use Facebook instead
+                           </Link>
                            {isSms ? (
                               <Link
                                  to="/sign-in?method=email"
                                  className="font-semibold text-[#6010D2] underline underline-offset-2 dark:text-[#C084FC]"
                               >
-                                 Get the code by email instead
+                                 Get it by email
                               </Link>
                            ) : null}
-                           <a
-                              href={messengerHelp}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="font-semibold text-[#6010D2] underline underline-offset-2 dark:text-[#C084FC]"
-                           >
-                              Message us on Messenger
-                           </a>
                         </div>
                      </div>
                   ) : null}
