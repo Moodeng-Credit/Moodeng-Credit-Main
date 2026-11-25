@@ -9,6 +9,8 @@
 //   { interestRefundId }                          "Pay zero interest": an invited friend repaid, so the inviter's
 //                                                 interest is owed (notify_interest_refund) → who, how much, wallet.
 //   { interestRefundId, event: 'sent', decidedBy? } marked Sent in the admin panel → stamp the card.
+//   { invoiceId }                                 an affiliate sent their monthly invoice (affiliate_invoices insert)
+//                                                 → who, which month, how much, which wallet, each friend line.
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -173,6 +175,55 @@ const handleInterestRefund = async (supabase: SupabaseClient, refundId: string, 
    return json({ ok: true });
 };
 
+type InvoiceItem = { amount: number | string; label: string };
+
+// Monthly invoice: everything still owed to one affiliate, sent by them at the end of the month.
+const postInvoiceCard = async (supabase: SupabaseClient, invoiceId: string) => {
+   const { data, error } = await supabase
+      .from('affiliate_invoices')
+      .select('id, month, owed, ahead, amount, items, wallet_address, note, owner_user_id, owner:users!affiliate_invoices_owner_user_id_fkey(id, username, display_name, email)')
+      .eq('id', invoiceId)
+      .maybeSingle();
+   if (error) throw new Error(error.message);
+   if (!data) return json({ error: 'Invoice not found' }, 404);
+   const inv = data as unknown as {
+      id: string;
+      month: string;
+      owed: number;
+      ahead: number;
+      amount: number;
+      items: InvoiceItem[];
+      wallet_address: string | null;
+      note: string | null;
+      owner_user_id: string;
+      owner: Person;
+   };
+   const chatId = await getSetting(supabase, 'kyc_alert_chat_id');
+   if (!chatId) return json({ error: 'kyc_alert_chat_id is not set' }, 500);
+
+   const who = personLabel(inv.owner);
+   const monthName = new Date(`${inv.month}T00:00:00Z`).toLocaleDateString('en-US', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+   const items = Array.isArray(inv.items) ? inv.items : [];
+   const text = [
+      `🧾 ${who} sent their ${monthName} invoice — pay ${usd(inv.amount)} USDC`,
+      '',
+      `To (USDC on Base): ${inv.wallet_address || 'NO WALLET ON FILE — message them first'}`,
+      `Who: ${who}${inv.owner?.username ? ` (@${inv.owner.username})` : ''}${inv.owner?.email ? ` · ${inv.owner.email}` : ''}`,
+      '',
+      ...items.slice(0, 30).map((i) => `• ${usd(Number(i.amount))} — ${i.label}`),
+      ...(items.length > 30 ? [`• …and ${items.length - 30} more`] : []),
+      ...(Number(inv.ahead) > 0 ? [`Already paid ahead: −${usd(inv.ahead)} (total owed ${usd(inv.owed)})`] : []),
+      ...(inv.note ? ['', `Note: ${inv.note}`] : []),
+      '',
+      'Pay it in Admin → Affiliate payouts (one tap sends USDC and marks every line paid).'
+   ].join('\n');
+   const siteUrl = (Deno.env.get('VITE_SITE_URL') ?? Deno.env.get('SITE_URL') ?? 'https://moodeng.app').replace(/\/$/, '');
+   const keyboard: TelegramInlineKeyboard = [[{ text: '💸 Pay in admin', url: `${siteUrl}/admin/affiliates` }]];
+   keyboard.push([openInAdminButton(inv.owner_user_id, inv.owner?.username ?? null)]);
+   await sendAdminCard(supabase, chatId, { kind: 'affiliate_invoice', refId: inv.id, text, keyboard });
+   return json({ ok: true });
+};
+
 serve(async (req) => {
    if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
@@ -180,13 +231,15 @@ serve(async (req) => {
    if (!(await isAuthorized(supabase, req))) return json({ error: 'Unauthorized' }, 401);
 
    try {
-      const { payoutId, event, decidedBy, claimId, interestRefundId } = (await req.json().catch(() => ({}))) as {
+      const { payoutId, event, decidedBy, claimId, interestRefundId, invoiceId } = (await req.json().catch(() => ({}))) as {
+         invoiceId?: string;
          payoutId?: string;
          event?: string;
          decidedBy?: string | null;
          claimId?: string;
          interestRefundId?: string;
       };
+      if (invoiceId) return await postInvoiceCard(supabase, invoiceId);
       if (claimId) return await postClaimCard(supabase, claimId);
       if (interestRefundId) return await handleInterestRefund(supabase, interestRefundId, event, decidedBy);
       if (!payoutId) return json({ error: 'payoutId is required' }, 400);
