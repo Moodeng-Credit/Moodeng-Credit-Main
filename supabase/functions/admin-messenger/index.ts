@@ -2,8 +2,10 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { loadDiditMedia } from '../_shared/diditMedia.ts';
+import { postDiscord } from '../_shared/discord.ts';
+import { limitUpFirstName, limitUpLang, limitUpMessengerText, limitUpWhatsAppLine } from '../_shared/limitUpMessage.ts';
 import { saveFacebookName, syncMessengerHistory } from '../_shared/messengerContactLog.ts';
-import { findPsidByName, sendUtilityTemplate } from '../_shared/metaMessenger.ts';
+import { cleanTemplateParam, findPsidByName, sendUtilityTemplate } from '../_shared/metaMessenger.ts';
 import {
    createWhatsAppTemplate,
    findMessengerContactIdByCode,
@@ -32,6 +34,8 @@ import {
 //   { action: 'profiles', userIds }  → each verified borrower's Facebook name + whether we're inside
 //                                      Messenger's 24h window (i.e. whether "Message" can send now).
 //   { action: 'send', userId, text } → sends the admin's message to that borrower on Messenger.
+//   { action: 'limit_up', userId, from, to } → "your credit limit went up" on Messenger + WhatsApp
+//                                      (from the DB trigger private.notify_limit_up).
 //   { action: 'sync_history', userIds? } → saves Facebook names + backfills messenger_contact_events
 //                                      from SendPulse's chat log (_shared/messengerContactLog.ts).
 //   { action: 'didit_media', userId } → their Didit sessions: method, document, scores + fresh photo links
@@ -249,6 +253,67 @@ serve(async (req) => {
          : await probeMessengerTemplate(resolved.id, { name, language, params }, shapes);
       console.log('[admin-messenger] msg_template_probe', JSON.stringify(result).slice(0, 2000));
       return json({ ...result, inWindow: isInsideMessagingWindow(resolved.contact) });
+   }
+
+   // DB trigger private.notify_limit_up (pg_net) when a borrower's limit goes up: tell them on Messenger
+   // (free text, so only inside 24h) and WhatsApp (approved template moodeng_follow_up, works any time).
+   // Switch limit_up_messages_enabled (telegram_bot_settings, 'true' = on). Posts the result to Discord.
+   if (body.action === 'limit_up') {
+      const userId = typeof body.userId === 'string' ? body.userId : '';
+      const from = Number(body.from);
+      const to = Number(body.to);
+      if (!/^[0-9a-f-]{36}$/i.test(userId) || !(to > from)) return json({ ok: false, reason: 'bad_input' }, 400);
+      const { data: setting } = await svc
+         .from('telegram_bot_settings')
+         .select('value')
+         .eq('key', 'limit_up_messages_enabled')
+         .maybeSingle();
+      if (setting?.value !== 'true') return json({ ok: false, reason: 'switched_off' });
+      const { data: user } = await svc
+         .from('users')
+         .select(
+            'id, username, display_name, facebook_name, preferred_locale, is_test, user_role, cs, messenger_psid, messenger_verified_at, whatsapp_contact_id, notif_whatsapp'
+         )
+         .eq('id', userId)
+         .maybeSingle();
+      if (!user) return json({ ok: false, reason: 'not_found' });
+      if (user.user_role === 'lender') return json({ ok: false, reason: 'not_borrower' });
+      // Stale call (the limit moved again since the trigger fired): say nothing rather than a wrong number.
+      if (Number(user.cs) !== to) return json({ ok: false, reason: 'limit_changed' });
+      const name = limitUpFirstName(user);
+      const lang = limitUpLang(user.preferred_locale);
+
+      let messenger = 'no Messenger';
+      if (user.messenger_verified_at) {
+         const resolved = await resolveContact(svc, user.id, user.messenger_psid);
+         if (!resolved) messenger = 'contact not found';
+         else {
+            const sent = await sendMessengerMessage(resolved.id, { text: limitUpMessengerText(name, from, to, lang) });
+            messenger = sent.ok ? 'sent' : `not sent (${sent.reason === 'send_failed' ? 'outside 24h' : sent.reason})`;
+         }
+      }
+
+      let whatsapp = 'no WhatsApp';
+      if (user.whatsapp_contact_id && user.notif_whatsapp !== false) {
+         const sent = await sendWhatsAppTemplateTo(
+            { contactId: user.whatsapp_contact_id },
+            {
+               name: FOLLOW_UP_TEMPLATE.name,
+               language: FOLLOW_UP_TEMPLATE.language,
+               params: [cleanTemplateParam(name), cleanTemplateParam(limitUpWhatsAppLine(from, to, lang))]
+            }
+         );
+         whatsapp = sent.ok ? 'sent' : `not sent (${sent.reason})`;
+      }
+
+      const who = user.username ? `@${user.username}` : user.id;
+      await postDiscord(
+         {
+            content: `🎉 Limit up $${from} → $${to} for ${who}${user.is_test ? ' (test)' : ''}. Messenger: ${messenger} · WhatsApp: ${whatsapp}`
+         },
+         { prefer: ['DISCORD_BOOKINGS_WEBHOOK_URL'] }
+      );
+      return json({ ok: true, messenger, whatsapp });
    }
 
    if (body.action === 'send') {
