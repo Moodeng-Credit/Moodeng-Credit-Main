@@ -239,11 +239,16 @@ export const sendConfirmedMessenger = (u: CallUser) => {
    });
 };
 
-// At the start time — the single most effective no-show nudge.
-export const sendStartingMessenger = (u: CallUser) => {
+// The 30 / 15 / 5-minute countdown (video-call-reminders), each with a sorry for the nagging
+// (George 2026-11-25). minutes = real minutes left; 0 → "starting now".
+export const sendCountdownMessenger = (u: CallUser, minutes: number) => {
    if (!u.video_call_starts_at) return Promise.resolve({ ok: false as const, reason: 'no_call' });
+   const head = minutes <= 0 ? "👋 We're starting now!" : `⏰ Your call starts in ${minutes} minute${minutes === 1 ? '' : 's'}!`;
    return sendMessengerMessage(u.messenger_psid, {
-      text: `👋 We're starting now! ${joinLine(u)}`
+      text: `${head} ${joinLine(u)}
+🪪 Have your ID ready and 📷 video on.
+
+Sorry for all the reminders 🙏 we just don't want you to miss your call!`
    });
 };
 

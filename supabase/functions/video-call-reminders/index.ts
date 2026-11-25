@@ -11,12 +11,12 @@ import {
    formatCallTime,
    formatCallTimeForTeam,
    sendConfirmAskMessenger,
+   sendCountdownMessenger,
    sendReminderMessenger,
-   sendStartingMessenger,
    sendWaitingMessenger
 } from '../_shared/videoCall.ts';
 import { autoMarkNoShow, closeReleasedCall, promptAdminsForAttendance } from '../_shared/videoCallOutcome.ts';
-import { buildCallConfirmTemplate, CALL_CONFIRM_WHATSAPP_SETTING_KEY, CONFIRM_CLOSES_MIN, RUNG, type Rung, shouldReleaseSlot, skipsConfirmAsk, skipsDayBeforeReminder, targetRung } from './lib.ts';
+import { buildCallConfirmTemplate, CALL_CONFIRM_WHATSAPP_SETTING_KEY, CONFIRM_CLOSES_MIN, COUNTDOWN_SORRY, countdownTitle, minutesLeft, RUNG, type Rung, shouldReleaseSlot, skipsConfirmAsk, skipsDayBeforeReminder, targetRung } from './lib.ts';
 import { cancelCalBooking } from '../_shared/calcomCancel.ts';
 import { cancelCallButton } from '../_shared/callCancel.ts';
 import { isInternalRequest } from '../_shared/internalAuth.ts';
@@ -34,7 +34,7 @@ import { runIdWaBridgeNudges } from '../_shared/idWaBridge.ts';
 import { runWaltTransferPayoutCards } from '../_shared/idWaltPayouts.ts';
 
 // Cron-driven (every 5 min) no-show defence for booked video calls. The full ladder — day-before,
-// confirm-or-cancel (1h before) / cancel unconfirmed (30 min before), starting now, we're waiting, admin prompt, auto
+// confirm-or-cancel (1h before) / cancel unconfirmed (30 min before), 30 / 15 / 5-minute countdown, we're waiting, admin prompt, auto
 // no-show — and its timing rules live in ./lib.ts. Channels: web push, Telegram (when connected +
 // account-activity on), Messenger (SendPulse, only inside Meta's 24h window) and, for the 1h ✅ ask
 // only, a WhatsApp template when Messenger can't reach them.
@@ -186,6 +186,23 @@ const hourBefore = async (svc: Svc, u: ReminderUser) => {
    await callSms(svc, u, 'hour');
 };
 
+// The 30 / 15 / 5-minute countdown: push, Telegram (Bahasa for the Indonesia track) and Messenger,
+// each with a sorry for the nagging (George 2026-11-25). Skipped once Zoom has seen them join.
+const countdown = async (svc: Svc, u: ReminderUser, minutes: number) => {
+   const title = countdownTitle(minutes);
+   const body = `${minutes > 0 ? 'Tap to join when it starts.' : 'Tap to join now.'} Have your ID ready and video on.\n\n${COUNTDOWN_SORRY}`;
+   await push(svc, u, title, body, u.video_call_join_url ?? `${SITE_URL}/request-board`);
+   await telegram(
+      u,
+      `${title}\n\n${body}`,
+      joinButton(u),
+      minutes > 0
+         ? { svc, event: 'call_soon', data: { minutes, joinUrl: u.video_call_join_url } }
+         : { svc, event: 'call_starting', data: { joinUrl: u.video_call_join_url } }
+   );
+   logMessenger(u, await sendCountdownMessenger(u, minutes));
+};
+
 // The ✅ ask reached nobody (Messenger's 24h window closed, no WhatsApp / Telegram / app), so the call is
 // kept but may well be a no-show: tell the team group + Discord #bookings so the host isn't waiting
 // blind (Emma, 2026-11-16: "No one showed up").
@@ -212,6 +229,7 @@ const runRung = async (svc: Svc, u: ReminderUser, rung: Rung, zoomActive: boolea
    const startsAt = Date.parse(u.video_call_starts_at);
    const at = formatCallTime(u.video_call_starts_at, u.video_call_timezone);
    const zoomMissing = zoomActive && Boolean(u.video_call_meeting_id) && !u.video_call_arrived_at;
+   const minutes = minutesLeft((startsAt - Date.now()) / 60000);
 
    switch (rung) {
       case RUNG.DAY: {
@@ -270,7 +288,14 @@ const runRung = async (svc: Svc, u: ReminderUser, rung: Rung, zoomActive: boolea
       }
       case RUNG.RELEASE: {
          if (shouldReleaseSlot(u) && (await releaseSlot(svc, u))) return 'released';
-         return null;
+         if (u.video_call_arrived_at) return null;
+         await countdown(svc, u, minutes);
+         return 'min30';
+      }
+      case RUNG.SOON: {
+         if (u.video_call_arrived_at) return null;
+         await countdown(svc, u, minutes);
+         return 'min15';
       }
       case RUNG.STARTING: {
          // The admins' Showed up / No-show card goes out now, not 20 min in, so a borrower can be
@@ -279,14 +304,7 @@ const runRung = async (svc: Svc, u: ReminderUser, rung: Rung, zoomActive: boolea
             console.error('video-call-reminders: early attendance card failed for', u.id, err instanceof Error ? err.message : err)
          );
          if (u.video_call_arrived_at) return 'starting';
-         const body = `Your call is starting now — ${at}. Tap to join.`;
-         await push(svc, u, 'Your Moodeng call is starting now 👋', body, u.video_call_join_url ?? `${SITE_URL}/request-board`);
-         await telegram(u, `Your Moodeng call is starting now 👋\n\n${body}`, joinButton(u), {
-            svc,
-            event: 'call_starting',
-            data: { joinUrl: u.video_call_join_url }
-         });
-         logMessenger(u, await sendStartingMessenger(u));
+         await countdown(svc, u, minutes);
          return 'starting';
       }
       case RUNG.WAITING: {

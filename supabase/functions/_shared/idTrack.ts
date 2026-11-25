@@ -186,6 +186,7 @@ export type IdEvent =
    | 'call_confirm'
    | 'call_hour'
    | 'call_starting'
+   | 'call_soon'
    | 'call_waiting'
    | 'access_approved'
    | 'access_rejected'
@@ -216,6 +217,8 @@ export type IdEventData = {
    callAt?: string | null;
    joinUrl?: string | null;
    confirmUrl?: string | null;
+   /** call_soon: minutes until the call (30 / 15 / 5 countdown). */
+   minutes?: number | null;
    amount?: number | string | null;
    /** Indonesia rupiah peg: rupiah owed (left, or paid for 'repaid'). Shown as "Rp 110.000 (≈ $6.08)"
     *  on due_soon / due_tomorrow / due_today / overdue / repaid when set; `amount` is the USD today. */
@@ -383,6 +386,17 @@ export const buildIdMessage = (event: IdEvent, locale: IdLocale, data: IdEventDa
          };
       case 'call_hour':
          return { text: say(locale, `⏰ Video call kamu kurang dari 1 jam lagi: ${at}. Siapkan KTP dan nyalakan kamera.`, `⏰ Your video call starts in under an hour: ${at}. Have your ID ready, camera on.`), button: join ?? onboarding };
+      case 'call_soon': {
+         const m = Math.max(1, Math.round(Number(data.minutes ?? 5)));
+         return {
+            text: say(
+               locale,
+               `⏰ Video call kamu mulai ${m} menit lagi. Siapkan KTP dan nyalakan kamera.\n\nMaaf ya kami terus mengingatkan 🙏 kami cuma tidak mau kamu ketinggalan.`,
+               `⏰ Your video call starts in ${m} minute${m === 1 ? '' : 's'}. Have your ID ready, camera on.\n\nSorry for all the reminders 🙏 we just don't want you to miss it.`
+            ),
+            button: join ?? onboarding
+         };
+      }
       case 'call_starting':
          return { text: say(locale, '👋 Video call kamu dimulai sekarang. Ketuk untuk bergabung.', '👋 Your video call is starting now. Tap to join.'), button: join ?? onboarding };
       case 'call_waiting':
