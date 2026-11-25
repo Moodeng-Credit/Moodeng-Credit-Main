@@ -5,14 +5,28 @@
 // A grid lagoon: rocks never move, seaweed blocks the way until it's chomped. Moodeng swims tile by
 // tile and CHOMPS: every shark right next to her (diagonals too), plus everything in a straight line
 // the way she faces up to `reach` tiles — sharks are eaten, the first seaweed is eaten and stops the
-// bite, a rock stops it. Eaten seaweed can leave
-// a 🍉 (longer bite) or a ❤️. A shark that swims into her costs a heart. Eat every shark → next wave,
-// with more and faster sharks.
+// bite, a rock stops it. Eaten seaweed can leave a Filipino snack that powers her up (FOODS below).
+// A shark that swims into her costs a heart. Eat every shark → a door opens in the lagoon; she swims
+// in to Moodeng's House (the page): the next level's lesson about borrowing safely with Moodeng
+// (LEVELS below), a shop to spend 🍞 pandesal points on a power-up, and every other level a prize
+// wheel (WHEEL). Then the next level, with more and faster sharks.
 
 export const COLS = 11;
 export const ROWS = 13;
 
-export type Tile = 'water' | 'rock' | 'weed' | 'melon' | 'heart';
+export type Food = 'pandesal' | 'mango' | 'halohalo' | 'turon';
+export type Tile = 'water' | 'rock' | 'weed' | Food;
+
+// Snacks hidden in the seaweed. `chance` is per chomped seaweed (the rest is plain water).
+export const FOODS: Record<Food, { name: string; power: string; chance: number }> = {
+   pandesal: { name: 'Pandesal', power: 'Swim faster', chance: 0.06 },
+   mango: { name: 'Mango', power: 'Longer bite', chance: 0.06 },
+   halohalo: { name: 'Halo-halo', power: 'Shield: eat any shark you touch', chance: 0.04 },
+   turon: { name: 'Turon', power: '+1 heart', chance: 0.04 }
+};
+export const FOOD_LIST = Object.keys(FOODS) as Food[];
+export const isFood = (t: Tile): t is Food => t in FOODS;
+export const POWER_MS = 6000;
 export type Dir = 'up' | 'down' | 'left' | 'right';
 export type Pos = { x: number; y: number };
 export type Shark = Pos & { id: number; dir: Dir };
@@ -29,6 +43,11 @@ export type ChompState = {
    over: boolean;
    // Wall-clock ms; the page passes `now` into every call.
    invulnerableUntil: number;
+   fastUntil: number; // pandesal
+   shieldUntil: number; // halo-halo
+   coins: number; // 🍞 pandesal points: +1 a shark, +3 a level, wheel prizes; spent in the shop
+   portal: Pos | null; // the door that opens when every shark is eaten
+   inHouse: boolean; // she swam through it
    lastChompAt: number;
    chompTiles: Pos[]; // last bite's tiles, for the flash
 };
@@ -41,6 +60,8 @@ export const HIT_GRACE_MS = 1500;
 export const POINTS_SHARK = 100;
 export const POINTS_WEED = 10;
 export const POINTS_WAVE = 250;
+export const COINS_SHARK = 1;
+export const COINS_LEVEL = 3;
 
 export const DIRS: Record<Dir, Pos> = { up: { x: 0, y: -1 }, down: { x: 0, y: 1 }, left: { x: -1, y: 0 }, right: { x: 1, y: 0 } };
 const DIR_LIST: Dir[] = ['up', 'down', 'left', 'right'];
@@ -54,12 +75,22 @@ export const sharkStepMs = (wave: number) => Math.max(260, 640 - (wave - 1) * 45
 export const sharkCount = (wave: number) => Math.min(9, 2 + wave);
 
 const inBounds = (p: Pos) => p.x >= 0 && p.y >= 0 && p.x < COLS && p.y < ROWS;
-const walkable = (t: Tile) => t === 'water' || t === 'melon' || t === 'heart';
+const walkable = (t: Tile) => t === 'water' || isFood(t);
+
+// What a chomped piece of seaweed leaves behind.
+const dropFrom = (roll: number): Tile => {
+   let acc = 0;
+   for (const f of FOOD_LIST) {
+      acc += FOODS[f].chance;
+      if (roll < acc) return f;
+   }
+   return 'water';
+};
 const same = (a: Pos, b: Pos) => a.x === b.x && a.y === b.y;
 const add = (p: Pos, d: Dir): Pos => ({ x: p.x + DIRS[d].x, y: p.y + DIRS[d].y });
 
 // A fresh lagoon. The hippo starts top-left with her corner kept clear; sharks start far from her.
-export const newWave = (wave: number, rng: Rng, carry?: Pick<ChompState, 'hearts' | 'reach' | 'score'>): ChompState => {
+export const newWave = (wave: number, rng: Rng, carry?: Pick<ChompState, 'hearts' | 'reach' | 'score' | 'coins'>): ChompState => {
    const grid: Tile[][] = [];
    for (let y = 0; y < ROWS; y++) {
       const row: Tile[] = [];
@@ -95,48 +126,104 @@ export const newWave = (wave: number, rng: Rng, carry?: Pick<ChompState, 'hearts
       wave,
       over: false,
       invulnerableUntil: 0,
+      fastUntil: 0,
+      shieldUntil: 0,
+      coins: carry?.coins ?? 0,
+      portal: null,
+      inHouse: false,
       lastChompAt: 0,
       chompTiles: []
    };
 };
 
 const hurt = (s: ChompState, now: number): ChompState => {
-   if (now < s.invulnerableUntil || s.over) return s;
+   if (now < s.invulnerableUntil || now < s.shieldUntil || s.over) return s;
    const hearts = s.hearts - 1;
    return { ...s, hearts, over: hearts <= 0, invulnerableUntil: now + HIT_GRACE_MS };
 };
 
 const touchesShark = (s: ChompState) => s.sharks.some((k) => same(k, s.hippo));
 
-// Pick up whatever is on her tile.
-const pickUp = (s: ChompState): ChompState => {
-   const t = s.grid[s.hippo.y][s.hippo.x];
-   if (t !== 'melon' && t !== 'heart') return s;
-   const grid = s.grid.map((r) => r.slice());
-   grid[s.hippo.y][s.hippo.x] = 'water';
-   return t === 'melon'
-      ? { ...s, grid, reach: Math.min(MAX_REACH, s.reach + 1), score: s.score + 50 }
-      : { ...s, grid, hearts: Math.min(MAX_HEARTS, s.hearts + 1), score: s.score + 50 };
+// A shark meets her: with the halo-halo shield on she eats it, otherwise it costs a heart.
+const sharkContact = (s: ChompState, now: number, rng: Rng): ChompState => {
+   if (!touchesShark(s)) return s;
+   if (now < s.shieldUntil) {
+      const sharks = s.sharks.filter((k) => !same(k, s.hippo));
+      const eaten = s.sharks.length - sharks.length;
+      const next = { ...s, sharks, score: s.score + POINTS_SHARK * eaten, coins: s.coins + COINS_SHARK * eaten };
+      return sharks.length === 0 ? openPortal(next, rng) : next;
+   }
+   return hurt(s, now);
 };
 
+// Eat the snack on her tile.
+const pickUp = (s: ChompState, now: number): ChompState => {
+   const t = s.grid[s.hippo.y][s.hippo.x];
+   if (!isFood(t)) return s;
+   const grid = s.grid.map((r) => r.slice());
+   grid[s.hippo.y][s.hippo.x] = 'water';
+   const base = { ...s, grid, score: s.score + 50 };
+   switch (t) {
+      case 'mango':
+         return { ...base, reach: Math.min(MAX_REACH, s.reach + 1) };
+      case 'turon':
+         return { ...base, hearts: Math.min(MAX_HEARTS, s.hearts + 1) };
+      case 'pandesal':
+         return { ...base, fastUntil: now + POWER_MS };
+      case 'halohalo':
+         return { ...base, shieldUntil: now + POWER_MS };
+   }
+};
+
+// Every shark eaten: the door opens on a tile away from her (seaweed there is cleared).
+const openPortal = (s: ChompState, rng: Rng): ChompState => {
+   const spots: Pos[] = [];
+   for (let y = 1; y < ROWS - 1; y++)
+      for (let x = 1; x < COLS - 1; x++) if (!isRockAt(x, y) && Math.abs(x - s.hippo.x) + Math.abs(y - s.hippo.y) >= 5) spots.push({ x, y });
+   const portal = spots.length ? spots[Math.floor(rng() * spots.length)] : { x: COLS - 2, y: ROWS - 2 };
+   const grid = s.grid.map((r) => r.slice());
+   grid[portal.y][portal.x] = 'water';
+   return { ...s, grid, portal, score: s.score + POINTS_WAVE, coins: s.coins + COINS_LEVEL };
+};
+
+// Out of the house: the next level, keeping hearts, bite, score and points.
+export const nextLevel = (s: ChompState, rng: Rng): ChompState =>
+   newWave(s.wave + 1, rng, { hearts: s.hearts, reach: s.reach, score: s.score, coins: s.coins });
+
+// A snack's power without finding it (the shop, the wheel): same effect as eating it.
+export const applySnack = (s: ChompState, food: Food, now: number): ChompState => {
+   const grid = s.grid.map((r) => r.slice());
+   const saved = grid[s.hippo.y][s.hippo.x];
+   grid[s.hippo.y][s.hippo.x] = food;
+   const fed = pickUp({ ...s, grid }, now);
+   const back = fed.grid.map((r) => r.slice());
+   back[s.hippo.y][s.hippo.x] = saved;
+   return { ...fed, grid: back, score: s.score };
+};
+
+// Moodeng's House shop: a power-up for the next level, paid in 🍞 pandesal points.
+export const SHOP: Record<Food, number> = { pandesal: 2, turon: 3, mango: 4, halohalo: 5 };
+export const buy = (s: ChompState, food: Food, now: number): ChompState | null =>
+   s.coins < SHOP[food] ? null : { ...applySnack(s, food, now), coins: s.coins - SHOP[food] };
+
 // One step. Always turns her to face `dir`, even when the way is blocked (so she can aim a chomp).
-export const moveHippo = (s: ChompState, dir: Dir, now: number): ChompState => {
-   if (s.over) return s;
+export const moveHippo = (s: ChompState, dir: Dir, now: number, rng: Rng = Math.random): ChompState => {
+   if (s.over || s.inHouse) return s;
    const to = add(s.hippo, dir);
    if (!inBounds(to) || !walkable(s.grid[to.y][to.x])) return { ...s, facing: dir };
-   let next: ChompState = pickUp({ ...s, hippo: to, facing: dir });
-   if (touchesShark(next)) next = hurt(next, now);
-   return next;
+   const moved = pickUp({ ...s, hippo: to, facing: dir }, now);
+   if (moved.portal && same(moved.portal, to)) return { ...moved, inHouse: true };
+   return sharkContact(moved, now, rng);
 };
 
 // The bite: she DASHES forward up to `reach` tiles, eating everything on the way, and ends up where
 // the bite lands (George 2026-11-25: "it goes forward and eats"). Sharks on the path are eaten;
-// seaweed is eaten and ends the dash on its tile (it may leave a 🍉 / ❤️, which she grabs); a rock
+// seaweed is eaten and ends the dash on its tile (it may leave a snack, which she grabs); a rock
 // stops her in front of it. Forgiving too: any shark right next to where she started or where she
 // lands (diagonals included) is eaten — sharks keep moving, and an exact line-up on a phone is too
 // fiddly. Returns the same state if she's still on cooldown.
 export const chomp = (s: ChompState, now: number, rng: Rng): ChompState => {
-   if (s.over || now - s.lastChompAt < CHOMP_COOLDOWN_MS) return s;
+   if (s.over || s.inHouse || now - s.lastChompAt < CHOMP_COOLDOWN_MS) return s;
    const grid = s.grid.map((r) => r.slice());
    let sharks = s.sharks;
    let score = s.score;
@@ -158,7 +245,7 @@ export const chomp = (s: ChompState, now: number, rng: Rng): ChompState => {
       }
       if (grid[p.y][p.x] === 'weed') {
          const roll = rng();
-         grid[p.y][p.x] = roll < 0.12 ? 'melon' : roll < 0.18 ? 'heart' : 'water';
+         grid[p.y][p.x] = dropFrom(roll);
          score += POINTS_WEED;
          break;
       }
@@ -170,18 +257,19 @@ export const chomp = (s: ChompState, now: number, rng: Rng): ChompState => {
       score += POINTS_SHARK * near.length;
       for (const k of near) if (!tiles.some((t) => same(t, k))) tiles.push({ x: k.x, y: k.y });
    }
-   // Grab any 🍉 / ❤️ she dashed over (including one the seaweed just dropped).
+   // Grab any snack she dashed over (including one the seaweed just dropped).
    let next: ChompState = { ...s, grid, sharks, score, lastChompAt: now, chompTiles: tiles };
-   for (const t of path) next = pickUp({ ...next, hippo: t });
-   next = { ...next, hippo: land };
-   if (sharks.length === 0) next = newWave(s.wave + 1, rng, { hearts: next.hearts, reach: next.reach, score: next.score + POINTS_WAVE });
-   return next;
+   for (const t of path) next = pickUp({ ...next, hippo: t }, now);
+   next = { ...next, hippo: land, coins: next.coins + COINS_SHARK * (s.sharks.length - sharks.length) };
+   if (s.sharks.length > 0 && sharks.length === 0) return openPortal(next, rng);
+   if (next.portal && same(next.portal, land)) return { ...next, inHouse: true };
+   return sharkContact(next, now, rng);
 };
 
 // Every shark swims one tile. Mostly keeps going; turns at walls; now and then turns toward Moodeng
 // when she's in its row or column.
 export const stepSharks = (s: ChompState, now: number, rng: Rng): ChompState => {
-   if (s.over) return s;
+   if (s.over || s.inHouse || s.sharks.length === 0) return s;
    const taken = new Set(s.sharks.map((k) => `${k.x},${k.y}`));
    const sharks = s.sharks.map((k) => {
       const open = DIR_LIST.filter((d) => {
@@ -199,9 +287,7 @@ export const stepSharks = (s: ChompState, now: number, rng: Rng): ChompState => 
       taken.add(`${p.x},${p.y}`);
       return { ...k, ...p, dir };
    });
-   let next: ChompState = { ...s, sharks };
-   if (touchesShark(next)) next = hurt(next, now);
-   return next;
+   return sharkContact({ ...s, sharks }, now, rng);
 };
 
 // "Call in 12 min" / "Call starting now" for the bar above the lagoon. null = no call time known.
@@ -213,3 +299,64 @@ export const callCountdownLabel = (startsAtIso: string | null, now: number): str
    if (min <= 0) return 'Your call is starting now!';
    return `Your call starts in ${min} min`;
 };
+
+// One level = one lesson about borrowing safely, shown on a card before it starts (George
+// 2026-11-25: levels that teach how the platform works). Keep each line short and plain (8th-grade
+// English, Filipino first-time borrowers). After the last one, the lessons repeat.
+export type Lesson = { title: string; text: string; tip?: string };
+export const LEVELS: Lesson[] = [
+   {
+      title: 'Spot the loan shark',
+      text: 'Loan sharks lend fast, then pile on interest and threaten you when you’re late. That’s how debt traps start.',
+      tip: 'Chomp every shark to clear the level!'
+   },
+   {
+      title: 'Meet us on a quick call',
+      text: 'Moodeng meets every new borrower on a short video call. It keeps scammers and fake accounts out.',
+      tip: 'Grab 🍞 pandesal to swim faster.'
+   },
+   {
+      title: 'Start small, grow',
+      text: 'Your first loan is small. Pay it back on time and your limit can grow, step by step.',
+      tip: 'Eat 🥭 mangoes to grow your bite too.'
+   },
+   {
+      title: 'No surprises',
+      text: 'One clear fee and one due date. You always know what you’ll pay back. No hidden charges.',
+      tip: 'Halo-halo gives you a shield for a few seconds.'
+   },
+   {
+      title: 'Pay on time',
+      text: 'Paying on time earns rewards and raises your limit. Late payments are recorded and can close your account.',
+      tip: 'Turon gives you an extra heart.'
+   },
+   {
+      title: 'Bring friends, not debt',
+      text: 'Invite friends to Moodeng instead of a loan shark. When they repay on time, you get rewarded.',
+      tip: 'Now the sharks get faster. Good luck!'
+   }
+];
+export const lessonFor = (wave: number): Lesson & { level: number } => ({ ...LEVELS[(wave - 1) % LEVELS.length], level: wave });
+
+// The prize wheel in Moodeng's House (every other level). Game prizes only, with honest odds:
+// `weight` is the real chance and each slice is drawn that big. (Real food vouchers would need a
+// server draw and sign-in, like Moo-Spin, and are not offered here.)
+export type WheelPrize = { label: string; coins?: number; snack?: Food; weight: number; color: string };
+export const WHEEL: WheelPrize[] = [
+   { label: '+3 🍞', coins: 3, weight: 30, color: '#ffe08a' },
+   { label: 'Turon', snack: 'turon', weight: 15, color: '#ffc4d6' },
+   { label: '+5 🍞', coins: 5, weight: 22, color: '#ffd166' },
+   { label: 'Halo-halo', snack: 'halohalo', weight: 10, color: '#d7c6ff' },
+   { label: '+10 🍞', coins: 10, weight: 13, color: '#ffb703' },
+   { label: 'Mango', snack: 'mango', weight: 10, color: '#fff1a8' }
+];
+export const WHEEL_TOTAL = WHEEL.reduce((n, p) => n + p.weight, 0);
+export const spinWheel = (rng: Rng): number => {
+   let r = rng() * WHEEL_TOTAL;
+   for (let i = 0; i < WHEEL.length; i++) {
+      r -= WHEEL[i].weight;
+      if (r < 0) return i;
+   }
+   return WHEEL.length - 1;
+};
+export const wheelDueAfter = (wave: number) => wave % 2 === 0;
