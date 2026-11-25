@@ -640,6 +640,8 @@ export const filipinoCoverageB: Record<string, string> = {
    'IDs that work': 'Mga ID na puwede',
    "My ID isn't listed": 'Wala sa listahan ang ID ko',
    'Continue with my ID': 'Ituloy gamit ang ID ko',
+   'A photo of your ID and a quick selfie.': 'Isang litrato ng ID mo at mabilis na selfie.',
+   'No ID like these?': 'Walang ganitong ID?',
    // src/views/dashboard/components/LoanRequestModal.tsx (fixed terms)
    '30 days to pay. On time = a bigger limit next time.': '30 araw para magbayad. On time = mas mataas na limit sa susunod.',
    'Join on Facebook': 'Sumali sa Facebook',

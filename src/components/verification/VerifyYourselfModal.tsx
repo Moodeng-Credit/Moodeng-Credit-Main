@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { messengerSupportLinkProps } from '@/components/support/MessengerChatButton';
-import { SUPPORTED_DIDIT_COUNTRIES } from '@/components/verification/CountryFlags';
 import { EXTERNAL_LINKS } from '@/config/externalLinks';
 import { PRE_KYC_CONNECT_PATH, usePreKycGate } from '@/hooks/usePreKycGate';
 import { isLikelyPhilippines } from '@/lib/isLikelyPhilippines';
@@ -324,24 +323,14 @@ function OpenVerifyYourselfModal({ isOpen, onClose, returnTo }: VerifyYourselfMo
                         </span>
                      </div>
                      <p className="text-md-b3 text-md-neutral-1000 mt-0.5 leading-snug">
-                        A photo of your ID and a quick selfie. Works in:
+                        A photo of your ID and a quick selfie.
                      </p>
                   </div>
                </div>
 
-               <div className="grid grid-cols-2 gap-y-3 gap-x-6 w-fit mx-auto">
-                  {SUPPORTED_DIDIT_COUNTRIES.map(({ code, name, Flag }) => (
-                     <div key={code} className="flex items-center gap-3">
-                        <div className="shrink-0 overflow-hidden rounded-[3px] shadow-sm shadow-black/10">
-                           <Flag className="w-[30px] h-5 block" />
-                        </div>
-                        <span className="text-md-b2 font-medium text-md-heading">{name}</span>
-                     </div>
-                  ))}
-               </div>
-
                {/* Which IDs work (2026-11-26: a borrower with a UMID thought hers wasn't accepted — the screen
-                   only said "National ID"). Matches Didit's live workflow for the Philippines. */}
+                   only said "National ID"). Matches Didit's live workflow for the Philippines. The 8-country flag
+                   grid is gone (George, 2026-11-26: borrowers are nearly all Filipino); the Academy guide keeps it. */}
                <div className="flex flex-col gap-2 border-t border-md-neutral-300 pt-3" data-testid="accepted-ids">
                   <p className="text-md-b3 font-semibold text-md-heading">IDs that work</p>
                   <div className="flex flex-wrap gap-1.5">
@@ -372,7 +361,7 @@ function OpenVerifyYourselfModal({ isOpen, onClose, returnTo }: VerifyYourselfMo
             {/* Secondary path: World ID (Orb/passport), kept as a quiet text link so it can't be
                 mistaken for the main button. */}
             <div className="flex flex-col items-center gap-1 text-center">
-               <p className="text-md-b3 text-md-neutral-700">Not in one of these countries?</p>
+               <p className="text-md-b3 text-md-neutral-700">No ID like these?</p>
                <button
                   type="button"
                   onClick={() => setStep('orb-info')}
