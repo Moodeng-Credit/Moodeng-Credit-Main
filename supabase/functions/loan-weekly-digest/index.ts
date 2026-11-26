@@ -23,7 +23,8 @@ import type {
 import { isInternalRequest } from '../_shared/internalAuth.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
 import { type AiCostSummary, aiCostLines, buildSignalReport, type SignalRow } from '../_shared/signalReport.ts';
-import { bangkokWeek, buildTeamLoansDue, type TeamDueLoan } from '../_shared/teamLoansDue.ts';
+import { bangkokDay, bangkokWeek, buildTeamLoansDue, type TeamDueLoan, UPCOMING_DAYS } from '../_shared/teamLoansDue.ts';
+import { nextMilestone, parseRepaymentSchedule } from '../_shared/repaymentSchedule.ts';
 import { buildUnsentRequestMessage, UNSENT_ADMIN_URL, UNSENT_IDLE_MINUTES, UNSENT_MAX_AGE_HOURS } from '../_shared/unsentLoanRequests.ts';
 
 const corsHeaders = {
@@ -109,57 +110,82 @@ const sendUnsentRequestAlerts = async (supabase: SupabaseClient, test: boolean) 
    return { ok: true, sent, skipped, candidates: drafts?.length ?? 0 };
 };
 
-// { event: 'team_due', force? }: the weekly team list of unpaid loans due this week + still overdue,
-// to telegram_bot_settings.loans_due_chat_id (cron Mondays 09:00 Bangkok). Once per week: the week
-// sent is remembered in loans_due_last_week, so a repeat call that week does nothing unless forced.
-const sendTeamLoansDue = async (supabase: SupabaseClient, force: boolean) => {
+// { event: 'team_due', force?, dry? }: the daily team list of unpaid loans due in the next 7 days + still
+// overdue, to telegram_bot_settings.loans_due_chat_id (cron daily 09:00 Bangkok). Once per Bangkok day:
+// the day sent is remembered in loans_due_last_day, so a repeat call that day does nothing unless forced.
+// dry = return the text without sending. The "what predicts repayment" report still goes once a week
+// (first send of each week, i.e. Mondays), tracked in loans_due_last_week.
+const sendTeamLoansDue = async (supabase: SupabaseClient, force: boolean, dry = false) => {
    const now = new Date();
    const week = bangkokWeek(now);
-   const { data: settings } = await supabase.from('telegram_bot_settings').select('key, value').in('key', ['loans_due_chat_id', 'loans_due_last_week']);
+   const today = bangkokDay(now);
+   const { data: settings } = await supabase
+      .from('telegram_bot_settings')
+      .select('key, value')
+      .in('key', ['loans_due_chat_id', 'loans_due_last_week', 'loans_due_last_day']);
    const setting = (key: string) => (settings ?? []).find((row: { key: string }) => row.key === key)?.value as string | undefined;
    const chatId = setting('loans_due_chat_id');
    if (!chatId) return { ok: false, error: 'loans_due_chat_id is not set' };
-   if (!force && setting('loans_due_last_week') === week.key) return { ok: true, skipped: 'already sent this week' };
+   if (!force && !dry && setting('loans_due_last_day') === today.key) return { ok: true, skipped: 'already sent today' };
 
+   // Partly paid loans count too (repayment_status 'Partial'); the date filter happens below, since a
+   // two-payment loan's due_date is its LAST part while its next part can be due much sooner.
    const { data: loans, error } = await supabase
       .from('loans')
-      .select('due_date, total_repayment_amount, repaid_amount, on_hold_since, borrower_user_id, market')
+      .select('due_date, total_repayment_amount, repaid_amount, repayment_schedule, on_hold_since, borrower_user_id, market')
       .eq('loan_status', 'Lent')
-      .eq('repayment_status', 'Unpaid')
+      .in('repayment_status', ['Unpaid', 'Partial'])
+      .is('repaid_at', null)
       .not('is_test', 'is', true)
       .is('refunded_at', null)
       .is('offplatform_settled_at', null)
-      .not('due_date', 'is', null)
-      .lt('due_date', week.end.toISOString());
+      .not('due_date', 'is', null);
    if (error) throw new Error(error.message);
-   const ids = [...new Set((loans ?? []).map((loan: { borrower_user_id: string | null }) => loan.borrower_user_id).filter(Boolean))];
+   const horizon = today.start.getTime() + UPCOMING_DAYS * 24 * 60 * 60 * 1000;
+   const due = (loans ?? [])
+      .map((loan: any) => {
+         const schedule = parseRepaymentSchedule(loan.repayment_schedule);
+         const next = schedule ? nextMilestone(schedule, Number(loan.repaid_amount ?? 0)) : null;
+         return { loan, next, dueDate: next ? `${next.due}T00:00:00.000Z` : (loan.due_date as string) };
+      })
+      .filter(({ loan, dueDate }: { loan: any; dueDate: string }) => Date.parse(dueDate) < horizon && getLoanOutstandingAmount(loan) > 0);
+   const ids = [...new Set(due.map(({ loan }: { loan: { borrower_user_id: string | null } }) => loan.borrower_user_id).filter(Boolean))];
    const { data: users } = ids.length
       ? await supabase.from('users').select('id, display_name, username, facebook_name, messenger_psid').in('id', ids)
       : { data: [] };
    const byId = new Map((users ?? []).map((user: { id: string }) => [user.id, user]));
-   const rows: TeamDueLoan[] = (loans ?? []).map((loan: any) => {
+   const rows: TeamDueLoan[] = due.map(({ loan, next, dueDate }: any) => {
       const user: any = byId.get(loan.borrower_user_id) ?? {};
+      const loanLeft = getLoanOutstandingAmount(loan);
       return {
-         dueDate: loan.due_date,
-         owedUsd: getLoanOutstandingAmount(loan),
+         dueDate,
+         owedUsd: next ? next.amountLeft : loanLeft,
          // 🇮🇩 = Indonesia track.
          name: `${loan.market === 'ID' ? '🇮🇩 ' : ''}${String(user.display_name ?? '').trim() || user.username || 'Someone'}`,
          username: user.username ?? null,
          facebookName: user.facebook_name ?? null,
          messengerContactId: user.messenger_psid ?? null,
-         onHold: Boolean(loan.on_hold_since)
+         onHold: Boolean(loan.on_hold_since),
+         part: next ? `part ${next.index + 1}/${next.count}` : null,
+         loanLeftUsd: next ? loanLeft : null
       };
    });
 
    const { text, keyboard } = buildTeamLoansDue(rows, now);
+   if (dry) return { ok: true, dry: true, day: today.key, loans: rows.length, text };
    await sendTelegramMessage(chatId, text, keyboard.length ? { inlineKeyboard: keyboard } : {});
-   await supabase.from('telegram_bot_settings').upsert({ key: 'loans_due_last_week', value: week.key }, { onConflict: 'key' });
-   // Then the weekly "what predicts repayment" report, to the same chat. Never breaks the due list.
-   const report = await sendSignalReport(supabase, chatId, false).catch((err) => {
-      console.error('signal report failed', err instanceof Error ? err.message : err);
-      return { ok: false };
-   });
-   return { ok: true, week: week.key, loans: rows.length, signal_report: report.ok };
+   await supabase.from('telegram_bot_settings').upsert({ key: 'loans_due_last_day', value: today.key }, { onConflict: 'key' });
+   // Then, once a week, the "what predicts repayment" report to the same chat. Never breaks the due list.
+   let signalReport: boolean | null = null;
+   if (setting('loans_due_last_week') !== week.key) {
+      await supabase.from('telegram_bot_settings').upsert({ key: 'loans_due_last_week', value: week.key }, { onConflict: 'key' });
+      const report = await sendSignalReport(supabase, chatId, false).catch((err) => {
+         console.error('signal report failed', err instanceof Error ? err.message : err);
+         return { ok: false };
+      });
+      signalReport = report.ok;
+   }
+   return { ok: true, day: today.key, loans: rows.length, signal_report: signalReport };
 };
 
 // { event: 'signal_report', dry? }: which signals at funding (AI pre-screen, income doc, call, referral…)
@@ -364,7 +390,7 @@ serve(async (req) => {
    if (body.event === 'team_due') {
       const svc = createClient(Deno.env.get('SUPABASE_URL') ?? '', Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '');
       try {
-         return new Response(JSON.stringify(await sendTeamLoansDue(svc, body.force === true)), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+         return new Response(JSON.stringify(await sendTeamLoansDue(svc, body.force === true, body.dry === true)), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       } catch (err) {
          console.error('team_due failed', err instanceof Error ? err.message : err);
          return new Response(JSON.stringify({ error: err instanceof Error ? err.message : 'failed' }), { status: 500, headers: corsHeaders });
