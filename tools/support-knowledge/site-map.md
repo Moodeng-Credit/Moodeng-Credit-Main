@@ -22,12 +22,12 @@
 
 The marketing site (`public/landing/`) explains Moodeng before someone signs up. Desktop visitors land on the main page; mobile visitors land on a mobile-optimized version. Both cover the same offer:
 
-- **First loan is $15.** You choose the amount you'll pay back and the due date before you ask — nothing changes after the request goes live. Example: borrow $15, agree to pay back $18 (the extra $3 is the lender's "thank you," not a Moodeng fee).
-- **Moodeng charges $0** — no service fee, no processing fee, no hidden charges, no APR, no rollover. If a payment is late, the amount owed does not grow ("$18 stays $18") — it just becomes part of your record.
+- **First loan is $15.** In the Philippines every loan is 30 days with a flat 10%, shown before you ask — nothing changes after the request goes live. Example: borrow $15, pay back $16.50 (the extra $1.50 is the lender's "thank you," not a Moodeng fee).
+- **Moodeng charges $0** — no service fee, no processing fee, no hidden charges, no APR, no rollover. If a payment is late, the amount owed does not grow ("$16.50 stays $16.50") — it just becomes part of your record.
 - **Four honest promises:** Moodeng never digs through your phone (no contacts/photos/messages access), never sells your information, never shames you (reminders stay private, nothing posted publicly), and never makes you prove yourself twice (one ID check proves you're one person; lenders see your verification status, never your documents).
 - **Funding is not automatic** — a real person on the Request Board decides to fund each request; if nobody funds it before it expires, you owe nothing.
 - Loans settle in **USDC** and land in your wallet — your **Instant Wallet** by default (created from your Moodeng login, no app or seed phrase), or a **Base Account** if you connected one instead; cashing out to pesos goes through an external provider you choose (Coins.ph, GCrypto, PDAX, Binance, or Moneybees) — Moodeng adds no fee for this, though the provider might have its own.
-- Credit limit grows over time with on-time repayment — the $15 first limit can grow to $20, then higher, the more full-limit loans you repay on time (see "How Credit Levels work" below for the exact ladder).
+- Credit limit grows over time — the $15 first limit grows to $25, then $35 and so on, each time you borrow your full limit and pay it back in the 2nd half of the loan, by the due date (see "How Credit Levels work" below for the exact ladder).
 
 There are dedicated marketing pages walking through **how it works** (four steps: ask → a real person decides → the loan lands as USDC in your Instant Wallet (or a Base Account, if you use one) → repay in parts or in full), **how to cash out** (choosing a provider, always Base network, Coins.ph is the recommended route in the Philippines), **how to repay** (pick the loan, add USDC, choose 25/50/75/Full or a custom amount), a **for lenders** page (browse requests, review a borrower's record before funding, only fund what you can afford to lose — repayment is never guaranteed), and an **about/our story** page (why Moodeng exists, told through the founders' own reasons for building it).
 

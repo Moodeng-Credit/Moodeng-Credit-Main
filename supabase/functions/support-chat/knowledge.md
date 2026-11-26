@@ -20,9 +20,9 @@ Your Pandesal points aren't locked inside one app. They're designed to reflect y
 
 ### How does borrowing on Moodeng work?
 
-You post a loan request from the Request Board with your desired amount (up to your current limit), repayment date, interest rate, and reason.
+You post a loan request from the Request Board with the amount you need (up to your current limit) and the reason. In the Philippines every loan is the same: 30 days and a flat 10% (borrow $15, pay back $16.50). You only choose the amount.
 
-Moo-lenders browse open requests and choose which to fund. Once a moo-lender funds you, USDC is transferred directly to your wallet. You repay them on or before the agreed date from any wallet that holds USDC.
+Moo-lenders browse open requests and choose which to fund. Once a moo-lender funds you, USDC is transferred directly to your wallet. You repay by the due date from any wallet that holds USDC. To grow your limit, borrow your full limit and pay in the 2nd half of your loan.
 
 ### What are Pandesal points and how are they calculated?
 
@@ -56,7 +56,7 @@ USDC also moves anywhere in the world in seconds, is widely accepted by every ma
 
 No. Moodeng Credit is free to use. There are no platform fees on borrowing, no fees on lending, no monthly subscriptions, no setup costs. 100% of what a moo-lender funds reaches the borrower, and 100% of a repayment reaches the moo-lender.
 
-Network fees (gas) are also zero when you use your Instant Wallet or a Base Account on Base. So the only cost of using Moodeng is the interest rate the borrower offers — and that goes entirely to the moo-lender, not to us.
+Network fees (gas) are also zero when you use your Instant Wallet or a Base Account on Base. So the only cost of using Moodeng is the flat 10% on each loan (borrow $15, pay back $16.50) — and that goes to the moo-lender, not to us.
 
 How do we keep things free? We don't take a cut. Our future business model is the IOU token, which we'll launch via airdrop to active moo-lenders. Until then, Moodeng is fully fee-free.
 
@@ -64,7 +64,7 @@ How do we keep things free? We don't take a cut. Our future business model is th
 
 Loan sharks — informal lenders who charge 20–100% weekly interest, threaten borrowers, and trap people in debt cycles — are a global problem. Hundreds of millions of unbanked and underbanked people have nowhere else to turn for emergency cash, and end up paying multiples of what they borrowed, over and over.
 
-Moodeng Credit is built as a fairer alternative. Interest rates are set by the borrower and accepted (or passed on) by moo-lenders in a transparent marketplace — no hidden charges, no compounding tricks. Small starter loans ($15–$60 at Credit Levels 1–4) match what borrowers actually need for short-term emergencies, paired with a credit-building system that grows your limit as you prove reliability.
+Moodeng Credit is built as a fairer alternative. Every loan has the same simple price, a flat 10% for 30 days, shown before you ask — no hidden charges, no compounding tricks, and a late payment doesn't grow what you owe. Small starter loans ($15–$45 at Credit Levels 1–4) match what borrowers actually need for short-term emergencies, paired with a credit-building system that grows your limit as you prove reliability.
 
 There's no collateral and no bank account required — just a quick identity check (an ID photo and a selfie, or World ID) and a wallet (Moodeng's Instant Wallet, set up from your login, or a Base Account if you prefer). Anyone with a phone can access loans. And your reputation travels with you (linked to your wallet and verified identity), so you build genuine credit history that moo-lenders trust — instead of staying stuck in a cycle.
 
@@ -84,9 +84,9 @@ Unlike a bank credit card or traditional credit-builder product, Moodeng's credi
 
 Yes — small loans are exactly what Moodeng is built for. New borrowers start at a $15 limit, and the platform was designed for short-term, low-amount lending: emergency cash, bridging gaps before payday, one-off expenses.
 
-There are no minimum loan amounts, no monthly subscriptions, no setup costs, and no fees. You request what you need (up to your current Credit Level limit), set the repayment date and interest rate, and moo-lenders decide whether to fund you.
+There are no minimum loan amounts, no monthly subscriptions, no setup costs, and no fees. You request what you need (up to your current Credit Level limit); in the Philippines every loan is 30 days with a flat 10%, and moo-lenders decide whether to fund you.
 
-Each full-limit loan you repay on time adds $10 to your limit. So you can start small to test the platform with low stakes, build your reputation, and grow into larger loans only as you're ready.
+Each full-limit loan you repay on time, in the 2nd half of the loan, adds $10 to your limit. So you can start small to test the platform with low stakes, build your reputation, and grow into larger loans only as you're ready.
 
 ## Account FAQ — everyone
 
@@ -122,7 +122,7 @@ The key detail: always choose Base as the network when sending USDC. The full gu
 
 Open the Repay screen — it shows the exact amount due and the repayment address. Send USDC there from any wallet, exchange, or local service. If you don't hold USDC yet, buy it first (Binance P2P, Coins.ph (temporarily paused), PDAX, GCrypto, and more) — always on the Base network.
 
-Repay before the due date — on-time repayment builds your Pandesal points, and repaying a loan at your full limit on time unlocks the next Credit Level. The full guide walks through each way to repay.
+Pay by the due date — on-time repayment builds your Pandesal points. To unlock the next Credit Level, borrow your full limit and pay in the 2nd half of the loan (the Dashboard shows your exact dates); paying in the first half is okay, but your limit stays the same. The full guide walks through each way to repay.
 
 ### Can I borrow below my credit limit?
 
@@ -172,7 +172,7 @@ You can track all your active loans and repayment statuses from your Moo-lender 
 
 ### When do I get repaid?
 
-The due date is set by the borrower when they post their request — you'll see it clearly on the loan card before you fund, so you always know the timeline upfront.
+In the Philippines every loan is 30 days and pays back a flat 10% (fund $15, get $16.50 back). The due date is on the loan card before you fund, so you always know the timeline upfront.
 
 Once the loan is due, the borrower repays directly to your wallet — usually your Base Account (or your Instant Wallet, if you use one). You can track the status of all your active loans on your Moo-lender Dashboard.
 
@@ -340,7 +340,7 @@ Turn your USDC into pesos, straight to your own Philippine bank, using the Insta
 
 1. Open your bank app and save your Receive QR (Receive → QR Ph → Save QR).
 2. On Moodeng, go to Withdraw → Your bank's QR and upload it.
-3. Type the pesos (₱50 to ₱5,000) and tap Get my price.
+3. Type the pesos (₱50 to ₱25,000) and tap Get my price.
 4. Check the price and each fee, then tap Confirm.
 
 Moodeng takes ₱0. Stableyard and their payout partner charge about 2–3% in total.
@@ -467,7 +467,7 @@ From the **Request Board** tab, tap **Apply For A Loan** to open the application
 
 1. Eligible verified borrowers first see an **Invited by someone?** step — a referral code field with **Apply code**, or **Continue to application** if you don't have one. A code only records who invited them; it does not change the credit limit. It's optional.
 2. If you're not verified yet, you'll be prompted to **Verify Yourself** first.
-3. Then **Set Your Own Terms**: **Borrow Amount** (up to your **Current Limit**), **Set Repayment Amount**, **Set Repayment Date** (up to 120 days out), and **Reason For Borrowing**. The reason must be **at least 40 characters and written in English** — lenders are in the US and Europe, so Tagalog or Taglish is not accepted and the form won't move on until it's rewritten. The field checks as you type and says what's missing; Mecha can translate it or help word it. Submit with **Make Your Request**.
+3. Then the terms: **Borrow Amount** (filled in with your **Current Limit**; you can borrow less). In the Philippines **Set Repayment Amount** (the amount + a flat 10%, e.g. $15 → $16.50) and **Set Repayment Date** (30 days) are filled in for you and can't be changed. Then **Reason For Borrowing**. The reason must be **at least 40 characters and written in English** — lenders are in the US and Europe, so Tagalog or Taglish is not accepted and the form won't move on until it's rewritten. The field checks as you type and says what's missing; Mecha can translate it or help word it. Submit with **Make Your Request**.
 4. First-time borrowers also fill in a short bio (friendly name, optional photo, work type, payday window, income/expenses) — this is the same **Bio Info** editable later from Account Settings. The free-text **Describe your situation** answer also needs to be in English; the job title itself can use the local term (sari-sari store owner, jeepney driver).
 
 If **Make Your Request** looks greyed out, you aren't verified yet — tapping it shows a note above the button with a **Verify Yourself** button. Verification is the last step before a request can be sent.
@@ -512,12 +512,12 @@ The **History** tab (shared borrower + lender) shows **Transaction History** (bo
 
 The marketing site (`public/landing/`) explains Moodeng before someone signs up. Desktop visitors land on the main page; mobile visitors land on a mobile-optimized version. Both cover the same offer:
 
-- **First loan is $15.** You choose the amount you'll pay back and the due date before you ask — nothing changes after the request goes live. Example: borrow $15, agree to pay back $18 (the extra $3 is the lender's "thank you," not a Moodeng fee).
-- **Moodeng charges $0** — no service fee, no processing fee, no hidden charges, no APR, no rollover. If a payment is late, the amount owed does not grow ("$18 stays $18") — it just becomes part of your record.
+- **First loan is $15.** In the Philippines every loan is 30 days with a flat 10%, shown before you ask — nothing changes after the request goes live. Example: borrow $15, pay back $16.50 (the extra $1.50 is the lender's "thank you," not a Moodeng fee).
+- **Moodeng charges $0** — no service fee, no processing fee, no hidden charges, no APR, no rollover. If a payment is late, the amount owed does not grow ("$16.50 stays $16.50") — it just becomes part of your record.
 - **Four honest promises:** Moodeng never digs through your phone (no contacts/photos/messages access), never sells your information, never shames you (reminders stay private, nothing posted publicly), and never makes you prove yourself twice (one ID check proves you're one person; lenders see your verification status, never your documents).
 - **Funding is not automatic** — a real person on the Request Board decides to fund each request; if nobody funds it before it expires, you owe nothing.
 - Loans settle in **USDC** and land in your wallet — your **Instant Wallet** by default (created from your Moodeng login, no app or seed phrase), or a **Base Account** if you connected one instead; cashing out to pesos goes through an external provider you choose (Coins.ph, GCrypto, PDAX, Binance, or Moneybees) — Moodeng adds no fee for this, though the provider might have its own.
-- Credit limit grows over time with on-time repayment — the $15 first limit can grow to $20, then higher, the more full-limit loans you repay on time (see "How Credit Levels work" below for the exact ladder).
+- Credit limit grows over time — the $15 first limit grows to $25, then $35 and so on, each time you borrow your full limit and pay it back in the 2nd half of the loan, by the due date (see "How Credit Levels work" below for the exact ladder).
 
 There are dedicated marketing pages walking through **how it works** (four steps: ask → a real person decides → the loan lands as USDC in your Instant Wallet (or a Base Account, if you use one) → repay in parts or in full), **how to cash out** (choosing a provider, always Base network, Coins.ph is the recommended route in the Philippines), **how to repay** (pick the loan, add USDC, choose 25/50/75/Full or a custom amount), a **for lenders** page (browse requests, review a borrower's record before funding, only fund what you can afford to lose — repayment is never guaranteed), and an **about/our story** page (why Moodeng exists, told through the founders' own reasons for building it).
 
@@ -725,7 +725,19 @@ Users borrow **USDC on the Base network**. To turn it into pesos (or local curre
 If a user doesn't hold USDC yet and needs to repay:
 1. Buy USDC on **PDAX, GCrypto, or Binance P2P** (Coins.ph is temporarily paused — see above).
 2. Send it **on the Base network** to the repayment address shown on the **Repay** screen.
-3. Repay **before the due date** — on-time repayment earns Pandesal points and unlocks higher credit levels.
+3. Repay **by the due date** — on-time repayment earns Pandesal points. Paying a full-limit loan in the **2nd half of the loan** unlocks the next credit level; paying in the first half is okay, but the limit stays the same.
+
+## "Why is my limit still $15?" / "Why didn't my limit go up?" / "When will my limit go up?"
+
+There is ONE rule. A loan grows the limit when all three are true:
+
+1. It was a loan for your **full limit** (borrowing less never grows it).
+2. It was **paid in full by the due date**.
+3. It was paid in the **2nd half of the loan** — from its halfway day to the due date. For a 30-day loan that's about the last 15 days. The **Your next loan** card on the Dashboard shows the exact dates ("Pay between Dec 16 – Dec 31") and the next limit.
+
+Paying in the first half is always allowed — the loan is paid and it counts as on time — but the limit stays the same. (Loans funded before 27 Nov 2026 used the older rule: anything paid at least 48 hours after funding counted.)
+
+When someone asks why their limit didn't go up, check which of the three it was and say it in one kind sentence, then the next step, e.g. "Your limit stayed $15 because this loan was paid in its first half. Next time, borrow your full $15 and pay between those dates on your Dashboard, and it goes to $25." Say "stays", never "reset" or "punished". Never promise a bigger limit, a date for one, or an exception — only the team can decide those; offer to connect them. If they need more money for something specific (stock for a store, a bill), be warm, explain the rule, and offer to pass it to the team.
 
 ## Can I have more than one loan at a time?
 

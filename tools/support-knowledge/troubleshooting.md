@@ -140,7 +140,19 @@ Users borrow **USDC on the Base network**. To turn it into pesos (or local curre
 If a user doesn't hold USDC yet and needs to repay:
 1. Buy USDC on **PDAX, GCrypto, or Binance P2P** (Coins.ph is temporarily paused — see above).
 2. Send it **on the Base network** to the repayment address shown on the **Repay** screen.
-3. Repay **before the due date** — on-time repayment earns Pandesal points and unlocks higher credit levels.
+3. Repay **by the due date** — on-time repayment earns Pandesal points. Paying a full-limit loan in the **2nd half of the loan** unlocks the next credit level; paying in the first half is okay, but the limit stays the same.
+
+## "Why is my limit still $15?" / "Why didn't my limit go up?" / "When will my limit go up?"
+
+There is ONE rule. A loan grows the limit when all three are true:
+
+1. It was a loan for your **full limit** (borrowing less never grows it).
+2. It was **paid in full by the due date**.
+3. It was paid in the **2nd half of the loan** — from its halfway day to the due date. For a 30-day loan that's about the last 15 days. The **Your next loan** card on the Dashboard shows the exact dates ("Pay between Dec 16 – Dec 31") and the next limit.
+
+Paying in the first half is always allowed — the loan is paid and it counts as on time — but the limit stays the same. (Loans funded before 27 Nov 2026 used the older rule: anything paid at least 48 hours after funding counted.)
+
+When someone asks why their limit didn't go up, check which of the three it was and say it in one kind sentence, then the next step, e.g. "Your limit stayed $15 because this loan was paid in its first half. Next time, borrow your full $15 and pay between those dates on your Dashboard, and it goes to $25." Say "stays", never "reset" or "punished". Never promise a bigger limit, a date for one, or an exception — only the team can decide those; offer to connect them. If they need more money for something specific (stock for a store, a bill), be warm, explain the rule, and offer to pass it to the team.
 
 ## Can I have more than one loan at a time?
 

@@ -17,9 +17,9 @@ Your Pandesal points aren't locked inside one app. They're designed to reflect y
    {
       id: 'how-does-borrowing-work',
       question: 'How does borrowing on Moodeng work?',
-      answer: `You post a loan request from the Request Board with your desired amount (up to your current limit), repayment date, interest rate, and reason.
+      answer: `You post a loan request from the Request Board with the amount you need (up to your current limit) and the reason. In the Philippines every loan is the same: 30 days and a flat 10% (borrow $15, pay back $16.50). You only choose the amount.
 
-Moo-lenders browse open requests and choose which to fund. Once a moo-lender funds you, USDC is transferred directly to your wallet. You repay them on or before the agreed date from any wallet that holds USDC.`
+Moo-lenders browse open requests and choose which to fund. Once a moo-lender funds you, USDC is transferred directly to your wallet. You repay by the due date from any wallet that holds USDC. To grow your limit, borrow your full limit and pay in the 2nd half of your loan.`
    },
    {
       id: 'what-is-a-trust-score',
@@ -58,7 +58,7 @@ USDC also moves anywhere in the world in seconds, is widely accepted by every ma
       question: 'Does Moodeng charge fees?',
       answer: `No. Moodeng Credit is free to use. There are no platform fees on borrowing, no fees on lending, no monthly subscriptions, no setup costs. 100% of what a moo-lender funds reaches the borrower, and 100% of a repayment reaches the moo-lender.
 
-Network fees (gas) are also zero when you use your Instant Wallet or a Base Account on Base. So the only cost of using Moodeng is the interest rate the borrower offers — and that goes entirely to the moo-lender, not to us.
+Network fees (gas) are also zero when you use your Instant Wallet or a Base Account on Base. So the only cost of using Moodeng is the flat 10% on each loan (borrow $15, pay back $16.50) — and that goes to the moo-lender, not to us.
 
 How do we keep things free? We don't take a cut. Our future business model is the IOU token, which we'll launch via airdrop to active moo-lenders. Until then, Moodeng is fully fee-free.`
    },
@@ -67,7 +67,7 @@ How do we keep things free? We don't take a cut. Our future business model is th
       question: 'How does Moodeng help fight loan sharks?',
       answer: `Loan sharks — informal lenders who charge 20–100% weekly interest, threaten borrowers, and trap people in debt cycles — are a global problem. Hundreds of millions of unbanked and underbanked people have nowhere else to turn for emergency cash, and end up paying multiples of what they borrowed, over and over.
 
-Moodeng Credit is built as a fairer alternative. Interest rates are set by the borrower and accepted (or passed on) by moo-lenders in a transparent marketplace — no hidden charges, no compounding tricks. Small starter loans ($15–$60 at Credit Levels 1–4) match what borrowers actually need for short-term emergencies, paired with a credit-building system that grows your limit as you prove reliability.
+Moodeng Credit is built as a fairer alternative. Every loan has the same simple price, a flat 10% for 30 days, shown before you ask — no hidden charges, no compounding tricks, and a late payment doesn't grow what you owe. Small starter loans ($15–$45 at Credit Levels 1–4) match what borrowers actually need for short-term emergencies, paired with a credit-building system that grows your limit as you prove reliability.
 
 There's no collateral and no bank account required — just a quick identity check (an ID photo and a selfie, or World ID) and a wallet (Moodeng's Instant Wallet, set up from your login, or a Base Account if you prefer). Anyone with a phone can access loans. And your reputation travels with you (linked to your wallet and verified identity), so you build genuine credit history that moo-lenders trust — instead of staying stuck in a cycle.
 
@@ -89,9 +89,9 @@ Unlike a bank credit card or traditional credit-builder product, Moodeng's credi
       question: 'Can I get a small loan with Moodeng?',
       answer: `Yes — small loans are exactly what Moodeng is built for. New borrowers start at a $15 limit, and the platform was designed for short-term, low-amount lending: emergency cash, bridging gaps before payday, one-off expenses.
 
-There are no minimum loan amounts, no monthly subscriptions, no setup costs, and no fees. You request what you need (up to your current Credit Level limit), set the repayment date and interest rate, and moo-lenders decide whether to fund you.
+There are no minimum loan amounts, no monthly subscriptions, no setup costs, and no fees. You request what you need (up to your current Credit Level limit); in the Philippines every loan is 30 days with a flat 10%, and moo-lenders decide whether to fund you.
 
-Each full-limit loan you repay on time adds $10 to your limit. So you can start small to test the platform with low stakes, build your reputation, and grow into larger loans only as you're ready.`
+Each full-limit loan you repay on time, in the 2nd half of the loan, adds $10 to your limit. So you can start small to test the platform with low stakes, build your reputation, and grow into larger loans only as you're ready.`
    }
 ];
 
@@ -108,9 +108,9 @@ Hindi nakakulong sa iisang app ang Pandesal points mo. Ginawa ang mga ito para i
    {
       id: 'how-does-borrowing-work',
       question: 'Paano gumagana ang paghiram sa Moodeng?',
-      answer: `Magpo-post ka ng loan request mula sa Request Board kasama ang halagang gusto mo (hanggang sa current limit mo), repayment date, interest rate, at dahilan.
+      answer: `Magpo-post ka ng loan request mula sa Request Board kasama ang halagang kailangan mo (hanggang sa current limit mo) at ang dahilan. Sa Pilipinas, pare-pareho ang bawat loan: 30 araw at flat na 10% (hiram $15, bayad $16.50). Ang halaga lang ang pipiliin mo.
 
-Titingnan ng mga moo-lender ang mga bukas na request at pipiliin kung alin ang popondohan nila. Kapag may moo-lender na nagpondo sa iyo, diretsong ipapadala ang USDC sa wallet mo. Babayaran mo sila sa o bago ang napagkasunduang petsa mula sa kahit anong wallet na may USDC.`
+Titingnan ng mga moo-lender ang mga bukas na request at pipiliin kung alin ang popondohan nila. Kapag may moo-lender na nagpondo sa iyo, diretsong ipapadala ang USDC sa wallet mo. Magbabayad ka hanggang sa due date mula sa kahit anong wallet na may USDC. Para tumaas ang limit mo, hiramin ang buong limit mo at magbayad sa 2nd half ng loan.`
    },
    {
       id: 'what-is-a-trust-score',
@@ -149,7 +149,7 @@ Naipapadala rin ang USDC kahit saan sa mundo sa loob ng ilang segundo, tinatangg
       question: 'May fees ba ang Moodeng?',
       answer: `Wala. Libre gamitin ang Moodeng Credit. Walang platform fee sa paghiram, walang fee sa pagpapahiram, walang monthly subscription, at walang setup cost. 100% ng pinondohan ng moo-lender ay napupunta sa borrower, at 100% ng bayad ay napupunta sa moo-lender.
 
-Zero rin ang network fee (gas) kapag Instant Wallet o Base Account sa Base ang gamit mo. Kaya ang tanging gastos sa paggamit ng Moodeng ay ang interest rate na ino-offer ng borrower — at buo itong napupunta sa moo-lender, hindi sa amin.
+Zero rin ang network fee (gas) kapag Instant Wallet o Base Account sa Base ang gamit mo. Kaya ang tanging gastos sa paggamit ng Moodeng ay ang flat na 10% sa bawat loan (hiram $15, bayad $16.50) — at napupunta ito sa moo-lender, hindi sa amin.
 
 Paano namin napapanatiling libre ito? Hindi kami kumukuha ng parte. Ang future business model namin ay ang IOU token, na ilulunsad namin sa pamamagitan ng airdrop sa mga aktibong moo-lender. Hanggang sa panahong iyon, ganap na walang fee ang Moodeng.`
    },
@@ -158,7 +158,7 @@ Paano namin napapanatiling libre ito? Hindi kami kumukuha ng parte. Ang future b
       question: 'Paano tumutulong ang Moodeng laban sa mga loan shark?',
       answer: `Ang mga loan shark — mga informal lender na naniningil ng 20–100% na interes kada linggo, nananakot ng mga borrower, at ikinukulong ang mga tao sa paulit-ulit na utang — ay problema sa buong mundo. Daan-daang milyong unbanked at underbanked na tao ang walang ibang malapitan para sa emergency cash, kaya paulit-ulit silang nagbabayad nang ilang beses na mas malaki kaysa sa hiniram nila.
 
-Ginawa ang Moodeng Credit bilang mas patas na alternatibo. Ang borrower ang nagtatakda ng interest rate, at tinatanggap (o nilalampasan) ito ng mga moo-lender sa isang transparent na marketplace — walang nakatagong singil, walang compounding na daya. Ang maliliit na starter loan ($15–$60 sa Credit Level 1–4) ay tugma sa talagang kailangan ng mga borrower para sa short-term na emergency, kasama ang credit-building system na nagpapalaki ng limit mo habang pinapatunayan mong maaasahan ka.
+Ginawa ang Moodeng Credit bilang mas patas na alternatibo. Iisa at simple ang presyo ng bawat loan, flat na 10% sa loob ng 30 araw, na makikita mo bago ka humiram — walang nakatagong singil, walang compounding na daya, at hindi lumalaki ang utang kapag na-late. Ang maliliit na starter loan ($15–$45 sa Credit Level 1–4) ay tugma sa talagang kailangan ng mga borrower para sa short-term na emergency, kasama ang credit-building system na nagpapalaki ng limit mo habang pinapatunayan mong maaasahan ka.
 
 Walang collateral at walang bank account na kailangan — mabilis na identity check lang (ID photo at selfie, o World ID) at wallet (ang Instant Wallet ng Moodeng na gagawin mula sa login mo, o Base Account kung mas gusto mo). Kahit sinong may phone ay puwedeng makahiram. At dala mo kahit saan ang reputasyon mo (naka-link sa wallet at verified identity mo), kaya nakakabuo ka ng tunay na credit history na pinagkakatiwalaan ng mga moo-lender — sa halip na manatiling nakakulong sa cycle.
 
@@ -180,9 +180,9 @@ Hindi tulad ng bank credit card o traditional na credit-builder product, hindi n
       question: 'Puwede ba akong makakuha ng maliit na loan sa Moodeng?',
       answer: `Oo — para talaga sa maliliit na loan ginawa ang Moodeng. Nagsisimula ang mga bagong borrower sa $15 limit, at ginawa ang platform para sa short-term at maliliit na halaga ng pautang: emergency cash, pantawid bago sumahod, o minsanang gastos.
 
-Walang minimum na halaga ng loan, walang monthly subscription, walang setup cost, at walang fee. Ire-request mo ang kailangan mo (hanggang sa current Credit Level limit mo), itatakda mo ang repayment date at interest rate, at ang mga moo-lender ang magpapasya kung popondohan ka nila.
+Walang minimum na halaga ng loan, walang monthly subscription, walang setup cost, at walang fee. Ire-request mo ang kailangan mo (hanggang sa current Credit Level limit mo); sa Pilipinas, 30 araw at flat na 10% ang bawat loan, at ang mga moo-lender ang magpapasya kung popondohan ka nila.
 
-Bawat full-limit na loan na nabayaran mo on time ay nagdadagdag ng $10 sa limit mo. Kaya puwede kang magsimula sa maliit para subukan ang platform nang mababa ang risk, bumuo ng reputasyon, at lumipat sa mas malalaking loan kapag handa ka na.`
+Bawat full-limit na loan na nabayaran mo on time, sa 2nd half ng loan, ay nagdadagdag ng $10 sa limit mo. Kaya puwede kang magsimula sa maliit para subukan ang platform nang mababa ang risk, bumuo ng reputasyon, at lumipat sa mas malalaking loan kapag handa ka na.`
    }
 ];
 
