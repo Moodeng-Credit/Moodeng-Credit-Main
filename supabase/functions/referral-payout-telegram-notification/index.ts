@@ -11,8 +11,10 @@
 //   { interestRefundId, event: 'sent', decidedBy? } marked Sent in the admin panel → stamp the card.
 //   { invoiceId }                                 an affiliate sent their monthly invoice (affiliate_invoices insert)
 //                                                 → who, which month, how much, which wallet, each friend line.
-//   { payday: 'YYYY-MM-DD' }                      15th / 30th (affiliate-payday cron): one card per code owner with
-//                                                 every unpaid "funded friend" payout (referral_codes.pay_on_funded_from).
+//   { payday: 'YYYY-MM-DD', test? }               15th / 30th (affiliate-payday cron): one card per code owner with
+//                                                 every unpaid "funded friend" payout (referral_codes.pay_on_funded_from),
+//                                                 or one "nothing owed" line. Chat: affiliate_payday_chat_id (else
+//                                                 kyc_alert_chat_id). test → 🧪 prefix.
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -241,7 +243,7 @@ type PaydayRow = {
 };
 
 // Payday (15th and 30th): what each partner earned from friends we funded, still unpaid. One card per owner.
-const postPaydayCards = async (supabase: SupabaseClient, payday: string) => {
+const postPaydayCards = async (supabase: SupabaseClient, payday: string, test = false) => {
    const { data, error } = await supabase
       .from('referral_code_payouts')
       .select(
@@ -252,21 +254,44 @@ const postPaydayCards = async (supabase: SupabaseClient, payday: string) => {
       .order('created_at');
    if (error) throw new Error(error.message);
    const rows = (data ?? []) as unknown as PaydayRow[];
-   if (!rows.length) return json({ ok: true, cards: 0 });
-   const chatId = await getSetting(supabase, 'kyc_alert_chat_id');
-   if (!chatId) return json({ error: 'kyc_alert_chat_id is not set' }, 500);
+   const paydayChat = await getSetting(supabase, 'affiliate_payday_chat_id');
+   const adminChat = await getSetting(supabase, 'kyc_alert_chat_id');
+   if (!paydayChat && !adminChat) return json({ error: 'affiliate_payday_chat_id / kyc_alert_chat_id is not set' }, 500);
+   const prefix = test ? '🧪 TEST — ' : '';
+   // Payday chat first; if the bot can't post there (not added, chat moved), the admin chat gets it with a note.
+   const send = async (text: string, options: Parameters<typeof sendTelegramMessage>[2] = {}) => {
+      if (paydayChat) {
+         try {
+            return await sendTelegramMessage(paydayChat, text, options);
+         } catch (err) {
+            console.error('payday chat send failed, using admin chat', err instanceof Error ? err.message : err);
+            if (!adminChat || adminChat === paydayChat) throw err;
+            return await sendTelegramMessage(
+               adminChat,
+               `${text}\n\n⚠️ Couldn't post in the payday chat (${paydayChat}). Add @MoodenCreditstaging_bot there.`,
+               options
+            );
+         }
+      }
+      return await sendTelegramMessage(adminChat as string, text, options);
+   };
 
    const byOwner = new Map<string, PaydayRow[]>();
    for (const r of rows) byOwner.set(r.owner_user_id, [...(byOwner.get(r.owner_user_id) ?? []), r]);
    const siteUrl = (Deno.env.get('VITE_SITE_URL') ?? Deno.env.get('SITE_URL') ?? 'https://moodeng.app').replace(/\/$/, '');
    const dayName = new Date(`${payday}T00:00:00Z`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
 
+   if (!rows.length) {
+      await send(`${prefix}💸 Payday ${dayName}: nothing to pay partners this time — no new funded friends since the last payday.`);
+      return json({ ok: true, cards: 0 });
+   }
+
    for (const [ownerId, lines] of byOwner) {
       const owner = lines[0].owner;
       const who = personLabel(owner);
       const total = lines.reduce((sum, l) => sum + Number(l.amount ?? 0), 0);
       const text = [
-         `💸 Payday ${dayName}: pay ${who} ${usd(total)} USDC — ${lines.length} funded friend${lines.length === 1 ? '' : 's'}`,
+         `${prefix}💸 Payday ${dayName}: pay ${who} ${usd(total)} USDC — ${lines.length} funded friend${lines.length === 1 ? '' : 's'}`,
          '',
          `To (USDC on Base): ${owner?.wallet_address || 'NO WALLET ON FILE — message them first'}`,
          `Who: ${who}${owner?.username ? ` (@${owner.username})` : ''}${owner?.email ? ` · ${owner.email}` : ''}`,
@@ -283,7 +308,7 @@ const postPaydayCards = async (supabase: SupabaseClient, payday: string) => {
       ].join('\n');
       const keyboard: TelegramInlineKeyboard = [[{ text: '💸 Pay in admin', url: `${siteUrl}/admin/affiliates` }]];
       keyboard.push([openInAdminButton(ownerId, owner?.username ?? null)]);
-      await sendTelegramMessage(chatId, text, { inlineKeyboard: keyboard, aboutUserIds: [ownerId] });
+      await send(text, { inlineKeyboard: keyboard, aboutUserIds: [ownerId] });
    }
    return json({ ok: true, cards: byOwner.size });
 };
@@ -295,8 +320,9 @@ serve(async (req) => {
    if (!(await isAuthorized(supabase, req))) return json({ error: 'Unauthorized' }, 401);
 
    try {
-      const { payoutId, event, decidedBy, claimId, interestRefundId, invoiceId, payday } = (await req.json().catch(() => ({}))) as {
+      const { payoutId, event, decidedBy, claimId, interestRefundId, invoiceId, payday, test } = (await req.json().catch(() => ({}))) as {
          payday?: string;
+         test?: boolean;
          invoiceId?: string;
          payoutId?: string;
          event?: string;
@@ -304,7 +330,7 @@ serve(async (req) => {
          claimId?: string;
          interestRefundId?: string;
       };
-      if (payday) return await postPaydayCards(supabase, payday);
+      if (payday) return await postPaydayCards(supabase, payday, test === true);
       if (invoiceId) return await postInvoiceCard(supabase, invoiceId);
       if (claimId) return await postClaimCard(supabase, claimId);
       if (interestRefundId) return await handleInterestRefund(supabase, interestRefundId, event, decidedBy);
