@@ -76,7 +76,8 @@ const COPY = {
       best: 'Pinakamagandang araw',
       late: 'Late',
       today: 'Ngayon',
-      nowEarly: (from: string, limit: number) => `Puwede kang magbayad anumang oras. Kapag nagbayad bago ${from}, mananatili sa $${limit} ang limit mo.`,
+      nowEarly: (from: string, limit: number) =>
+         `Puwede kang magbayad anumang oras. Kapag nagbayad bago ${from}, mananatili sa $${limit} ang limit mo.`,
       nowEarlyPlain: (from: string) => `Puwede kang magbayad anumang oras. Simula ${from} ang pinakamagandang araw mo.`,
       nowBest: 'Magbayad na: ito ang pinakamagandang araw mo.',
       nowLate: 'Late na ang loan mo. Magbayad agad.',
