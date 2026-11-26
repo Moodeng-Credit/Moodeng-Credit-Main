@@ -23,14 +23,15 @@ const sampleDue = (daysToDue: number, daysSinceFunded: number, principal = 15): 
 
 const STREAK = { current: 1, best: 1, nextStep: 3, toGo: 2, nextPhp: 50 };
 
-/** Dev only: the "Your next loan" card in each state. ?state=best|early|less|none shows one. */
+/** Dev only: the "Your next loan" card in each state. ?state=best|early|less|none|ceiling shows one. */
 export default function NextLoanPreview() {
    const only = new URLSearchParams(window.location.search).get('state');
-   const states: { key: string; label: string; dues: DashboardV2Due[] }[] = [
+   const states: { key: string; label: string; dues: DashboardV2Due[]; ceiling?: boolean }[] = [
       { key: 'best', label: 'Best days (2nd half)', dues: [sampleDue(10, 20)] },
       { key: 'early', label: 'Too early (just funded)', dues: [sampleDue(29, 1)] },
       { key: 'less', label: 'Borrowed less than the limit', dues: [sampleDue(20, 10, 10)] },
-      { key: 'none', label: 'No loan out', dues: [] }
+      { key: 'none', label: 'No loan out', dues: [] },
+      { key: 'ceiling', label: 'At their income ceiling ($35)', dues: [], ceiling: true }
    ];
    return (
       <div className="min-h-screen bg-dv2-page">
@@ -40,7 +41,11 @@ export default function NextLoanPreview() {
                .map((state) => (
                   <section key={state.key} className="rounded-[8px] bg-dv2-card px-2.5 pb-3.5 pt-4">
                      <p className="px-1 text-[13px] font-semibold text-[#45556c]">{state.label}</p>
-                     <NextLoanCard dues={state.dues} limit={15} nextLimit={25} streak={STREAK} />
+                     {state.ceiling ? (
+                        <NextLoanCard dues={state.dues} limit={35} nextLimit={35} atCeiling streak={STREAK} />
+                     ) : (
+                        <NextLoanCard dues={state.dues} limit={15} nextLimit={25} streak={STREAK} />
+                     )}
                   </section>
                ))}
          </div>

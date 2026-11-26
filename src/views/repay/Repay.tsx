@@ -31,6 +31,7 @@ import UserAvatar from '@/components/UserAvatar';
 import { useVerifyYourself } from '@/components/verification/VerifyYourselfModal';
 
 import { useGeoCheck } from '@/hooks/useGeoCheck';
+import { useLimitCeiling } from '@/hooks/useLimitCeiling';
 import { useIdOnboarding } from '@/hooks/useIdOnboarding';
 import { useLoanData } from '@/hooks/useLoanData';
 import { useVerificationJourney } from '@/hooks/useVerificationJourney';
@@ -558,6 +559,8 @@ export default function Repay() {
    const reduxStore = useStore<RootState>();
    const loans = useSelector((state: RootState) => state.loans.loans.gloans);
    const usePreviewLoans = shouldUsePreviewLoans(location.search, location.pathname);
+   // Income ceiling (2026-11-27): "Next loan: up to $X" never shows past it (the server caps it too).
+   const limitCeiling = useLimitCeiling(!usePreviewLoans)?.ceiling ?? null;
 
    // A Base-Account borrower inside Facebook's in-app browser can't complete the Base wallet's
    // popup + passkey handshake, so repayment dead-spinners on "Sending payment…". Detect it and
@@ -2343,7 +2346,8 @@ export default function Repay() {
          joinedAt: user.createdAt ?? null
       });
       const currentLimit = user.cs || STARTING_CREDIT_LIMIT;
-      const nextLimit = progression.shouldLevelUp ? progression.nextLimit : currentLimit;
+      const cappedNext = limitCeiling ? Math.min(progression.nextLimit, Math.max(limitCeiling, currentLimit)) : progression.nextLimit;
+      const nextLimit = progression.shouldLevelUp ? cappedNext : currentLimit;
       // Too early to grow the limit (the second-half rule; older loans the 48-hour one): say so before they
       // pay, with when it would.
       const fastCountsFrom =

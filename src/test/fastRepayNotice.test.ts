@@ -87,3 +87,17 @@ describe('fast-repay notice: 24-hour snooze', () => {
       expect(isFastRepayNoticeDue(NOW - FAST_REPAY_NOTICE_SNOOZE_MS, NOW)).toBe(true);
    });
 });
+
+describe('fast-repay notice: income ceiling (2026-11-27)', () => {
+   it('never shows a level-up past the ceiling', () => {
+      const result = notice([loan({ loanAmount: 25, totalRepaymentAmount: 27.5 })], { currentLimit: 25, ceiling: 30 });
+      expect(result?.levelUp).toEqual({ from: 25, to: 30 });
+   });
+   it('at the ceiling: no level-up line at all', () => {
+      const result = notice([loan({ loanAmount: 35, totalRepaymentAmount: 38.5 })], { currentLimit: 35, ceiling: 35 });
+      expect(result?.levelUp ?? null).toBeNull();
+   });
+   it('no ceiling: unchanged', () => {
+      expect(notice([loan()], { ceiling: null })?.levelUp).toEqual({ from: 15, to: 25 });
+   });
+});

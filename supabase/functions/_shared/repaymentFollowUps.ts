@@ -57,9 +57,21 @@ export const applyCreditProgression = async (
 
    if (!evaluation.shouldLevelUp) return { errors, levelUp: null };
 
+   // Income ceiling (2026-11-27, migration 20261127010000_limit_ceilings): growth stops at what we know
+   // they can repay. Never lowers a limit. If the lookup fails, the earned level-up still happens.
+   let nextLimit = evaluation.nextLimit;
+   const { data: ceilingRow, error: ceilingError } = await admin.rpc('limit_ceiling_for', { p_user: borrower.id });
+   const ceiling = toNumber((ceilingRow as { ceiling?: number | string } | null)?.ceiling ?? 0);
+   if (ceilingError) {
+      errors.push({ type: 'credit_progression', message: `ceiling lookup failed: ${ceilingError.message}` });
+   } else if (ceiling > 0) {
+      nextLimit = Math.min(nextLimit, ceiling);
+      if (nextLimit <= toNumber(borrower.cs ?? 0)) return { errors, levelUp: null };
+   }
+
    // Compare-and-set on the limit we evaluated against: if two final repayments race, only the
    // first raises the limit, so one full-limit loan can never level a borrower up twice.
-   const levelUp = admin.from('users').update({ cs: evaluation.nextLimit }).eq('id', borrower.id);
+   const levelUp = admin.from('users').update({ cs: nextLimit }).eq('id', borrower.id);
    const { data: leveled, error: userUpdateError } = await (
       borrower.cs === null ? levelUp.is('cs', null) : levelUp.eq('cs', borrower.cs)
    ).select('id');
@@ -81,7 +93,7 @@ export const applyCreditProgression = async (
       );
       return { errors, levelUp: null };
    }
-   return { errors, levelUp: { fromLimit: getEffectiveCreditLimit(borrower.cs, true), toLimit: evaluation.nextLimit } };
+   return { errors, levelUp: { fromLimit: getEffectiveCreditLimit(borrower.cs, true), toLimit: nextLimit } };
 };
 
 // Posts one repayment line to a Discord channel via DISCORD_REPAY_WEBHOOK_URL; no-ops when unset.

@@ -5,6 +5,7 @@ import posthog from 'posthog-js';
 import { useSelector } from 'react-redux';
 
 import { useFriendReferrals } from '@/hooks/useFriendReferrals';
+import { useLimitCeiling } from '@/hooks/useLimitCeiling';
 
 import { useLocalization } from '@/i18n';
 import { SECOND_HALF_RULE_FROM } from '@/lib/creditLeveling';
@@ -184,6 +185,7 @@ export function useFastRepayNotice({ loans, isPreview = false }: { loans: Loan[]
    const streak = isPreview ? PREVIEW_STREAK : (rewards?.streak ?? null);
    const isVerified = isPreview || isUserVerified(user);
 
+   const ceiling = useLimitCeiling(!isPreview)?.ceiling ?? null;
    const notice = useMemo(
       () =>
          getFastRepayNotice({
@@ -192,9 +194,10 @@ export function useFastRepayNotice({ loans, isPreview = false }: { loans: Loan[]
             isVerified,
             joinedAt: isPreview ? null : user?.createdAt,
             streak,
-            locale
+            locale,
+            ceiling
          }),
-      [loans, isPreview, user?.cs, user?.createdAt, isVerified, streak, locale]
+      [loans, isPreview, user?.cs, user?.createdAt, isVerified, streak, locale, ceiling]
    );
 
    const [closedLoanId, setClosedLoanId] = useState<string | null>(null);

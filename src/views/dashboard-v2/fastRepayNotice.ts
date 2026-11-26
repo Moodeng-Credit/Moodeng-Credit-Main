@@ -41,10 +41,13 @@ export const getFastRepayNotice = ({
    isVerified,
    joinedAt,
    streak,
-   locale
+   locale,
+   ceiling = null
 }: {
    /** The borrower's active (funded, unpaid) loans. */
    loans: Loan[];
+   /** Their income ceiling (useLimitCeiling): the level-up never shows past it. */
+   ceiling?: number | null;
    now?: number;
    currentLimit: number | null | undefined;
    isVerified: boolean;
@@ -84,7 +87,8 @@ export const getFastRepayNotice = ({
       joinedAt: joinedAt ?? null
    });
    const limitNow = getEffectiveCreditLimit(currentLimit, isVerified);
-   const levelUp = progression.shouldLevelUp && progression.nextLimit > limitNow ? { from: limitNow, to: progression.nextLimit } : null;
+   const nextLimit = ceiling ? Math.min(progression.nextLimit, Math.max(ceiling, limitNow)) : progression.nextLimit;
+   const levelUp = progression.shouldLevelUp && nextLimit > limitNow ? { from: limitNow, to: nextLimit } : null;
 
    const rewardFrom = loan.fundedAt ? getRewardFromAt(loan.fundedAt, loan.dueDate, zone) : null;
    const window = getRewardWindow({ rewardFrom: rewardFrom?.toISOString() ?? null, deadline: deadline.toISOString(), zone }, now);
