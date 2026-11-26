@@ -17,6 +17,7 @@ import { openSupportChat } from '@/lib/support/liveChat';
 import { DASHBOARD_V2_ASSETS } from '@/views/dashboard-v2/assets';
 import { TabbedCard } from '@/views/dashboard-v2/components/DashboardV2Graphics';
 import DesignImage from '@/views/dashboard-v2/components/DesignImage';
+import NextLoanCard from '@/views/dashboard-v2/components/NextLoanCard';
 import { AddDueToCalendar, RepayStreakCard } from '@/views/dashboard-v2/components/RepayStreak';
 import {
    getRepayRewardLine,
@@ -396,7 +397,13 @@ export function UpcomingDuesSection({ model, limit = 0, nextLimit = 0 }: { model
                />
             </Link>
          </div>
-         <RepayStreakCard streak={model.rewards.streak} limit={limit} nextLimit={nextLimit} />
+         {/* "Your next loan": next limit + the pay window (one rule: pay in your last week). Shows the old
+             "Pay on time" streak card only for someone without a limit yet. */}
+         {limit > 0 ? (
+            <NextLoanCard dues={model.dues} limit={limit} nextLimit={nextLimit} streak={model.rewards.streak} />
+         ) : (
+            <RepayStreakCard streak={model.rewards.streak} />
+         )}
          <div className="mt-4">
             <Divider />
          </div>
@@ -406,8 +413,9 @@ export function UpcomingDuesSection({ model, limit = 0, nextLimit = 0 }: { model
             model.dues.map((due, index) => (
                <Fragment key={due.id}>
                   {index > 0 ? <Divider /> : null}
-                  {/* One on-time payment earns the reward, so only the next loan due carries the line. */}
-                  <DueRow due={due} streak={due.id === nextDueId ? model.rewards.streak : null} />
+                  {/* One on-time payment earns the reward, so only the next loan due carries the line — and only when
+                      the "Your next loan" card isn't already showing the dates (two date ranges confused people). */}
+                  <DueRow due={due} streak={limit <= 0 && due.id === nextDueId ? model.rewards.streak : null} />
                </Fragment>
             ))
          )}

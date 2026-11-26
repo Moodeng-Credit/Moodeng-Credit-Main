@@ -110,6 +110,9 @@ export function useDashboardV2Model(): { model: DashboardV2Model; isSignedIn: bo
             deadline: getDueDayEnd(dueDay, getLoanTimezone(loan)).toISOString(),
             rewardFrom: loan.fundedAt ? (getRewardFromAt(loan.fundedAt, loan.dueDate, getLoanTimezone(loan))?.toISOString() ?? null) : null,
             zone: getLoanTimezone(loan),
+            // For the "Your next loan" card: the 48-hour floor and whether it's a full-limit loan.
+            fundedAt: loan.fundedAt ?? null,
+            principal: toNumber(loan.loanAmount),
             lenderName: lender?.displayName || lender?.username || 'a moo-lender',
             isOverdue
          };
