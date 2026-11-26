@@ -144,10 +144,7 @@ export function RepayStreakCard({ streak, limit = 0, nextLimit = 0 }: { streak: 
    const copy = getStreakCardCopy(streak, locale);
    const t = TRACKER_COPY[locale === 'fil' ? 'fil' : 'en'];
    return (
-      <div
-         className="mt-3 flex flex-col gap-3 rounded-[16px] border border-[#EEE8F5] bg-white px-4 py-4 dark:border-[#3A2F55] dark:bg-dv2-page"
-         data-testid="repay-streak-card"
-      >
+      <div className="mt-3 flex flex-col gap-3 rounded-[18px] bg-[#FAF7FF] px-4 py-4 dark:bg-dv2-page" data-testid="repay-streak-card">
          <div className="flex items-center gap-2">
             <img src="/auth-screen.png" alt="" aria-hidden="true" className="h-7 w-7 object-contain" />
             <p className="text-[17px] font-bold leading-6 tracking-[-0.03em] text-[#040033] dark:text-[#F0EAFF]">{t.title}</p>
@@ -232,7 +229,7 @@ export function AddDueToCalendar({ due, rewardLine }: { due: DashboardV2Due; rew
          download={link.download}
          target={link.download ? undefined : '_blank'}
          rel="noreferrer"
-         className="flex h-[34px] shrink-0 items-center gap-1 rounded-full border border-[#d9d2ee] bg-white px-2.5 text-[13px] font-semibold text-[#5640e0] active:scale-[0.97] dark:border-[#3a2f55] dark:bg-dv2-page dark:text-[#c4b8ff]"
+         className="flex h-[34px] shrink-0 items-center gap-1 rounded-full bg-[#F3EEFB] px-3 text-[13px] font-semibold text-[#5640e0] transition-transform duration-150 active:scale-[0.94] dark:bg-[#2A2138] dark:text-[#c4b8ff]"
       >
          <CalendarPlus className="h-4 w-4" aria-hidden="true" />
          Add to calendar

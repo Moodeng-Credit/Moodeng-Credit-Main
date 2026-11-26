@@ -52,7 +52,7 @@ export default function LimitStaysCard({ language, preview }: { language: Dashbo
    const copy = COPY[language] ?? COPY.en;
 
    return (
-      <section className="mx-5 flex flex-col gap-3 rounded-[8px] border border-[#f1d58a] bg-[#fff8e1] px-4 py-4 dark:border-[#5a4818] dark:bg-[#2a2210]" aria-label="Your limit">
+      <section className="mx-5 flex flex-col gap-3 rounded-[20px] border border-[#f1d58a] bg-[#fff8e1] px-4 py-4 dark:border-[#5a4818] dark:bg-[#2a2210]" aria-label="Your limit">
          <p className="text-[18px] font-black leading-6 text-[#6b4a00] dark:text-[#ffe27a]">{copy.title(notice.limit ?? 15)}</p>
          <p className="text-[14px] leading-[20px] text-[#6b5a2e] dark:text-[#e8d9a8]">{copy.body}</p>
          <p className="text-[14px] font-bold leading-[20px] text-[#6b5a2e] dark:text-[#e8d9a8]">{copy.ask}</p>

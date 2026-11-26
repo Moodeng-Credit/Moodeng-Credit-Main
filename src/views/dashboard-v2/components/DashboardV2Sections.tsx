@@ -30,7 +30,8 @@ import {
 import type { DashboardV2Due, DashboardV2Milestone, DashboardV2Model } from '@/views/dashboard-v2/types';
 import { voucherMissingMessage } from '@/views/dashboard-v2/voucherMissingMessage';
 
-const PILL_BUTTON = 'flex h-[34px] w-[82px] shrink-0 items-center justify-center rounded-full text-[16px] font-semibold leading-6';
+const PILL_BUTTON =
+   'flex h-9 w-[78px] shrink-0 items-center justify-center rounded-full text-[15px] font-semibold leading-6 transition-transform duration-150 active:scale-[0.94]';
 const PRIMARY_GRADIENT = 'linear-gradient(85.47deg, #9584ff 0.5%, #6b55f7 98.16%)';
 // Design numerals use SF Pro Compressed, which the app does not load; tight tracking approximates it.
 const STAT_NUMBER = 'font-medium leading-[18px] tracking-[-0.06em]';
@@ -65,7 +66,7 @@ export function ClaimVoucherButton({ onClaim }: { onClaim: () => void }) {
       <button
          type="button"
          onClick={onClaim}
-         className="flex h-[34px] w-[82px] shrink-0 items-center justify-center rounded-full bg-[#ffce1b] text-[16px] font-bold tracking-[-0.3px] text-[#704518] shadow-[0_-2px_1px_rgba(255,255,255,0.3),0_2px_1px_rgba(63,89,79,0.4)]"
+         className="flex h-9 w-[78px] shrink-0 items-center justify-center rounded-full bg-[#ffce1b] text-[15px] font-bold transition-transform duration-150 active:scale-[0.94] tracking-[-0.3px] text-[#704518] shadow-[0_-2px_1px_rgba(255,255,255,0.3),0_2px_1px_rgba(63,89,79,0.4)]"
       >
          Claim
       </button>
@@ -173,7 +174,7 @@ export function MilestonesSection({
 
    return (
       <TabbedCard title="Reputation Milestones" titleId="dv2-milestones-title" tabWidth="37%">
-         <div className="relative flex flex-col px-1.5 pb-7 pt-4">
+         <div className="relative flex flex-col px-4 pb-6 pt-4">
             {model.milestones.map((milestone, index) => (
                <Fragment key={milestone.id}>
                   {index > 0 ? <Divider /> : null}
@@ -183,25 +184,36 @@ export function MilestonesSection({
                         index > 0 && 'py-[14px]',
                         index === 0 && 'pb-[14px]',
                         milestone.isVoucher &&
-                           '-mx-1.5 bg-gradient-to-r from-[rgba(255,206,27,0.36)] from-[10.88%] to-transparent to-[108.81%] px-1.5 dark:from-[rgba(255,206,27,0.16)]'
+                           '-mx-2 rounded-[16px] bg-gradient-to-r from-[rgba(255,206,27,0.36)] from-[10.88%] to-transparent to-[108.81%] px-2 dark:from-[rgba(255,206,27,0.16)]'
                      )}
                   >
-                     <div className="flex min-w-0 items-center gap-1">
-                        <DesignImage
-                           src={milestone.isVoucher ? DASHBOARD_V2_ASSETS.coupon : DASHBOARD_V2_ASSETS.pandesal}
-                           className="h-10 w-10 shrink-0 object-contain"
-                        />
+                     <div className="flex min-w-0 items-center gap-3">
+                        <span
+                           className={clsx(
+                              'flex h-11 w-11 shrink-0 items-center justify-center rounded-full',
+                              milestone.isVoucher ? 'bg-white/70 dark:bg-white/10' : 'bg-[#FFF3E2] dark:bg-[#3a2a1a]'
+                           )}
+                        >
+                           <DesignImage
+                              src={milestone.isVoucher ? DASHBOARD_V2_ASSETS.coupon : DASHBOARD_V2_ASSETS.pandesal}
+                              className="h-8 w-8 object-contain"
+                           />
+                        </span>
                         <div className="min-w-0">
                            <p
                               className={clsx(
-                                 'font-medium leading-6',
-                                 index === 0 ? 'text-[20px]' : 'text-[18px]',
+                                 'text-[17px] font-semibold leading-[22px] tracking-[-0.01em]',
                                  milestone.isVoucher ? 'text-[#833000] dark:text-[#ffc46b]' : 'text-[#0f172b]'
                               )}
                            >
                               {milestone.title}
                            </p>
-                           <p className={clsx('text-[16px] leading-[18px]', milestone.isVoucher ? 'text-[#f90]' : 'text-[#45556c]')}>
+                           <p
+                              className={clsx(
+                                 'mt-0.5 text-[14px] leading-[18px]',
+                                 milestone.isVoucher ? 'text-[#e08600] dark:text-[#ffb547]' : 'text-[#7a6f88] dark:text-[#a99cb8]'
+                              )}
+                           >
                               Reward: {milestone.reward}
                            </p>
                         </div>
@@ -249,7 +261,7 @@ export function LoanSummarySection({ model }: { model: DashboardV2Model }) {
             </p>
          }
       >
-         <div className="flex items-start justify-between gap-3 px-[9px] pb-6 pt-7">
+         <div className="flex items-start justify-between gap-3 px-4 pb-6 pt-7">
             <Link
                to="/repay"
                className="group flex min-w-0 flex-1 flex-col gap-[7px] transition-transform duration-150 active:scale-[0.97]"
@@ -263,13 +275,13 @@ export function LoanSummarySection({ model }: { model: DashboardV2Model }) {
                      className="h-4 w-4 transition-transform duration-150 group-hover:translate-x-1 group-active:translate-x-1.5"
                   />
                </span>
-               <span className="text-[14px] leading-[18px] text-[#45556c]">Active Loans($)</span>
+               <span className="text-[13px] leading-[17px] text-[#7a6f88] dark:text-[#a99cb8]">Active Loans($)</span>
             </Link>
             <div className="flex min-w-0 flex-1 flex-col gap-[7px]">
                <span className={clsx(STAT_NUMBER, 'text-[clamp(22px,6.4vw,28px)] text-[#594d65] dark:text-[#e6def2]')}>
                   {formatCurrency(summary.pending)}
                </span>
-               <span className="text-[14px] leading-[18px] text-[#45556c]">Pending Request($)</span>
+               <span className="text-[13px] leading-[17px] text-[#7a6f88] dark:text-[#a99cb8]">Pending Request($)</span>
             </div>
             <div className="flex min-w-0 flex-1 flex-col gap-[7px]">
                <span
@@ -281,7 +293,7 @@ export function LoanSummarySection({ model }: { model: DashboardV2Model }) {
                >
                   {formatCurrency(summary.defaulted)}
                </span>
-               <span className="text-[14px] leading-[18px] text-[#45556c]">Defaulted($)</span>
+               <span className="text-[13px] leading-[17px] text-[#7a6f88] dark:text-[#a99cb8]">Defaulted($)</span>
             </div>
          </div>
       </TabbedCard>
@@ -336,24 +348,26 @@ function DueRow({ due, streak }: { due: DashboardV2Due; streak: RepayStreak | nu
          className={clsx(
             'flex items-center justify-between py-3',
             due.isOverdue &&
-               '-mx-2.5 bg-gradient-to-r from-[#ff5b6b] via-[#ff8e98] via-55% to-[#ffe3e6] px-2.5 dark:from-[#b4232f] dark:via-[#7d1f2b] dark:to-dv2-card'
+               '-mx-1.5 my-1 rounded-[16px] bg-gradient-to-r from-[#ff5b6b] via-[#ff8e98] via-55% to-[#ffe3e6] px-3 dark:from-[#b4232f] dark:via-[#7d1f2b] dark:to-dv2-card'
          )}
       >
          <div className="flex flex-col">
-            <div className="flex items-center gap-0.5">
-               <span className={clsx('text-[18px] font-bold leading-6', due.isOverdue ? 'text-white' : 'text-[#0f172b]')}>
+            <div className="flex items-center gap-2">
+               <span className={clsx('text-[18px] font-bold leading-6 tabular-nums', due.isOverdue ? 'text-white' : 'text-[#0f172b]')}>
                   ${formatCurrency(due.amount)}
                </span>
                <span
                   className={clsx(
-                     'flex h-[22px] items-center justify-center rounded-[11px] px-[9px] text-[16px] leading-[18px]',
+                     'flex h-6 items-center justify-center rounded-full px-2.5 text-[13px] font-semibold leading-[18px]',
                      due.isOverdue ? 'bg-[#d51728] text-white' : 'bg-[#e0dbff] text-[#5640e0] dark:bg-[#2f2560] dark:text-[#c4b8ff]'
                   )}
                >
                   {formatDueLabel(due, locale)}
                </span>
             </div>
-            <span className={clsx('text-[16px] leading-[18px]', due.isOverdue ? 'text-[#ffb8b8]' : 'text-[#c0b9c8] dark:text-[#8f819e]')}>
+            <span
+               className={clsx('mt-0.5 text-[14px] leading-[18px]', due.isOverdue ? 'text-white/80' : 'text-[#8a8494] dark:text-[#8f819e]')}
+            >
                Lent by {due.lenderName}
             </span>
             {rewardLine ? (
@@ -381,7 +395,7 @@ function DueRow({ due, streak }: { due: DashboardV2Due; streak: RepayStreak | nu
 export function UpcomingDuesSection({ model, limit = 0, nextLimit = 0 }: { model: DashboardV2Model; limit?: number; nextLimit?: number }) {
    const nextDueId = [...model.dues].filter((due) => !due.isOverdue).sort((a, b) => a.daysRemaining - b.daysRemaining)[0]?.id;
    return (
-      <section className="mx-5 rounded-[8px] bg-dv2-card px-2.5 pb-3.5 pt-5" aria-labelledby="dv2-dues-title">
+      <section className="mx-5 rounded-[20px] bg-dv2-card px-3.5 pb-4 pt-5 shadow-[var(--dv2-shadow)]" aria-labelledby="dv2-dues-title">
          <div className="flex items-center justify-between">
             <h2 id="dv2-dues-title" className="whitespace-nowrap text-[clamp(17px,5vw,20px)] font-medium leading-6 text-[#0f172b]">
                Upcoming Loan Dues
@@ -496,7 +510,7 @@ export function VoucherFollowUpCard({
    isAnswering?: boolean;
 }) {
    const brandName = claim.brand === 'grabmart' ? 'GrabMart' : 'food';
-   const surface = 'mx-5 flex items-center gap-3 rounded-[8px] px-3 py-3';
+   const surface = 'mx-5 flex items-center gap-3 rounded-[20px] px-3.5 py-3.5 shadow-[var(--dv2-shadow)]';
    const yellow = { backgroundImage: 'linear-gradient(90deg, #fff3a3 0%, #ffe27a 100%)' };
 
    if (claim.status === 'pending') {
@@ -719,7 +733,7 @@ export function RewardsWaitingCard({ claimable, onClaim }: { claimable: Claimabl
    const total = claimable.reduce((sum, voucher) => sum + voucher.amountPhp, 0);
    return (
       <section
-         className="mx-5 flex flex-col gap-3 rounded-[8px] px-3 py-3"
+         className="mx-5 flex flex-col gap-3 rounded-[20px] px-3.5 py-3.5 shadow-[var(--dv2-shadow)]"
          style={{ backgroundImage: 'linear-gradient(90deg, #fff3a3 0%, #ffe27a 100%)' }}
          aria-label="Rewards waiting"
       >
