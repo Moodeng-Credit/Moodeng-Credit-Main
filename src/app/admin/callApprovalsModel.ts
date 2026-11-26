@@ -6,7 +6,8 @@ import type { AdminCallApprovalRow } from '@/app/admin/adminSupabase';
 // A call counts as "now" from this long before its start — the host may open the panel early.
 export const NOW_WINDOW_MIN = 10;
 
-// Undecided calls older than this stop asking for a decision and move to Completed as "not marked".
+// Undecided calls older than this stop asking for a decision and move to Completed as "not marked" —
+// unless their call request is still pending, which keeps them waiting until someone decides.
 export const DECIDE_WINDOW_H = 48;
 
 export type CallResult = 'approved' | 'no_show' | 'rejected' | 'unmarked';
@@ -50,7 +51,7 @@ export const groupCallApprovals = (rows: AdminCallApprovalRow[], now: number): C
       if (Number.isNaN(start)) continue;
       if (row.outcome || row.loanAccessStatus === 'rejected') completed.push(row);
       else if (start > now + NOW_WINDOW_MIN * 60000) upcoming.push(row);
-      else if (start >= now - DECIDE_WINDOW_H * 3600000) needsDecision.push(row);
+      else if (start >= now - DECIDE_WINDOW_H * 3600000 || row.request) needsDecision.push(row);
       else completed.push(row);
    }
    const byStart = (a: AdminCallApprovalRow, b: AdminCallApprovalRow) =>
