@@ -26,6 +26,7 @@ import {
    fetchAffiliatePayments,
    friendChecks,
    newPayouts,
+   nextAffiliatePayday,
    referralStage,
    referralStep,
    splitCodes,
@@ -100,7 +101,7 @@ function useCopy() {
 
 /* ---------- 1 · Hero ---------- */
 
-function Hero({ payout }: { payout: number }) {
+function Hero({ payout, onFunding = false }: { payout: number; onFunding?: boolean }) {
    const backPath = useBackPath();
    return (
       <section
@@ -123,7 +124,9 @@ function Hero({ payout }: { payout: number }) {
             >
                EARN {money(payout)}
             </p>
-            <p className="mt-1 text-[20px] font-extrabold italic leading-6 text-white">for every friend who repays</p>
+            <p className="mt-1 text-[20px] font-extrabold italic leading-6 text-white">
+               {onFunding ? 'for every friend we fund' : 'for every friend who repays'}
+            </p>
          </div>
          <img
             src={DASHBOARD_V2_ASSETS.affiliateHero}
@@ -147,7 +150,16 @@ const GUIDE_STEPS: Array<[string, string]> = [
    ['🎉', 'You earn your reward. We send it to your Moodeng wallet.']
 ];
 
-function HowItWorks({ payout, open }: { payout: number; open: boolean }) {
+// Codes that pay when the friend is funded (Mahjid's deal, 2026-11-27).
+const FUNDED_GUIDE_STEPS: Array<[string, string]> = [
+   ['📣', 'Share your code. Tap Share, or show your QR poster.'],
+   ['📝', 'Your friend signs up with your code and gets approved.'],
+   ['💸', 'We check them and send their first loan.'],
+   ['🎉', 'You earn your reward. We pay on the 15th and the 30th of every month.']
+];
+
+function HowItWorks({ payout, open, onFunding = false }: { payout: number; open: boolean; onFunding?: boolean }) {
+   const steps = onFunding ? FUNDED_GUIDE_STEPS : GUIDE_STEPS;
    return (
       <details
          open={open}
@@ -158,7 +170,7 @@ function HowItWorks({ payout, open }: { payout: number; open: boolean }) {
             <ChevronDown className="h-5 w-5 transition-transform group-open:rotate-180" />
          </summary>
          <ol className="mt-3 flex flex-col gap-2">
-            {GUIDE_STEPS.map(([icon, text], i) => (
+            {steps.map(([icon, text], i) => (
                <li key={text} className="flex gap-3 text-[15px] font-medium leading-6 text-[#594d65] dark:text-[#d9cfe6]">
                   <span className="shrink-0" aria-hidden>
                      {icon}
@@ -642,7 +654,12 @@ function hintText(r: AffiliateReferral, stage: AffiliateStage, paused: boolean, 
    if (todo && (stage === 'signed_up' || stage === 'checking')) return r.added_by_you ? `Added by you · ${todo}` : todo;
    if (stage === 'paid') return r.paid_at ? `We paid you on ${shortDate(r.paid_at)}` : 'We paid you';
    if (stage === 'voucher') return `₱${r.voucher_php ?? 250} food voucher instead of ${money(r.payout_amount)}`;
-   if (stage === 'owed') return paused ? 'Repay your loan first — then we send it' : 'They repaid — we’ll send your money';
+   if (stage === 'owed') {
+      if (paused) return 'Repay your loan first — then we send it';
+      if (r.funded_reward)
+         return `Their loan is out — we pay you on ${nextAffiliatePayday().toLocaleDateString(undefined, { month: 'short', day: 'numeric', timeZone: 'UTC' })}`;
+      return 'They repaid — we’ll send your money';
+   }
    if (stage === 'locked') return 'Repay a loan yourself to unlock it';
    if (stage === 'rejected') return 'Not approved by our team — they can’t borrow';
    if (stage === 'too_early')
@@ -1013,7 +1030,9 @@ function MonthlyInvoice({ state, sample }: { state: AffiliateInvoiceState; sampl
             ) : null}
          </ul>
          <p className="mt-2 text-[13px] text-[#7b6b8c] dark:text-[#a99cba]">
-            {state.walletAddress ? `Paid in USDC to your Moodeng wallet ${shortWallet(state.walletAddress)}` : 'Paid in USDC to your Moodeng wallet'}
+            {state.walletAddress
+               ? `Paid in USDC to your Moodeng wallet ${shortWallet(state.walletAddress)}`
+               : 'Paid in USDC to your Moodeng wallet'}
          </p>
          {errorText ? <p className="mt-2 text-[14px] text-red-600 dark:text-red-400">{errorText}</p> : null}
          <button
@@ -1309,7 +1328,7 @@ export default function AffiliateDashboardPage({ sample = false }: { sample?: bo
          <div className="mx-auto max-w-[440px] px-5 pb-28">
             <h1 className="sr-only">Moo affiliate</h1>
             {adminView ? <AdminViewBanner viewing={data?.viewing ?? null} who={viewAs} /> : null}
-            <Hero payout={main.payout_amount} />
+            <Hero payout={main.payout_amount} onFunding={main.pay_on_funding === true} />
             <CodeCard main={main} others={others} unlocked={unlocked || !main.personal} onShare={() => setSharing(true)} />
             {isShark ? (
                <SharkFighterCard
@@ -1330,7 +1349,11 @@ export default function AffiliateDashboardPage({ sample = false }: { sample?: bo
                   onCopy={copyInviteMessage}
                />
             ) : (
-               <HowItWorks payout={main.payout_amount} open={isAffiliateOnly || referrals.length === 0} />
+               <HowItWorks
+                  payout={main.payout_amount}
+                  open={isAffiliateOnly || referrals.length === 0}
+                  onFunding={main.pay_on_funding === true}
+               />
             )}
             <PosterQr code={main.code} />
             <MoneyRow owed={shownOwed} pending={totals.pending} paid={shownPaid} paused={paused} />

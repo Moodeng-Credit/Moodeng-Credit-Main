@@ -6,6 +6,7 @@ import {
    affiliateTotals,
    friendChecks,
    newPayouts,
+   nextAffiliatePayday,
    referralStage,
    referralStep,
    splitCodes
@@ -120,5 +121,32 @@ describe('affiliate dashboard', () => {
       expect(labels({ ...base, call_missed: true })).toEqual(['Missed the call']);
       expect(friendChecks({ ...base, access: 'approved', screening: 'validated' }, now).checks).toEqual([]);
       expect(friendChecks({ ...base, borrowed: true }, now).checks).toEqual([]);
+   });
+});
+
+describe('funded-friend rewards (pay on funding, paid on the 15th and 30th)', () => {
+   it('a funded friend is owed before they repay, then paid', () => {
+      const funded = { ...base, borrowed: true, funded_reward: true, payout_status: 'unpaid' as const };
+      expect(referralStage(funded)).toBe('owed');
+      expect(referralStage({ ...funded, payout_status: 'paid' })).toBe('paid');
+      const totals = affiliateTotals([funded]);
+      expect(totals.owed).toBe(10);
+      expect(totals.earned).toBe(10);
+      expect(totals.repaid).toBe(0);
+   });
+
+   it('an old-rule friend with a loan still waits for repayment', () => {
+      expect(referralStage({ ...base, borrowed: true })).toBe('borrowed');
+   });
+
+   it('picks the next payday in Bangkok time', () => {
+      const day = (iso: string) => nextAffiliatePayday(new Date(iso)).toISOString().slice(0, 10);
+      expect(day('2026-11-27T03:00:00Z')).toBe('2026-11-30');
+      expect(day('2026-12-15T03:00:00Z')).toBe('2026-12-15');
+      expect(day('2026-12-16T03:00:00Z')).toBe('2026-12-30');
+      expect(day('2026-12-31T03:00:00Z')).toBe('2027-01-15');
+      expect(day('2027-02-20T03:00:00Z')).toBe('2027-02-28');
+      // 23:30 UTC on the 15th is already the 16th in Bangkok.
+      expect(day('2026-12-15T23:30:00Z')).toBe('2026-12-30');
    });
 });
