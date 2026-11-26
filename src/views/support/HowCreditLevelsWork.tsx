@@ -79,7 +79,7 @@ const loanTypes = [
 
 const tips = [
    { kind: 'do', text: 'Request your full current limit only when you are confident you can repay it.' },
-   { kind: 'do', text: 'Pick a repayment date you can comfortably hit. Repaying early is always fine.' },
+   { kind: 'do', text: 'Pay in the 2nd half of your loan, by the due day. Paying in the first half is okay, but it won’t grow your limit.' },
    { kind: 'dont', text: 'Do not take a full-limit loan you are unsure about — one missed repayment pauses your progress.' },
    { kind: 'dont', text: 'Do not expect extra or early payments to skip a level. Growth is always one step at a time.' }
 ] as const;
@@ -175,11 +175,11 @@ const quizQuestions: QuizQuestion[] = [
       wrongLine: 'Nope — there are no shortcuts. It’s one level at a time.'
    },
    {
-      q: 'What slows your climb the most?',
-      options: ['Repaying early', 'A late or missed repayment', 'Borrowing your full limit', 'Asking questions'],
+      q: 'When should you pay to grow your limit?',
+      options: ['Right after you borrow', 'In the 2nd half of your loan', 'A week after the due date', 'Any time at all'],
       answer: 1,
-      correctLine: 'You got it — a missed repayment pauses progress and dents your Pandesal points.',
-      wrongLine: 'Actually it’s a late or missed repayment — that’s what pauses your climb.'
+      correctLine: 'Yes — pay in the 2nd half of your loan, by the due day. Your limit grows after that.',
+      wrongLine: 'Not quite — only payments in the 2nd half of your loan, by the due day, grow your limit.'
    }
 ];
 

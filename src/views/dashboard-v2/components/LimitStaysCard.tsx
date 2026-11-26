@@ -5,7 +5,8 @@ import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import type { DashboardV2Language } from '@/views/dashboard-v2/types';
 
 // "Your limit stays at $X" (George, 2026-11-18): for borrowers whose limit didn't go up because they
-// repaid within 48 hours (the 48-hour rule), or whose limit the team reset for it. Says why, and gives
+// repaid too early (in the loan's first half since 2026-11-27; within 48 hours before), or whose limit
+// the team reset for it. Says why, and gives
 // one button to talk to us on Messenger, plus a link to add proof of income.
 // Who sees it: public.my_limit_notice() (migration 20261118190000).
 
@@ -16,14 +17,14 @@ const PAGE_ID = '61589106561061';
 const COPY: Record<DashboardV2Language, { title: (limit: number) => string; body: string; ask: string; button: string; docs: string }> = {
    en: {
       title: (limit) => `Your limit stays at $${limit}`,
-      body: 'Loans paid back in under 2 days don’t raise your limit. Keep your next loan at least 2 days.',
+      body: 'Only payments in the 2nd half of a loan raise your limit. Next time, borrow your full limit and pay in the 2nd half.',
       ask: 'Want to talk about it, or show us more about your income?',
       button: 'Message us on Messenger',
       docs: 'Add proof of income'
    },
    fil: {
       title: (limit) => `Mananatili sa $${limit} ang limit mo`,
-      body: 'Hindi tumataas ang limit kapag nabayaran ang loan nang wala pang 2 araw. Bayaran ang susunod mong loan pagkalipas ng 2 araw o higit pa.',
+      body: 'Ang bayad lang sa 2nd half ng loan ang nagpapataas ng limit mo. Sa susunod, hiramin ang buong limit mo at magbayad sa 2nd half.',
       ask: 'Gusto mo bang pag-usapan, o magpakita pa tungkol sa kita mo?',
       button: 'Mag-message sa Messenger',
       docs: 'Magdagdag ng proof of income'

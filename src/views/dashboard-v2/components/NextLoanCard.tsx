@@ -3,6 +3,7 @@ import { useMemo } from 'react';
 import clsx from 'clsx';
 
 import { useLocalization } from '@/i18n';
+import { SECOND_HALF_RULE_FROM } from '@/lib/creditLeveling';
 import type { RepayStreak } from '@/lib/friendReferrals';
 import { isLikelyPhilippines } from '@/lib/isLikelyPhilippines';
 import { useUsdcRate } from '@/lib/useUsdcRate';
@@ -16,8 +17,10 @@ export type PayWindowStatus = 'early' | 'best' | 'late';
 
 /**
  * One rule for borrowers (research 2026-11-26: 30% repaid within 48h hoping to level up; four different
- * "too early" rules confused them): pay in the last 7 days before the due date. That window is also after
- * 48 hours (limit) and after the halfway day (food reward), so it satisfies every rule at once.
+ * "too early" rules confused them): pay in the SECOND HALF of your loan — from its halfway day (never
+ * sooner than 48h after funding) to the due day. The server grows the limit on exactly that window for
+ * loans funded since SECOND_HALF_RULE_FROM, and food rewards use it too. Half a 30-day loan always holds a
+ * 15th or 30th payday; a last-7-days window missed both for almost half of due dates.
  */
 export const getPayWindow = (
    due: Pick<DashboardV2Due, 'deadline' | 'fundedAt' | 'rewardFrom'>,
@@ -28,7 +31,7 @@ export const getPayWindow = (
    const fundedRaw = due.fundedAt ? new Date(due.fundedAt).getTime() : Number.NaN;
    const rewardFrom = due.rewardFrom ? new Date(due.rewardFrom).getTime() : Number.NaN;
    const funded = Number.isFinite(fundedRaw) ? fundedRaw : deadline - 30 * DAY;
-   const start = Math.min(deadline - HOUR, Math.max(deadline - 7 * DAY, funded + 48 * HOUR, Number.isFinite(rewardFrom) ? rewardFrom : 0));
+   const start = Math.min(deadline - HOUR, Math.max(funded + 48 * HOUR, Number.isFinite(rewardFrom) ? rewardFrom : 0));
    const status: PayWindowStatus = now >= deadline ? 'late' : now >= start ? 'best' : 'early';
    return { start, deadline, funded, status };
 };
@@ -57,7 +60,7 @@ const COPY = {
       nowBest: 'Pay now: these are your best days.',
       nowLate: 'Your loan is late. Pay as soon as you can.',
       notFull: (limit: number, next: number) => `Borrow your full $${limit} next time to reach $${next}.`,
-      steps: (limit: number) => [`Borrow your full $${limit}`, 'Pay in your last week', 'Your limit goes up'],
+      steps: (limit: number) => [`Borrow your full $${limit}`, 'Pay in the 2nd half of your loan', 'Your limit goes up'],
       top: 'You are at the top limit. Keep paying on time.'
    },
    fil: {
@@ -75,7 +78,7 @@ const COPY = {
       nowBest: 'Magbayad na: ito ang pinakamagandang araw mo.',
       nowLate: 'Late na ang loan mo. Magbayad agad.',
       notFull: (limit: number, next: number) => `Hiramin ang buong $${limit} sa susunod para umabot ng $${next}.`,
-      steps: (limit: number) => [`Hiramin ang buong $${limit}`, 'Magbayad sa huling linggo', 'Tataas ang limit mo'],
+      steps: (limit: number) => [`Hiramin ang buong $${limit}`, 'Magbayad sa 2nd half ng loan mo', 'Tataas ang limit mo'],
       top: 'Nasa pinakamataas na limit ka na. Ituloy ang on-time na bayad.'
    }
 };
@@ -215,7 +218,7 @@ export default function NextLoanCard({
                      ? t.nowBest
                      : payWindow.status === 'late'
                        ? t.nowLate
-                       : isFullLimit && canGrow
+                       : isFullLimit && canGrow && payWindow.funded >= SECOND_HALF_RULE_FROM
                          ? t.nowEarly(dayLabel(payWindow.start, due.zone), limit)
                          : t.nowEarlyPlain(dayLabel(payWindow.start, due.zone))}
                </p>

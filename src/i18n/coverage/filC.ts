@@ -417,8 +417,8 @@ export const filipinoCoverageC: Record<string, string> = {
    'Unlocks the next level': 'Nag-a-unlock ng susunod na level',
    'Request your full current limit only when you are confident you can repay it.':
       'Mag-request ng buo mong kasalukuyang limit lang kapag sigurado kang babayaran mo ito.',
-   'Pick a repayment date you can comfortably hit. Repaying early is always fine.':
-      'Pumili ng petsa ng pagbabayad na siguradong kaya mo. Laging okay ang maagang pagbabayad.',
+   'Pay in the 2nd half of your loan, by the due day. Paying in the first half is okay, but it won’t grow your limit.':
+      'Magbayad sa 2nd half ng loan mo, hanggang sa due day. Okay lang magbayad sa unang kalahati, pero hindi nito palalakihin ang limit mo.',
    'Do not take a full-limit loan you are unsure about — one missed repayment pauses your progress.':
       'Huwag kumuha ng full-limit loan kung hindi ka sigurado — mahihinto ang progress mo kahit sa isang na-miss na bayad.',
    'Do not expect extra or early payments to skip a level. Growth is always one step at a time.':

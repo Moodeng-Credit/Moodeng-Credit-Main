@@ -38,7 +38,7 @@ describe('food vouchers: halfway rule', () => {
 
    it('tells early repayers there is no reward and to message us', () => {
       expect(getRewardRuleCopy('en').earlyPaidBody).toBe("Early payments don't get the food reward. Want it anyway? Message us.");
-      expect(getRewardRuleCopy('en').countsFrom('Dec 1')).toBe('🍗 Food reward counts from Dec 1. Paying now is fine.');
+      expect(getRewardRuleCopy('en').countsFrom('Dec 1')).toBe('🍗 Food reward counts from Dec 1.');
    });
 });
 

@@ -45,7 +45,7 @@ import { COINS_PH_SUSPENDED, COINS_PH_SUSPENDED_MESSAGE, COINS_PH_SUSPENDED_TITL
 import { ALLOWED_CHAIN_ID, BASE_USDC_ADDRESS } from '@/config/wagmiConfig';
 import { useLocalization } from '@/i18n';
 import { clearPendingBasePayment, hasPendingPaymentForLoan, registerPendingBasePayment } from '@/lib/basePayReconciliation';
-import { countsFromAt, evaluateCreditProgression, isFastRepay } from '@/lib/creditLeveling';
+import { countsFromAt, evaluateCreditProgression, isTooEarlyRepay, SECOND_HALF_RULE_FROM } from '@/lib/creditLeveling';
 import { ensureAllowedChain } from '@/lib/ensureAllowedChain';
 import { detectInAppBrowser, shouldBlockRepayForInAppBrowser } from '@/lib/inAppBrowser';
 import { isUserVerified } from '@/lib/isUserVerified';
@@ -347,7 +347,7 @@ const renderSourceLogo = (id: FundSourceId, isSelected = false) => {
    if (id === 'pdax') {
       return (
          <svg className="h-4 w-4 shrink-0" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-            {!isSelected && <circle cx="10" cy="10" r="10" fill="#1B2A4A" />}
+            {!isSelected ? <circle cx="10" cy="10" r="10" fill="#1B2A4A" /> : null}
             <path d="M5 14.5L7.8 5.5H10.2L7.4 14.5H5Z" fill={isSelected ? 'white' : '#00D097'} />
             <path d="M9.8 14.5L12.6 5.5H15L12.2 14.5H9.8Z" fill={isSelected ? 'white' : '#00D097'} />
          </svg>
@@ -634,6 +634,8 @@ export default function Repay() {
       creditLevelUp?: { toLevel: number; newLimit: number } | null;
       /** Repaid within 48h of getting it: their limit stays (the 48-hour rule). */
       fastRepayLimit?: number | null;
+      /** The loan is on the second-half rule (funded since SECOND_HALF_RULE_FROM), not the 48-hour one. */
+      fastRepaySecondHalf?: boolean;
    } | null>(() =>
       // Preview: ?paid=1 shows the "you're paid" screen (screenshots / design review).
       usePreviewLoans && new URLSearchParams(location.search).get('paid') === '1'
@@ -1384,9 +1386,11 @@ export default function Repay() {
                   ? { toLevel: getCreditLevelNumber(serverLevelUp.toLimit), newLimit: serverLevelUp.toLimit }
                   : null,
                fastRepayLimit:
-                  !serverLevelUp && isFastRepay(selectedLoan.fundedAt ?? null, new Date().toISOString())
+                  !serverLevelUp &&
+                  isTooEarlyRepay(selectedLoan.fundedAt ?? null, new Date().toISOString(), selectedLoan.dueDate, selectedLoan.dueTimezone)
                      ? user.cs || STARTING_CREDIT_LIMIT
-                     : null
+                     : null,
+               fastRepaySecondHalf: Boolean(selectedLoan.fundedAt) && Date.parse(selectedLoan.fundedAt as string) >= SECOND_HALF_RULE_FROM
             });
          } else {
             // Partial payment: the loan stays active, so acknowledge it inline instead of
@@ -1698,11 +1702,9 @@ export default function Repay() {
             <p className="mt-1.5 truncate font-mono text-[22px] font-extrabold leading-tight text-[#1a1240] dark:text-white">
                {formatWalletAddressShort(repayWalletAddress)}
             </p>
-            {copiedAddress && (
-               <p className="mt-1.5 text-[12px] font-medium text-[#16a34a]">
+            {copiedAddress ? <p className="mt-1.5 text-[12px] font-medium text-[#16a34a]">
                   {activeSource.id === 'moneybees' ? 'Now open Moneybees below →' : 'Now paste it into the app below →'}
-               </p>
-            )}
+               </p> : null}
          </button>
          {/* Wrong-network sends lose funds and can't be recovered — make BASE unmissable
                                         at the exact moment the borrower copies the address to paste as a destination. */}
@@ -2108,8 +2110,10 @@ export default function Repay() {
                            className="rounded-[14px] bg-[#fff6dc] px-4 py-3 text-[14px] leading-[20px] text-[#6b4a00] dark:bg-[#3a2e10] dark:text-[#ffe27a]"
                            data-testid="repay-fast-note"
                         >
-                           <b>Your limit stays ${completion.fastRepayLimit}.</b> Loans paid back in under 2 days don’t count. Next time,
-                           keep it at least 2 days to level up.
+                           <b>Your limit stays ${completion.fastRepayLimit}.</b>{' '}
+                           {completion.fastRepaySecondHalf
+                              ? 'Only payments in the 2nd half of a loan grow it. Next time, borrow your full limit and pay in the 2nd half.'
+                              : 'Loans paid back in under 2 days don’t count. Next time, keep it at least 2 days to level up.'}
                         </p>
                      ) : null}
                      {completion.trustPoints > 0 ? <DoneRow>+{completion.trustPoints} Pandesal points</DoneRow> : null}
@@ -2340,20 +2344,23 @@ export default function Repay() {
       });
       const currentLimit = user.cs || STARTING_CREDIT_LIMIT;
       const nextLimit = progression.shouldLevelUp ? progression.nextLimit : currentLimit;
-      // The 48-hour rule: paying now won't level them up — say so before they pay, with when it would.
+      // Too early to grow the limit (the second-half rule; older loans the 48-hour one): say so before they
+      // pay, with when it would.
       const fastCountsFrom =
-         clearsLoan && isFastRepay(selectedLoan.fundedAt ?? null, new Date().toISOString()) ? countsFromAt(selectedLoan.fundedAt) : null;
+         clearsLoan && isTooEarlyRepay(selectedLoan.fundedAt ?? null, new Date().toISOString(), selectedLoan.dueDate, selectedLoan.dueTimezone)
+            ? countsFromAt(selectedLoan.fundedAt, selectedLoan.dueDate, selectedLoan.dueTimezone)
+            : null;
+      const fastSecondHalf = Boolean(selectedLoan.fundedAt) && Date.parse(selectedLoan.fundedAt as string) >= SECOND_HALF_RULE_FROM;
       const fastNote = fastCountsFrom ? (
          <span className="text-[13px] font-medium leading-[17px] text-[#7a6a4f] dark:text-[#bfb29a]" data-testid="repay-fast-before-note">
             ⏳ Pay from{' '}
             {fastCountsFrom.toLocaleString('en-US', {
                month: 'short',
                day: 'numeric',
-               hour: 'numeric',
-               minute: '2-digit',
+               ...(fastSecondHalf ? {} : { hour: 'numeric', minute: '2-digit' }),
                timeZone: getLoanTimezone(selectedLoan)
             })}{' '}
-            to raise your limit — keep loans at least 2 days.
+            {fastSecondHalf ? 'to raise your limit: the 2nd half of your loan.' : 'to raise your limit — keep loans at least 2 days.'}
          </span>
       ) : null;
       const goTo = (next: WizardStep) => {
@@ -3122,8 +3129,7 @@ export default function Repay() {
             ) : null}
 
             {selectedLoan ? (
-               <>
-                  <section className="relative overflow-hidden rounded-md-xl border border-[#ede8fb] bg-white shadow-[0_8px_24px_rgba(96,16,210,0.07)] dark:border-[#3d2a60] dark:bg-[#1a1240]">
+               <section className="relative overflow-hidden rounded-md-xl border border-[#ede8fb] bg-white shadow-[0_8px_24px_rgba(96,16,210,0.07)] dark:border-[#3d2a60] dark:bg-[#1a1240]">
                      {isProcessing ? (
                         <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-3 bg-white/85 px-6 text-center backdrop-blur-sm">
                            <Loader2 className="h-8 w-8 animate-spin text-md-primary-1200" aria-hidden="true" />
@@ -3197,7 +3203,6 @@ export default function Repay() {
                         </span>
                      </div>
                   </section>
-               </>
             ) : (
                <section className="flex min-h-[430px] flex-col items-center justify-center px-6 text-center">
                   <h2 className="text-md-h5 font-semibold text-[#040033]">{emptyRepayState?.title ?? 'No repayments yet'}</h2>

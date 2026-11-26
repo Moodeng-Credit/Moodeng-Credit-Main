@@ -1,15 +1,17 @@
 // Loan-timing questions typed to the Page by a known borrower (George 2026-11-20):
 //
 //   "kailan ko babayaran?" / "can I pay in 1 week?"   → we're not loan sharks: every loan has a set term (theirs),
-//                                                       pay in the last week before your due date
-//   "I want to repay now" (days after borrowing)       → please pay in the week before your due date;
-//                                                       paying right away doesn't help your limit
+//                                                       pay in the 2nd half of your loan (since 2026-11-27; was
+//                                                       "the last week"), by the due day
+//   "I want to repay now" (in the first half)          → please pay in the 2nd half; paying in the first
+//                                                       half doesn't help your limit
 //   "can I borrow again?" / 2 loans in one month        → we're for long-term credit builders; fast
 //                                                       borrow-repay loops to push the limit don't work
 //
 // A cheap word check first, then Gemini says which one it is (no AI answer → a person handles it). Early repays
 // and quick re-borrows are flagged to the team (⚠️ may be gaming the limit). Every message still becomes
 // a support ticket; extension / can't-pay / problems aren't answered here at all.
+import { secondHalfStartAt } from './creditAndPoints.ts';
 import { GEMINI_MODEL } from './geminiPreScreen.ts';
 import { getAdminChatId } from './loanAccess.ts';
 import { sendMessengerMessage } from './sendpulse.ts';
@@ -22,8 +24,8 @@ export type TimingIntent = 'term' | 'early' | 'again' | 'other';
 export type Locale = 'en' | 'fil';
 
 const DAY = 86_400_000;
-/** "Pay in the last week before your due date." */
-export const REPAY_WINDOW_DAYS = 7;
+/** Fallback when a loan has no funding time: the 2nd half of a 30-day loan. */
+export const REPAY_WINDOW_DAYS = 15;
 export const LOAN_TERM_DAYS = 31;
 
 /** Worth asking the AI about at all? Pure. */
@@ -45,15 +47,24 @@ export type OpenLoan = { funded_at: string | null; due_date: string | null; due_
 export const fmtDate = (iso: string, tz: string | null, locale: Locale) =>
    new Intl.DateTimeFormat(locale === 'fil' ? 'fil-PH' : 'en-US', { month: 'short', day: 'numeric', timeZone: tz || 'Asia/Manila' }).format(new Date(iso));
 
-/** Before the last-week window opens (so "paying now" is early). Pure. */
-export const isEarly = (loan: OpenLoan | null, now: number) =>
-   !!loan?.due_date && now < Date.parse(loan.due_date) - REPAY_WINDOW_DAYS * DAY;
+/** When the loan's 2nd half starts (the best days to pay), same as the app's "Your next loan" card. Pure. */
+export const payFromAt = (loan: Pick<OpenLoan, 'funded_at' | 'due_date' | 'due_timezone'> | null): Date | null => {
+   if (!loan?.due_date) return null;
+   return secondHalfStartAt(loan.funded_at, loan.due_date, loan.due_timezone) ?? new Date(Date.parse(loan.due_date) - REPAY_WINDOW_DAYS * DAY);
+};
+
+/** Before the 2nd half starts (so "paying now" is early). Pure. */
+export const isEarly = (loan: OpenLoan | null, now: number) => {
+   const from = payFromAt(loan);
+   return from !== null && now < from.getTime();
+};
 
 /** The reply text. Pure. */
 export const timingReply = (intent: Exclude<TimingIntent, 'other'>, loan: OpenLoan | null, locale: Locale, now: number): string => {
    const fil = locale === 'fil';
    const due = loan?.due_date ? fmtDate(loan.due_date, loan.due_timezone, locale) : null;
-   const from = loan?.due_date ? fmtDate(new Date(Date.parse(loan.due_date) - REPAY_WINDOW_DAYS * DAY).toISOString(), loan.due_timezone, locale) : null;
+   const fromAt = payFromAt(loan);
+   const from = fromAt ? fmtDate(fromAt.toISOString(), loan?.due_timezone ?? null, locale) : null;
    // Terms differ per loan (mostly ~30 days, some shorter): quote theirs, never one fixed number.
    const termDays = loan?.funded_at && loan.due_date ? Math.round((Date.parse(loan.due_date) - Date.parse(loan.funded_at)) / DAY) : null;
    const notShark = fil
@@ -61,14 +72,14 @@ export const timingReply = (intent: Exclude<TimingIntent, 'other'>, loan: OpenLo
       : `We're not a loan shark 🙂 Every Moodeng loan has a set term${termDays ? ` (yours is ${termDays} days)` : ` (usually about a month, up to ${LOAN_TERM_DAYS} days)`}, and we follow the rules for lenders.`;
    const window = due
       ? fil
-         ? `Ang due date mo ay ${due}. Pinakamainam magbayad sa huling linggo bago nito: ${from} hanggang ${due}.`
-         : `Your due date is ${due}. The best time to pay is the last week before it: ${from} to ${due}.`
+         ? `Ang due date mo ay ${due}. Pinakamainam magbayad sa 2nd half ng loan mo: ${from} hanggang ${due}.`
+         : `Your due date is ${due}. The best time to pay is the 2nd half of your loan: ${from} to ${due}.`
       : fil
-        ? 'Pinakamainam magbayad sa huling linggo bago ang due date mo.'
-        : 'The best time to pay is the last week before your due date.';
+        ? 'Pinakamainam magbayad sa 2nd half ng loan mo, hanggang sa due date.'
+        : 'The best time to pay is the 2nd half of your loan, by your due date.';
    const builder = fil
-      ? 'Para kami sa mga gustong bumuo ng credit nang pangmatagalan. Ganito tumataas ang limit mo: isang loan, bayad sa tamang oras malapit sa due date.'
-      : "We're here for long-term credit builders. This is how your limit grows: one loan, paid on time near the due date.";
+      ? 'Para kami sa mga gustong bumuo ng credit nang pangmatagalan. Ganito tumataas ang limit mo: hiramin ang buong limit mo, at bayaran sa 2nd half ng loan.'
+      : "We're here for long-term credit builders. This is how your limit grows: borrow your full limit, and pay it back in the 2nd half of the loan.";
 
    if (intent === 'term') return [notShark, window, builder].join('\n\n');
    if (intent === 'early') {
@@ -81,8 +92,8 @@ export const timingReply = (intent: Exclude<TimingIntent, 'other'>, loan: OpenLo
          fil ? 'Salamat sa gustong magbayad agad! 🙏' : 'Thanks for wanting to pay early! 🙏',
          window,
          fil
-            ? 'Ang pagbayad agad pagkatapos humiram ay hindi nakakatulong sa limit mo, at puwede kang hindi makakuha ng rewards. Hindi rin namin tinatanggap ang paghiram at pagbayad nang mabilis para lang tumaas ang limit.'
-            : "Paying right after you borrow doesn't help your limit, and you can miss rewards. Borrowing and repaying fast just to push your limit up doesn't work here.",
+            ? 'Ang pagbayad sa unang kalahati ng loan ay hindi nakakatulong sa limit mo, at puwede kang hindi makakuha ng rewards. Hindi rin namin tinatanggap ang paghiram at pagbayad nang mabilis para lang tumaas ang limit.'
+            : "Paying in the first half of your loan doesn't help your limit, and you can miss rewards. Borrowing and repaying fast just to push your limit up doesn't work here.",
          builder
       ].join('\n\n');
    }
@@ -92,7 +103,7 @@ export const timingReply = (intent: Exclude<TimingIntent, 'other'>, loan: OpenLo
          ? 'Puwede kang humiram ulit, pero hindi maganda ang 2 loan sa isang buwan para sa credit mo. Tinatanggap namin ito, pero hindi kung para lang i-game ang system.'
          : "You can borrow again, but 2 loans in one month isn't good for your credit. We can accept it, just not when it's to game the system.",
       builder,
-      loan?.due_date ? window : fil ? 'Pinakamainam magbayad sa huling linggo bago ang due date.' : 'The best time to pay is the last week before your due date.'
+      loan?.due_date ? window : fil ? 'Pinakamainam magbayad sa 2nd half ng loan mo, hanggang sa due date.' : 'The best time to pay is the 2nd half of your loan, by your due date.'
    ].join('\n\n');
 };
 

@@ -830,5 +830,19 @@ export const filipinoCoverageB: Record<string, string> = {
    'This is where the borrower sets the amount, repayment, date, and reason. Sending it is when their ID gets checked.':
       'Dito ilalagay ng borrower ang amount, bayad, petsa, at dahilan. Pagpadala nito, saka iche-check ang ID nila.',
    'New borrowers set up, have a short call with the team, then fill in a request. A quick ID check is the last step of sending it.':
-      'Ang bagong borrower ay mag-se-set up, may maikling call sa team, tapos magfi-fill in ng request. Ang mabilis na ID check ang huling hakbang bago ito maipadala.'
+      'Ang bagong borrower ay mag-se-set up, may maikling call sa team, tapos magfi-fill in ng request. Ang mabilis na ID check ang huling hakbang bago ito maipadala.',
+   // Second-half rule (2026-11-27): Repay screen before and after paying early.
+   'Only payments in the 2nd half of a loan grow it. Next time, borrow your full limit and pay in the 2nd half.':
+      'Ang bayad lang sa 2nd half ng loan ang nagpapalaki nito. Sa susunod, hiramin ang buong limit mo at magbayad sa 2nd half.',
+   'to raise your limit: the 2nd half of your loan.': 'para tumaas ang limit mo: ang 2nd half ng loan mo.',
+   'Pay in the 2nd half of your loan': 'Magbayad sa 2nd half ng loan mo',
+   'When should you pay to grow your limit?': 'Kailan ka dapat magbayad para tumaas ang limit mo?',
+   'Right after you borrow': 'Agad pagkatapos manghiram',
+   'In the 2nd half of your loan': 'Sa 2nd half ng loan mo',
+   'A week after the due date': 'Isang linggo pagkatapos ng due date',
+   'Any time at all': 'Kahit kailan',
+   'Yes — pay in the 2nd half of your loan, by the due day. Your limit grows after that.':
+      'Tama — magbayad sa 2nd half ng loan mo, hanggang sa due day. Tataas ang limit mo pagkatapos.',
+   'Not quite — only payments in the 2nd half of your loan, by the due day, grow your limit.':
+      'Hindi pa — ang bayad lang sa 2nd half ng loan mo, hanggang sa due day, ang nagpapataas ng limit mo.'
 };

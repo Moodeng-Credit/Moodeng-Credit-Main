@@ -11,7 +11,7 @@
 // People without an account keep the canned reply + sign-up card (buildAutoReply).
 import { withToday } from './aiToday.ts';
 import { GEMINI_MODEL } from './geminiModel.ts';
-import { fmtDate, REPAY_WINDOW_DAYS } from './messengerLoanTiming.ts';
+import { fmtDate, payFromAt } from './messengerLoanTiming.ts';
 
 // deno-lint-ignore no-explicit-any
 type Svc = any;
@@ -52,7 +52,7 @@ const money = (n: number) => `$${Number.isInteger(n) ? n : n.toFixed(2)}`;
 export const ackPrompt = (facts: AckFacts): string => {
    const hi = facts.firstName ? `Hi ${facts.firstName}!` : 'Hi!';
    const loan = facts.loan
-      ? `Their open loan: they owe ${money(facts.loan.owed)}, due ${facts.loan.due}. The best time to pay is the last week before the due date: ${facts.loan.payFrom} to ${facts.loan.due}.`
+      ? `Their open loan: they owe ${money(facts.loan.owed)}, due ${facts.loan.due}. The best time to pay is the 2nd half of the loan: ${facts.loan.payFrom} to ${facts.loan.due}.`
       : 'They have no open loan right now. Do not mention any amounts or dates.';
    return [
       'You write the automatic first reply from Moodeng Credit, a small-loan app for people in the Philippines, to a borrower who just messaged its Facebook Page.',
@@ -114,6 +114,7 @@ async function askGemini(svc: Svc, facts: AckFacts, now: number): Promise<string
 }
 
 type LoanRow = {
+   funded_at?: string | null;
    due_date: string | null;
    due_timezone: string | null;
    total_repayment_amount: number | string | null;
@@ -127,7 +128,7 @@ type LoanRow = {
 const loadLoan = async (svc: Svc, userId: string, locale: Locale): Promise<AckLoan | null> => {
    const { data } = await svc
       .from('loans')
-      .select('due_date, due_timezone, total_repayment_amount, repaid_amount, repayment_status, loan_status, repayment_schedule')
+      .select('funded_at, due_date, due_timezone, total_repayment_amount, repaid_amount, repayment_status, loan_status, repayment_schedule')
       .eq('borrower_user_id', userId)
       .is('refunded_at', null)
       .order('created_at', { ascending: false })
@@ -137,11 +138,11 @@ const loadLoan = async (svc: Svc, userId: string, locale: Locale): Promise<AckLo
    const loan = open[0];
    const owed = Math.round(Math.max(0, Number(loan.total_repayment_amount ?? 0) - Number(loan.repaid_amount ?? 0)) * 100) / 100;
    if (!owed) return null;
-   const dueAt = Date.parse(loan.due_date!);
+   const from = payFromAt({ funded_at: loan.funded_at ?? null, due_date: loan.due_date, due_timezone: loan.due_timezone });
    return {
       owed,
       due: fmtDate(loan.due_date!, loan.due_timezone, locale),
-      payFrom: fmtDate(new Date(dueAt - REPAY_WINDOW_DAYS * DAY).toISOString(), loan.due_timezone, locale)
+      payFrom: fmtDate((from ?? new Date(loan.due_date!)).toISOString(), loan.due_timezone, locale)
    };
 };
 
