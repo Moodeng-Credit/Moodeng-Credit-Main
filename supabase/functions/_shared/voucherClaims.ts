@@ -21,6 +21,7 @@ import { sendEmail } from './email.ts';
 import { getGiftawayConfig, giftawaySource, type GiftawayBrand, orderGiftawayEgift, toPhilippineMobile } from './giftaway.ts';
 import { isPlaceholderEmail } from './placeholderEmail.ts';
 import { getTelegramBotSettingEnabled } from './borrowerNotificationDelivery.ts';
+import { MESSENGER_TEMPLATES, sendTemplateToContact } from './metaMessenger.ts';
 import { type MessengerCard, messengerChatUrl, sendMessengerMessage, sendWhatsAppTemplate, type WhatsAppTemplate } from './sendpulse.ts';
 import { sendTelegramMessage, type TelegramInlineKeyboard } from './telegram.ts';
 
@@ -332,8 +333,9 @@ export const buildRewardWhatsAppTemplate = (firstName: string | null | undefined
 export type BorrowerTold = { messenger: 'sent' | string; whatsapp: 'sent' | string | null };
 
 /**
- * Messenger first; when that fails, the WhatsApp template saying where the voucher went. Never
- * throws. WhatsApp is skipped when they never connected it, sent STOP, or the switch is off.
+ * Messenger first; outside its 24h window, the Page template moodeng_reward_sent (straight through
+ * Meta); when neither lands, the WhatsApp template saying where the voucher went. Never throws.
+ * WhatsApp is skipped when they never connected it, sent STOP, or the switch is off.
  */
 export const tellBorrower = async (
    supabase: SupabaseClient,
@@ -341,8 +343,17 @@ export const tellBorrower = async (
    content: RewardMessengerContent,
    notice: RewardNotice
 ): Promise<BorrowerTold> => {
-   const messenger = await messageBorrower(facebook, content);
-   if (messenger === 'sent' || !facebook?.whatsappContactId) return { messenger, whatsapp: null };
+   let messenger = await messageBorrower(facebook, content);
+   if (messenger !== 'sent' && facebook?.contactId) {
+      const viaMeta = await sendTemplateToContact(
+         supabase,
+         { contactId: facebook.contactId, facebookName: facebook.facebookName },
+         { name: MESSENGER_TEMPLATES.rewardSent, params: [facebook.firstName?.trim() || 'there', notice.what.replace(/₱\s*(\d)/, 'PHP $1'), notice.sentTo] }
+      );
+      if (viaMeta.ok) messenger = 'sent_template';
+      else console.log(`[voucher] Messenger reward template → not sent (${viaMeta.reason})`);
+   }
+   if (messenger === 'sent' || messenger === 'sent_template' || !facebook?.whatsappContactId) return { messenger, whatsapp: null };
    const enabled = await getTelegramBotSettingEnabled(supabase, VOUCHER_WHATSAPP_SETTING_KEY).catch(() => false);
    if (!enabled) return { messenger, whatsapp: null };
    const result = await sendWhatsAppTemplate(facebook.whatsappContactId, buildRewardWhatsAppTemplate(facebook.firstName, notice));
@@ -352,6 +363,7 @@ export const tellBorrower = async (
 /** One line for the admin card: did the bot reach them (and, if Messenger didn't, did WhatsApp)? */
 export const messengerOutcomeLine = (outcome: 'sent' | string, whatsapp: 'sent' | string | null = null) => {
    if (outcome === 'sent') return '💬 Messenger: told them ✓';
+   if (outcome === 'sent_template') return '💬 Messenger: told them where it went (outside 24h, template) ✓';
    const messenger =
       outcome === 'no_contact'
          ? '💬 Messenger: not linked'

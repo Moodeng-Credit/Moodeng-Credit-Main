@@ -21,6 +21,7 @@ import {
 } from './pushMessages.ts';
 import { type MessengerCard, sendMessengerMessage, sendWhatsAppTemplate, type WhatsAppTemplate } from './sendpulse.ts';
 import { sendTelegramMessage } from './telegram.ts';
+import { MESSENGER_TEMPLATES, sendTemplateToContact } from './metaMessenger.ts';
 import { remainingIdr } from './fxRates.ts';
 import { type IdEvent, sendIdTelegramTo } from './idTrack.ts';
 
@@ -452,6 +453,20 @@ export const sendBorrowerLoanNotification = async (
       // Every outcome is logged, so "did the bot tell them?" is one log search (a borrower's funded
       // message on 2026-10-01 was skipped with no trace).
       console.log(`[borrowerNotification] Messenger "${type}" for ${loan?.tracking_id ?? '?'} → ${result.ok ? 'sent' : `not sent (${result.reason})`}`);
+      // Funded outside the 24h window: the approved Page template moodeng_loan_funded, straight through
+      // Meta (English, so not for the Indonesia track, which hears on Telegram).
+      if (!result.ok && type === 'funded' && loan && options.push?.supabase && cashOutWho?.market !== 'ID') {
+         const viaMeta = await sendTemplateToContact(
+            options.push.supabase,
+            { contactId: recipient.messenger_psid },
+            {
+               name: MESSENGER_TEMPLATES.funded,
+               params: [recipient.username?.trim() || 'there', `$${formatUsdcAmount(loan.loan_amount)}`, formatDueDate(loan.due_date) ?? 'your due date']
+            }
+         );
+         messengerSent = viaMeta.ok;
+         console.log(`[borrowerNotification] Messenger "funded" template for ${loan.tracking_id ?? '?'} → ${viaMeta.ok ? 'sent' : `not sent (${viaMeta.reason})`}`);
+      }
    } else if (messengerContent) {
       console.log(`[borrowerNotification] Messenger "${type}" for ${loan?.tracking_id ?? '?'} → not sent (no Facebook connected)`);
    }

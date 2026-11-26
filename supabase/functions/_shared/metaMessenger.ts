@@ -110,6 +110,52 @@ export const sendUtilityTemplate = async (
    return sent.ok ? { ok: true, messageId: sent.json?.message_id ?? null, steps } : { ok: false, reason: errText(sent), steps };
 };
 
+// Facebook's Page-scoped id for a SendPulse contact: the latest sender_id in our event log (same rule
+// as private.messenger_meta_psid). Null when we never logged a message from them.
+export const metaPsidForContact = async (svc: Svc, contactId: string): Promise<string | null> => {
+   const { data } = await svc
+      .from('messenger_contact_events')
+      .select('payload')
+      .eq('contact_id', contactId)
+      .order('created_at', { ascending: false })
+      .limit(50);
+   for (const row of (data ?? []) as Array<{ payload: { info?: { message?: { channel_data?: { sender_id?: unknown } } } } | null }>) {
+      const id = String(row.payload?.info?.message?.channel_data?.sender_id ?? '');
+      if (/^\d{5,25}$/.test(id) && id !== META_PAGE_ID) return id;
+   }
+   return null;
+};
+
+// Page utility templates (Graph POST /PAGE/message_templates, all Utility, English, "Open Moodeng" button
+// to moodeng.app/dashboard). Created 2026-11-27 as the outside-24h fallback for messages that were
+// Messenger free text only. Body variables:
+//   moodeng_loan_funded       {{1}} name, {{2}} amount, {{3}} due date
+//   moodeng_payment_received  {{1}} name, {{2}} amount
+//   moodeng_reward_sent       {{1}} name, {{2}} what ("PHP 50 food voucher"), {{3}} where it went
+//   moodeng_account_approved  {{1}} name
+export const MESSENGER_TEMPLATES = {
+   funded: 'moodeng_loan_funded',
+   paymentReceived: 'moodeng_payment_received',
+   rewardSent: 'moodeng_reward_sent',
+   approved: 'moodeng_account_approved'
+} as const;
+
+/**
+ * The outside-24h fallback for one SendPulse contact: finds their Page-scoped id (event log, else a
+ * unique exact Facebook-name match) and sends the approved utility template. Never throws.
+ */
+export const sendTemplateToContact = async (
+   svc: Svc,
+   who: { contactId: string | null | undefined; facebookName?: string | null },
+   t: { name: string; params: string[] }
+): Promise<MetaSendResult> => {
+   const psid =
+      (who.contactId ? await metaPsidForContact(svc, who.contactId).catch(() => null) : null) ??
+      (who.facebookName ? await findPsidByName(svc, who.facebookName).catch(() => null) : null);
+   if (!psid) return { ok: false, reason: 'no_messenger_id', steps: [] };
+   return sendUtilityTemplate(svc, psid, t);
+};
+
 /**
  * PSID by Facebook name from the Page's Messenger conversations, for people our event log never saw
  * (borrowers from before Oct 2026). Only an exact, unique name match counts: two people with the
