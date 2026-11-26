@@ -455,7 +455,7 @@ export default function FundingMethodModal({ target, onClose, onDirectLend, onFu
                Try again
             </button>
          </div>
-      ) : cap.over && !cap.override ? (
+      ) : cap.over && !cap.override && !cap.soft ? (
          <div className="space-y-md-2">
             <div className="rounded-[16px] border border-[#f5c56b] bg-[#fff6e0] p-md-3">
                <p className="text-md-b1 font-semibold text-[#8a5300]">Over this borrower’s cap</p>
@@ -487,6 +487,16 @@ export default function FundingMethodModal({ target, onClose, onDirectLend, onFu
          <p className="mb-md-3 rounded-[16px] bg-[#faf8fc] px-md-3 py-2.5 text-md-b3 text-md-neutral-1500">
             Cap {usd(cap.override.cap ?? cap.cap)} overridden: {cap.override.reason}
          </p>
+      ) : cap !== 'checking' && cap !== 'error' && cap.soft && cap.over ? (
+         // Soft cap: a heads-up only, funding goes ahead as normal.
+         <div className="mb-md-3 rounded-[16px] border border-[#f5c56b] bg-[#fff6e0] p-md-3">
+            <p className="text-md-b2 font-semibold text-[#8a5300]">Over this borrower’s soft cap</p>
+            <p className="mt-1 text-md-b3 text-[#8a5300] tabular-nums">
+               Cap {usd(cap.cap)} · {usd(cap.inUse)} in use · this loan {usd(cap.amount)}
+            </p>
+            {cap.note ? <p className="mt-1 text-md-b3 text-[#8a5300]">Why capped: {cap.note}</p> : null}
+            <p className="mt-1 text-md-b3 text-[#8a5300]">You can still fund it. The borrower doesn’t know about the cap.</p>
+         </div>
       ) : null;
 
    const connectStep = (stepTitle: string) => (

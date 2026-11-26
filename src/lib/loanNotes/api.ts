@@ -159,6 +159,8 @@ export async function recordAdminFunding(payload: {
 /** Per-borrower cap check for a loan (admin-fund-loan cap_status). */
 export interface LoanCapStatus {
    capped: boolean;
+   /** Soft cap: warn the team, never block or tell the borrower. */
+   soft?: boolean;
    cap: number | null;
    note: string | null;
    inUse: number;

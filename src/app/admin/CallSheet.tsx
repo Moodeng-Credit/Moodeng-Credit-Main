@@ -427,6 +427,7 @@ function LoanCapBox({ userId }: { userId: string }) {
    const [cap, setCap] = useState<LoanCap | null | undefined>(undefined);
    const [amount, setAmount] = useState('');
    const [note, setNote] = useState('');
+   const [soft, setSoft] = useState(false);
    const [busy, setBusy] = useState(false);
    const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
@@ -438,6 +439,7 @@ function LoanCapBox({ userId }: { userId: string }) {
             setCap(c);
             setAmount(c ? String(c.capUsd) : '');
             setNote(c?.note ?? '');
+            setSoft(c?.soft ?? false);
          })
          .catch((err) => !cancelled && (setCap(null), setMsg({ ok: false, text: err instanceof Error ? err.message : 'Could not load the cap.' })));
       return () => {
@@ -461,7 +463,7 @@ function LoanCapBox({ userId }: { userId: string }) {
       }
    };
    const value = Number(amount);
-   const changed = cap ? value !== cap.capUsd || note.trim() !== cap.note : amount.trim() !== '';
+   const changed = cap ? value !== cap.capUsd || note.trim() !== cap.note || soft !== cap.soft : amount.trim() !== '';
 
    if (cap === undefined) return <p className="text-[13px] text-[#9b9a97]">Loading…</p>;
    return (
@@ -485,7 +487,12 @@ function LoanCapBox({ userId }: { userId: string }) {
                className="h-9 flex-1 rounded-md bg-[#6b55f7] text-[14px] font-semibold text-white transition hover:brightness-110 disabled:opacity-40"
                disabled={busy || !changed || !(value > 0)}
                onClick={() =>
-                  void run(() => saveLoanCap(userId, value, note), `Capped at $${value}`, { capUsd: value, note: note.trim(), setAt: new Date().toISOString() })
+                  void run(() => saveLoanCap(userId, value, note, soft), `${soft ? 'Soft cap' : 'Capped'} at $${value}`, {
+                     capUsd: value,
+                     note: note.trim(),
+                     soft,
+                     setAt: new Date().toISOString()
+                  })
                }
                type="button"
             >
@@ -502,6 +509,10 @@ function LoanCapBox({ userId }: { userId: string }) {
                </button>
             ) : null}
          </div>
+         <label className="flex items-center gap-2 text-[13px] text-[#37352f]">
+            <input checked={soft} onChange={(e) => setSoft(e.target.checked)} type="checkbox" />
+            Soft: don’t hold or tell them, just alert the team
+         </label>
          {msg ? <p className={`text-[13px] ${msg.ok ? 'text-[#0f7b3f]' : 'text-[#b42318]'}`}>{msg.text}</p> : null}
       </div>
    );

@@ -196,7 +196,7 @@ serve(async (req) => {
 
       const loanUrl = buildLoanUrl(loan.id);
       // A request on hold isn't shown to lenders yet: tell the team why, and don't broadcast it.
-      const cap = loan.on_hold_reason === 'over_cap' ? await capStatus(supabase, loan.id).catch(() => null) : null;
+      const cap = loan.borrower_user_id ? await capStatus(supabase, loan.id).catch(() => null) : null;
       const holdNote =
          loan.on_hold_since && loan.on_hold_reason === 'over_cap'
             ? `🚧 OVER THEIR CAP: cap $${cap?.cap ?? '?'}, $${cap?.inUse ?? '?'} already in use, asking $${loan.loan_amount}.` +
@@ -210,7 +210,14 @@ serve(async (req) => {
       const message = holdNote + buildTelegramLoanRequestMessage(loan, history ?? [], borrower, loanUrl);
       // Admin copy (team Telegram + Discord) also says what proof of income they sent; the lender copy doesn't.
       const income = loan.borrower_user_id ? await incomeProofLine(supabase, loan.borrower_user_id).catch(() => null) : null;
-      const adminMessage = income ? `${income.line}\n\n${message}` : message;
+      // Soft cap: the request still goes to lenders and the borrower isn't told; only the team copy says so.
+      const softCapNote =
+         cap?.soft && cap.over
+            ? `⚠️ OVER THEIR SOFT CAP: cap $${cap.cap}, $${cap.inUse} already in use, asking $${loan.loan_amount}.` +
+              (cap.note ? ` Cap note: ${cap.note}` : '') +
+              '\nStill shown to lenders and the borrower is not told. Check before anyone funds it.\n\n'
+            : '';
+      const adminMessage = softCapNote + (income ? `${income.line}\n\n${message}` : message);
 
       if (dryRun) {
          return new Response(JSON.stringify({ message, adminMessage, loanUrl }), {
