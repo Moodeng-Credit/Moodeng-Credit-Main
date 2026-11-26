@@ -91,21 +91,18 @@ export default function SuccessModal({ clickOutsideRef, isOpen, onClose }: Succe
                      />
                   ))}
                </div>
-               <p className="mt-2 text-[13px] font-medium tracking-[-0.01em] text-[#70617F] dark:text-[#A89BB8]">
-                  Emma &amp; George · Moodeng team
-               </p>
+               <p className="mt-2 text-[13px] font-medium tracking-[-0.01em] text-[#70617F] dark:text-[#A89BB8]">Emma &amp; George</p>
                <h2 className="mt-4 text-[28px] font-bold leading-[1.15] tracking-[-0.04em] text-[#040033] dark:text-[#F0EAFF]">
                   Request sent
                </h2>
-               <p className="mt-2 text-[16px] font-semibold leading-[22px] tracking-[-0.02em] text-[#040033] dark:text-[#F0EAFF]">
-                  We&apos;ve passed it to our moo-lenders.
-               </p>
-               <p className="mt-1 text-[15px] leading-[22px] tracking-[-0.01em] text-[#70617F] dark:text-[#A89BB8]">
-                  They review every request and may fund it. It can take some time. We&apos;ll get back to you.
+               {/* Fewer words (George, 2026-11-26). "We'll get back to you" carries the wait; no funding promise. */}
+               <p className="mt-2 text-[15px] leading-[22px] tracking-[-0.01em] text-[#70617F] dark:text-[#A89BB8]">
+                  <span className="block">We&apos;ve passed it to moo-lenders.</span>
+                  <span className="block">We&apos;ll get back to you.</span>
                </p>
 
                <p className="mt-6 self-start text-[13px] font-semibold tracking-[-0.01em] text-[#040033] dark:text-[#F0EAFF]">
-                  Meet moo-lenders in our group
+                  Join our group
                </p>
                <div className="mt-2 grid w-full grid-cols-2 gap-2">
                   <a className={GROUP_TILE} href={BORROWER_GROUP_TELEGRAM_URL} rel="noopener noreferrer" target="_blank">
@@ -145,7 +142,7 @@ export default function SuccessModal({ clickOutsideRef, isOpen, onClose }: Succe
                   <span className="size-[18px]">
                      <MessengerGlyph />
                   </span>
-                  Questions? Message us
+                  Message us
                </a>
             </div>
          </section>

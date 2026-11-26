@@ -636,6 +636,10 @@ export const filipinoCoverageB: Record<string, string> = {
    'Questions? Message us': 'May tanong? Mag-message sa amin',
    'Emma & George · Moodeng team': 'Emma & George · Moodeng team',
    "We've passed it to our moo-lenders.": 'Naipasa na namin ito sa mga moo-lender namin.',
+   "We've passed it to moo-lenders.": 'Naipasa na namin sa mga moo-lender.',
+   "We'll get back to you.": 'Babalikan ka namin.',
+   'Join our group': 'Sumali sa group namin',
+   'Message us': 'Mag-message sa amin',
    "They review every request and may fund it. It can take some time. We'll get back to you.":
       'Sinusuri nila ang bawat request at puwede nila itong pondohan. Puwedeng tumagal ito. Babalikan ka namin.',
    // src/components/verification/VerifyYourselfModal.tsx (accepted IDs)
