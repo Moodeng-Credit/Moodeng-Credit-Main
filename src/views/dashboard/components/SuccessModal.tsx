@@ -12,6 +12,8 @@ interface SuccessModalProps {
 
 const BORROWER_GROUP_TELEGRAM_URL = 'https://t.me/jimmymoodengcredit';
 const BORROWER_GROUP_FACEBOOK_URL = 'https://www.facebook.com/groups/1593629908540434';
+// The two people borrowers deal with on Messenger and on their call, as small 3D avatars.
+const TEAM_AVATARS = ['/team/cartoon-emma.png', '/team/cartoon-george.png'];
 
 const GROUP_TILE =
    'flex h-12 items-center justify-center gap-2 rounded-2xl border border-[#E7E0F0] bg-white text-[15px] font-semibold tracking-[-0.02em] text-[#040033] active:scale-[0.98] dark:border-[#3A2F55] dark:bg-[#221A30] dark:text-[#F0EAFF]';
@@ -75,15 +77,31 @@ export default function SuccessModal({ clickOutsideRef, isOpen, onClose }: Succe
             onPointerCancel={endDismissGesture}
             style={{ transform: `translateY(${dismissOffset}px)` }}
          >
-            {/* 2026-11-26: Mahjid's wording (never "we can't do many loans"); the sign-in screen's crisp look with
-                the hippo. Team photos were tried and dropped (George: hippo only; no AI-made faces). */}
+            {/* 2026-11-26: the team (Emma & George, 3D avatars made from their photos) has passed the request on
+                to moo-lenders and will get back to them. Mahjid's tone: never "we can't do many loans", never a
+                promise it gets funded. The sign-in screen's crisp look. */}
             <div className="flex flex-col items-center px-6 pb-6 pt-8 text-center">
-               <img src="/auth-screen.png" alt="" aria-hidden="true" className="h-[70px] w-[80px] object-contain" />
+               <div className="flex -space-x-3" aria-hidden="true">
+                  {TEAM_AVATARS.map((src) => (
+                     <img
+                        key={src}
+                        alt=""
+                        src={src}
+                        className="h-[60px] w-[60px] rounded-full bg-[#F3EEFB] object-cover ring-4 ring-white dark:ring-[#1A1426]"
+                     />
+                  ))}
+               </div>
+               <p className="mt-2 text-[13px] font-medium tracking-[-0.01em] text-[#70617F] dark:text-[#A89BB8]">
+                  Emma &amp; George · Moodeng team
+               </p>
                <h2 className="mt-4 text-[28px] font-bold leading-[1.15] tracking-[-0.04em] text-[#040033] dark:text-[#F0EAFF]">
                   Request sent
                </h2>
-               <p className="mt-2 text-[15px] leading-[22px] tracking-[-0.01em] text-[#70617F] dark:text-[#A89BB8]">
-                  Moo-lenders review every request. Once they&apos;ve looked at yours, they may fund it. This can take some time.
+               <p className="mt-2 text-[16px] font-semibold leading-[22px] tracking-[-0.02em] text-[#040033] dark:text-[#F0EAFF]">
+                  We&apos;ve passed it to our moo-lenders.
+               </p>
+               <p className="mt-1 text-[15px] leading-[22px] tracking-[-0.01em] text-[#70617F] dark:text-[#A89BB8]">
+                  They review every request and may fund it. It can take some time. We&apos;ll get back to you.
                </p>
 
                <p className="mt-6 self-start text-[13px] font-semibold tracking-[-0.01em] text-[#040033] dark:text-[#F0EAFF]">
