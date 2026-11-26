@@ -1,6 +1,6 @@
 import { assertEquals } from 'https://deno.land/std@0.168.0/testing/asserts.ts';
 
-import { extractBooking, verifySignature } from './parse.ts';
+import { extractBooking, extractOutsideDetails, verifySignature } from './parse.ts';
 
 // Compute the hex HMAC-SHA256 the same way Cal.com signs a delivery, so we can prove verify accepts
 // a good signature and rejects a tampered body.
@@ -111,4 +111,24 @@ Deno.test('attendee emails are collected (lowercased) from attendees and the ema
       }
    };
    assertEquals(extractBooking(body)?.attendeeEmails, ['borrower@example.com', 'george@moodeng.app']);
+});
+
+Deno.test('booked on Cal.com directly: attendee name, zone and organizer for matching', () => {
+   const body = {
+      triggerEvent: 'BOOKING_CREATED',
+      payload: {
+         uid: 'bk_out',
+         startTime: '2026-11-27T12:00:00Z',
+         attendees: [{ email: 'Someone@Example.com', name: ' Ana ', timeZone: 'Asia/Manila' }],
+         organizer: { email: 'Host@Example.com' }
+      }
+   };
+   assertEquals(extractBooking(body)?.userId, null);
+   assertEquals(extractBooking(body)?.attendeeEmails, ['someone@example.com']);
+   assertEquals(extractOutsideDetails(body), { attendeeName: 'Ana', attendeeTimeZone: 'Asia/Manila', organizerEmail: 'host@example.com' });
+   assertEquals(extractOutsideDetails({ triggerEvent: 'BOOKING_CREATED' }), {
+      attendeeName: null,
+      attendeeTimeZone: null,
+      organizerEmail: null
+   });
 });

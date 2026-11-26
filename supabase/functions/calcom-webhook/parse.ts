@@ -16,7 +16,8 @@ export type CalcomWebhookBody = {
       videoCallData?: { url?: string };
       metadata?: Record<string, unknown>;
       responses?: Record<string, unknown>;
-      attendees?: Array<{ email?: unknown }>;
+      attendees?: Array<{ email?: unknown; name?: unknown; timeZone?: unknown }>;
+      organizer?: { email?: unknown };
       rescheduleUid?: unknown;
       fromReschedule?: unknown;
       rescheduledFromUid?: unknown;
@@ -45,9 +46,7 @@ const toHex = (buf: ArrayBuffer) => Array.from(new Uint8Array(buf), (b) => b.toS
 
 export const verifySignature = async (rawBody: string, header: string | null, secret: string): Promise<boolean> => {
    if (!secret || !header) return false;
-   const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, [
-      'sign'
-   ]);
+   const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
    const signature = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(rawBody));
    return toHex(signature).toLowerCase() === header.trim().toLowerCase();
 };
@@ -97,5 +96,20 @@ export const extractBooking = (body: CalcomWebhookBody): CalcomBooking | null =>
          [payload.rescheduleUid, payload.fromReschedule, payload.rescheduledFromUid].find(
             (value): value is string => typeof value === 'string' && value.length > 0
          ) ?? null
+   };
+};
+
+// A booking made on Cal.com's own page (not through our app) has no moodeng_user_id: the borrower
+// rebooked from a Cal.com email or a saved link. What we need to match it to them and tell them.
+export type OutsideDetails = { attendeeName: string | null; attendeeTimeZone: string | null; organizerEmail: string | null };
+
+const str = (value: unknown): string | null => (typeof value === 'string' && value.trim() ? value.trim() : null);
+
+export const extractOutsideDetails = (body: CalcomWebhookBody): OutsideDetails => {
+   const first = body.payload?.attendees?.[0];
+   return {
+      attendeeName: str(first?.name),
+      attendeeTimeZone: str(first?.timeZone),
+      organizerEmail: str(body.payload?.organizer?.email)?.toLowerCase() ?? null
    };
 };

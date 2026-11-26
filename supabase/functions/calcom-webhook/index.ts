@@ -3,17 +3,18 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { openInAdminButton, personName, stampDecisionCards } from '../_shared/adminCards.ts';
 import { ATTENDANCE_RESET, meetingIdFromJoinUrl } from '../_shared/attendance.ts';
+import { cancelCallButton } from '../_shared/callCancel.ts';
+import { changeTimeLinkButton, isValidChangeTimeToken } from '../_shared/callReschedule.ts';
+import { autoRejectForStrikes, logCallEvent, teamMovedRecently } from '../_shared/callStrikes.ts';
 import { postDiscord } from '../_shared/discord.ts';
+import { sendIdTelegram } from '../_shared/idTrack.ts';
 import { BORROWER_COLUMNS, type BorrowerRow, getCallChangesChatId, notifyBorrower, PAGE_INBOX_URL, who } from '../_shared/loanAccess.ts';
 import { needsPreKycGate } from '../_shared/preKycGate.ts';
 import { sendTelegramMessage } from '../_shared/telegram.ts';
-import { changeTimeLinkButton, isValidChangeTimeToken } from '../_shared/callReschedule.ts';
-import { cancelCallButton } from '../_shared/callCancel.ts';
 import { testAccountRow } from '../_shared/testAccount.ts';
 import { buildRescheduleUrl, formatCallTimeForTeam, sendMovedMessenger } from '../_shared/videoCall.ts';
-import { extractBooking, verifySignature, type CalcomWebhookBody } from './parse.ts';
-import { sendIdTelegram } from '../_shared/idTrack.ts';
-import { autoRejectForStrikes, logCallEvent, teamMovedRecently } from '../_shared/callStrikes.ts';
+import { adoptOutsideBooking, findHolderOfBooking } from './outside.ts';
+import { type CalcomWebhookBody, extractBooking, extractOutsideDetails, verifySignature } from './parse.ts';
 
 // Cal.com webhook — the server-side "did they actually book it" gate for the no-referral video
 // call, replacing the client-asserted mark_video_call_scheduled RPC.
@@ -37,7 +38,8 @@ const SCHEDULED_EVENTS = new Set(['BOOKING_CREATED', 'BOOKING_RESCHEDULED']);
 const CANCELLED_EVENTS = new Set(['BOOKING_CANCELLED', 'BOOKING_REJECTED']);
 
 // Plain text: Supabase serves function responses on its own domain as text, not HTML.
-const textResponse = (message: string, status = 200) => new Response(message, { status, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
+const textResponse = (message: string, status = 200) =>
+   new Response(message, { status, headers: { 'Content-Type': 'text/plain; charset=utf-8' } });
 
 // 🔄 Change time on the team's Telegram call cards (changeTimeLinkButton): note it as a team move,
 // so the coming BOOKING_RESCHEDULED isn't a strike against the borrower, then open the booking's
@@ -45,7 +47,8 @@ const textResponse = (message: string, status = 200) => new Response(message, { 
 const openCalReschedule = async (url: URL): Promise<Response> => {
    const userId = (url.searchParams.get('move') ?? '').toLowerCase();
    const token = url.searchParams.get('t') ?? '';
-   if (!/^[0-9a-f-]{36}$/.test(userId) || !(await isValidChangeTimeToken(userId, token))) return textResponse('This link isn’t valid.', 403);
+   if (!/^[0-9a-f-]{36}$/.test(userId) || !(await isValidChangeTimeToken(userId, token)))
+      return textResponse('This link isn’t valid.', 403);
    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
    const { data } = await supabase.from('users').select('video_call_booking_uid, video_call_starts_at').eq('id', userId).maybeSingle();
    const row = data as { video_call_booking_uid?: string | null; video_call_starts_at?: string | null } | null;
@@ -95,8 +98,14 @@ serve(async (req) => {
 
    if (SCHEDULED_EVENTS.has(booking.triggerEvent)) {
       if (!booking.userId) {
-         console.error('calcom-webhook: booking with no moodeng_user_id metadata', booking.triggerEvent);
-         return jsonResponse({ ok: true });
+         // No moodeng_user_id: Cal.com moved one of our calls but dropped the metadata (carry on as a
+         // move for whoever holds the old booking), or they booked on Cal.com's own page.
+         booking.userId = await findHolderOfBooking(supabase, booking.rescheduledFromUid);
+         if (!booking.userId) {
+            const outcome = await adoptOutsideBooking(supabase, booking, extractOutsideDetails(body));
+            console.log('calcom-webhook: booking with no moodeng_user_id metadata', booking.triggerEvent, outcome);
+            return jsonResponse({ ok: true, outside: outcome });
+         }
       }
       // Our own booking (calcom-round-robin) already stamped this exact time, and Cal.com then echoes
       // BOOKING_CREATED — possibly late or retried. Only a genuinely new time restarts the reminder
@@ -128,7 +137,8 @@ serve(async (req) => {
       const { error } = await supabase
          .from('users')
          .update({
-            video_call_host: booking.host,
+            // A move Cal.com sent without our metadata has no host: it stays with the same one.
+            ...(booking.host ? { video_call_host: booking.host } : {}),
             video_call_starts_at: booking.startsAt,
             video_call_booking_uid: booking.bookingUid,
             ...(timeMoved
@@ -143,7 +153,9 @@ serve(async (req) => {
                : {}),
             // Keep the join link (and the Zoom meeting id attendance is matched on) in step with the
             // (possibly moved) booking — never a stale one.
-            ...(booking.joinUrl ? { video_call_join_url: booking.joinUrl, video_call_meeting_id: meetingIdFromJoinUrl(booking.joinUrl) } : {})
+            ...(booking.joinUrl
+               ? { video_call_join_url: booking.joinUrl, video_call_meeting_id: meetingIdFromJoinUrl(booking.joinUrl) }
+               : {})
          })
          .eq('id', booking.userId);
       if (error) console.error('calcom-webhook: mark scheduled failed', error);
@@ -152,7 +164,14 @@ serve(async (req) => {
       const previousStart = (current as { video_call_starts_at?: string | null } | null)?.video_call_starts_at ?? null;
       // They moved it themselves (Cal.com's reschedule link): a reschedule strike. The 3rd one
       // rejects them automatically (the moved call is cancelled, they're told why).
-      if (!error && rescheduleOfCurrent && timeMoved && previousStart && booking.startsAt && !(await teamMovedRecently(supabase, booking.userId))) {
+      if (
+         !error &&
+         rescheduleOfCurrent &&
+         timeMoved &&
+         previousStart &&
+         booking.startsAt &&
+         !(await teamMovedRecently(supabase, booking.userId))
+      ) {
          await logCallEvent(supabase, booking.userId, 'moved', booking.startsAt);
          if (await autoRejectForStrikes(supabase, booking.userId)) return jsonResponse({ ok: true, rejected: true });
       }
@@ -185,7 +204,9 @@ serve(async (req) => {
          // Tell the borrower too — whether they moved it or we did (🔄 Change time in Telegram).
          const { data: moved } = await supabase
             .from('users')
-            .select('messenger_psid, video_call_starts_at, video_call_timezone, video_call_join_url, video_call_confirm_token, video_call_confirmed_at, video_call_booking_uid')
+            .select(
+               'messenger_psid, video_call_starts_at, video_call_timezone, video_call_join_url, video_call_confirm_token, video_call_confirmed_at, video_call_booking_uid'
+            )
             .eq('id', booking.userId)
             .maybeSingle();
          if (moved) {
@@ -254,9 +275,15 @@ serve(async (req) => {
             .select(BORROWER_COLUMNS)
             .maybeSingle();
          if (!borrower) continue;
-         await stampDecisionCards(supabase, 'loan_access', row.id, `🗓️ CALL CANCELLED — ${personName(borrower)} was asked to book a new time`, {
-            by: 'the borrower (cancelled on Cal.com)'
-         });
+         await stampDecisionCards(
+            supabase,
+            'loan_access',
+            row.id,
+            `🗓️ CALL CANCELLED — ${personName(borrower)} was asked to book a new time`,
+            {
+               by: 'the borrower (cancelled on Cal.com)'
+            }
+         );
          await notifyBorrower(supabase, borrower, 'call_cancelled');
          const text = `🗓️ ${who(borrower)} cancelled their call — their request is closed and they've been asked to rebook.`;
          try {
