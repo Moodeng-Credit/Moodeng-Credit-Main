@@ -27,6 +27,8 @@ import type {
    TrustPointRewardLoan
 } from '../_shared/trustPointRewards.ts';
 import { sendIdTelegramTo } from '../_shared/idTrack.ts';
+import { MESSENGER_TEMPLATES, sendTemplateToContact } from '../_shared/metaMessenger.ts';
+import { sendMessengerMessage } from '../_shared/sendpulse.ts';
 
 const corsHeaders = {
    'Access-Control-Allow-Origin': '*',
@@ -162,7 +164,9 @@ serve(async (req) => {
 
    const { data: borrower, error: borrowerError } = await supabase
       .from('users')
-      .select('id, username, telegram_username, email, cs, is_world_id, is_didit, chat_id, market, preferred_locale, facebook_name, facebook_profile_url')
+      .select(
+         'id, username, display_name, telegram_username, email, cs, is_world_id, is_didit, chat_id, market, preferred_locale, facebook_name, facebook_profile_url, messenger_psid, messenger_verified_at'
+      )
       .eq('id', loan.borrower_user_id)
       .maybeSingle();
 
@@ -195,7 +199,9 @@ serve(async (req) => {
 
    // Indonesia track: the borrower hears on Telegram (Bahasa), whatever their email looks like.
    const idTrack = borrower?.market === 'ID';
-   const borrowerAlreadySent = borrower?.email || idTrack
+   // Messenger-verified borrowers hear on Messenger too (below), so they're checked even with no email.
+   const onMessenger = !idTrack && !!borrower?.messenger_psid && !!borrower?.messenger_verified_at;
+   const borrowerAlreadySent = borrower?.email || idTrack || onMessenger
       ? await hasNotificationBeenSent(supabase, { loanId: loan.id, userId: borrower.id, type: 'repayment_received' })
       : true;
    const lenderAlreadySent = lender?.id
@@ -293,6 +299,34 @@ serve(async (req) => {
       }
    }
 
+   // Messenger: free text inside the 24h window, else the approved Page template moodeng_payment_received
+   // (straight through Meta). Before 2026-11-27 a repaid borrower heard only by email.
+   let messengerSent = false;
+   if (onMessenger && !borrowerAlreadySent) {
+      const amount = Number(loan.repaid_amount ?? loan.total_repayment_amount ?? 0);
+      const amountText = amount.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+      const firstName = (borrower.display_name ?? '').trim().split(/\s+/)[0] || borrower.username || 'there';
+      const sent = await sendMessengerMessage(borrower.messenger_psid, {
+         text: `✅ Payment received! Thanks ${firstName}, we got your ${amountText} USDC payment and your Moodeng loan is repaid.`,
+         card: { title: 'Your loan is repaid ✅', button: { title: 'Open Moodeng', url: 'https://moodeng.app/dashboard' } }
+      });
+      messengerSent = sent.ok;
+      let how = sent.ok ? 'sent' : `not sent (${sent.reason})`;
+      if (!sent.ok) {
+         const viaMeta = await sendTemplateToContact(
+            supabase,
+            { contactId: borrower.messenger_psid, facebookName: borrower.facebook_name },
+            { name: MESSENGER_TEMPLATES.paymentReceived, params: [firstName, `$${amountText}`] }
+         );
+         messengerSent = viaMeta.ok;
+         how = viaMeta.ok ? 'sent (template)' : `${how}; template not sent (${viaMeta.reason})`;
+      }
+      console.log(`[repayment-received] Messenger for ${loan.tracking_id ?? loan.id} → ${how}`);
+      if (messengerSent && !emailSent && !idTelegramSent) {
+         notificationRows.push({ loan_id: loan.id, user_id: borrower.id, notification_type: 'repayment_received' });
+      }
+   }
+
    const lenderTelegramEnabled = await getLenderDirectNotificationsEnabled(supabase);
    if (lender?.chat_id && lenderTelegramEnabled && !lenderAlreadySent) {
       const { text, actionUrl } = buildLenderRepaymentTelegram(loan, lender, borrower);
@@ -340,7 +374,7 @@ serve(async (req) => {
       }
    }
 
-   if (!emailSent && !telegramSent && !pushSent && !lenderEmailSent && !idTelegramSent) {
+   if (!emailSent && !telegramSent && !pushSent && !lenderEmailSent && !idTelegramSent && !messengerSent) {
       return new Response(
          JSON.stringify({ message: 'No eligible borrower/lender target', teamFeedSent }),
          { status: 200, headers: corsHeaders }
@@ -355,5 +389,5 @@ serve(async (req) => {
       }
    }
 
-   return new Response(JSON.stringify({ message: 'Notification sent', emailSent, telegramSent, pushSent, lenderEmailSent, teamFeedSent, idTelegramSent }), { status: 200, headers: corsHeaders });
+   return new Response(JSON.stringify({ message: 'Notification sent', emailSent, telegramSent, pushSent, lenderEmailSent, teamFeedSent, idTelegramSent, messengerSent }), { status: 200, headers: corsHeaders });
 });

@@ -123,6 +123,7 @@ Deno.test('admin side: 💬 button opens their SendPulse chat; outcome line says
    });
    assertEquals(messengerChatButton({ ...facebook, contactId: null }), null);
    assertStringIncludes(messengerOutcomeLine('sent'), 'told them ✓');
+   assertStringIncludes(messengerOutcomeLine('sent_template'), 'template) ✓');
    assertStringIncludes(messengerOutcomeLine('send_failed'), 'outside the 24h window');
    assertStringIncludes(messengerOutcomeLine('no_contact'), 'not linked');
 });

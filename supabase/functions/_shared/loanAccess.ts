@@ -34,6 +34,7 @@ import { cancelCallButton, cancelUpcomingCall } from './callCancel.ts';
 import { formatCallTimeForTeam } from './videoCall.ts';
 import { describeHeldRequests } from './loanRequestHold.ts';
 import { sendEmail } from './email.ts';
+import { MESSENGER_TEMPLATES, sendTemplateToContact } from './metaMessenger.ts';
 import { isPlaceholderEmail } from './placeholderEmail.ts';
 import { FB_GROUP_URL } from './facebookSteps.ts';
 import { sendFacebookSteps } from './facebookStepsSend.ts';
@@ -546,10 +547,17 @@ export const notifyBorrower = async (svc: SupabaseClient, borrower: BorrowerRow,
       ...(noButton ? {} : { card: { title: '👉 Next step', button: { title: ctaLabel(msg, kind), url: msg.url } } })
    });
    if (!messenger.ok && messenger.reason !== 'no_contact') console.log('loanAccess: messenger skipped for', borrower.id, messenger.reason);
-   // Approved but Messenger couldn't tell them (outside its 24h window): the WhatsApp template.
-   if (kind === 'approved' && !messenger.ok && borrower.whatsapp_contact_id && borrower.notif_whatsapp !== false) {
+   const firstName = (borrower.display_name ?? '').trim().split(/\s+/)[0] || borrower.username || null;
+   // Approved outside the 24h window: the approved Page template moodeng_account_approved, straight
+   // through Meta (English, so not for the Indonesia track, which heard on Telegram above).
+   const viaTemplate =
+      kind === 'approved' && !messenger.ok && borrower.messenger_psid && !idTrack
+         ? await sendTemplateToContact(svc, { contactId: borrower.messenger_psid }, { name: MESSENGER_TEMPLATES.approved, params: [firstName ?? 'there'] })
+         : null;
+   if (viaTemplate) console.log('loanAccess: messenger approved template for', borrower.id, viaTemplate.ok ? 'sent' : `not sent (${viaTemplate.reason})`);
+   // Approved but Messenger couldn't tell them at all (no Messenger id, or no Messenger): the WhatsApp template.
+   if (kind === 'approved' && !messenger.ok && !viaTemplate?.ok && borrower.whatsapp_contact_id && borrower.notif_whatsapp !== false) {
       if (await getTelegramBotSettingEnabled(svc, APPROVED_WHATSAPP_SETTING_KEY).catch(() => false)) {
-         const firstName = (borrower.display_name ?? '').trim().split(/\s+/)[0] || borrower.username || null;
          const sent = await sendWhatsAppTemplate(borrower.whatsapp_contact_id, buildApprovedWhatsAppTemplate(firstName));
          console.log('loanAccess: whatsapp approved for', borrower.id, sent.ok ? 'sent' : `not sent (${sent.reason})`);
       }

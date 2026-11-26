@@ -5,7 +5,7 @@ import { loadDiditMedia } from '../_shared/diditMedia.ts';
 import { postDiscord } from '../_shared/discord.ts';
 import { limitUpFirstName, limitUpLang, limitUpMessengerText, limitUpWhatsAppLine } from '../_shared/limitUpMessage.ts';
 import { saveFacebookName, syncMessengerHistory } from '../_shared/messengerContactLog.ts';
-import { cleanTemplateParam, findPsidByName, sendUtilityTemplate } from '../_shared/metaMessenger.ts';
+import { cleanTemplateParam, findPsidByName, metaPsidForContact, sendUtilityTemplate } from '../_shared/metaMessenger.ts';
 import {
    createWhatsAppTemplate,
    findMessengerContactIdByCode,
@@ -97,22 +97,6 @@ const resolveContact = async (
    // Heal the stored id so reminders and the next lookup go straight to the right contact.
    if (contactId !== storedId) await svc.from('users').update({ messenger_psid: contactId }).eq('id', userId);
    return { id: contactId, contact };
-};
-
-// Facebook's Page-scoped id for a SendPulse contact: the latest sender_id in our event log (same rule
-// as private.messenger_meta_psid). Null when we never logged a message from them.
-const metaPsidForContact = async (svc: Svc, contactId: string): Promise<string | null> => {
-   const { data } = await svc
-      .from('messenger_contact_events')
-      .select('payload')
-      .eq('contact_id', contactId)
-      .order('created_at', { ascending: false })
-      .limit(50);
-   for (const row of (data ?? []) as Array<{ payload: { info?: { message?: { channel_data?: { sender_id?: unknown } } } } | null }>) {
-      const id = String(row.payload?.info?.message?.channel_data?.sender_id ?? '');
-      if (/^\d{5,25}$/.test(id) && id !== '1148756028310286') return id;
-   }
-   return null;
 };
 
 serve(async (req) => {
