@@ -7,7 +7,7 @@
 //   - src/utils/dateFormatters.ts      (parseDateSafely)
 // If any of those change, change this too. These are pure functions — no Supabase/Deno deps — so
 // they can be unit-tested in isolation.
-import { DEFAULT_TIMEZONE, isUsableTimezone, pastDueAt } from './loanDeadline.ts';
+import { DEFAULT_TIMEZONE, isUsableTimezone, pastDueAt, zonedMidnightUtc } from './loanDeadline.ts';
 
 // --- small utils (ported) ---------------------------------------------------------------------
 
@@ -117,6 +117,58 @@ export const isFastRepay = (fundedAt: string | null | undefined, paidAt: string 
    return Number.isFinite(funded) && Number.isFinite(paid) && paid - funded < FAST_REPAY_HOURS * 3_600_000;
 };
 
+// One rule since 2026-11-27 (George): a repayment grows the limit only in the loan's SECOND HALF — from
+// 00:00 (loan's zone) on its halfway day, never sooner than 48h after funding. Same window as food
+// vouchers (app_private.loan_reward_from_at), and it always holds a 15th or 30th payday. Loans funded
+// before the switch keep the 48-hour rule they were shown. Kept in sync with src/lib/creditLeveling.ts.
+export const SECOND_HALF_RULE_FROM = Date.parse('2026-11-27T00:00:00+07:00');
+
+/** When paying this loan starts to grow the limit. Null when the loan has no funding time. */
+export const countsFromAt = (
+   fundedAt: string | null | undefined,
+   dueDate?: string | Date | null,
+   dueTimezone?: string | null
+): Date | null => {
+   const funded = fundedAt ? Date.parse(fundedAt) : NaN;
+   if (!Number.isFinite(funded)) return null;
+   const fast = funded + FAST_REPAY_HOURS * 3_600_000;
+   if (funded < SECOND_HALF_RULE_FROM) return new Date(fast);
+   return secondHalfStartAt(fundedAt, dueDate, dueTimezone) ?? new Date(fast);
+};
+
+/**
+ * 00:00 (loan's zone) on the loan's halfway day, never sooner than 48h after funding: the start of its
+ * "2nd half", the best days to pay. Mirrors app_private.loan_reward_from_at. Null without both dates.
+ */
+export const secondHalfStartAt = (
+   fundedAt: string | null | undefined,
+   dueDate?: string | Date | null,
+   dueTimezone?: string | null
+): Date | null => {
+   const funded = fundedAt ? Date.parse(fundedAt) : NaN;
+   if (!Number.isFinite(funded) || !dueDate || Number.isNaN(new Date(dueDate).getTime())) return null;
+   const zone = isUsableTimezone(dueTimezone) ? dueTimezone : DEFAULT_TIMEZONE;
+   const halfway = new Date(funded + (pastDueAt(dueDate, zone).getTime() - funded) / 2);
+   const parts = new Intl.DateTimeFormat('en-US', { timeZone: zone, year: 'numeric', month: 'numeric', day: 'numeric' }).formatToParts(
+      halfway
+   );
+   const get = (type: string) => Number(parts.find((part) => part.type === type)?.value);
+   const dayStart = zonedMidnightUtc(get('year'), get('month'), get('day'), zone).getTime();
+   return new Date(Math.max(dayStart, funded + FAST_REPAY_HOURS * 3_600_000));
+};
+
+/** True when paying at `paidAt` is too early to grow the limit (before `countsFromAt`). */
+export const isTooEarlyRepay = (
+   fundedAt: string | null | undefined,
+   paidAt: string | null | undefined,
+   dueDate?: string | Date | null,
+   dueTimezone?: string | null
+) => {
+   const from = countsFromAt(fundedAt, dueDate, dueTimezone);
+   const paid = paidAt ? Date.parse(paidAt) : NaN;
+   return from !== null && Number.isFinite(paid) && paid < from.getTime();
+};
+
 export const evaluateCreditProgression = ({
    currentLimit,
    isVerified,
@@ -140,7 +192,7 @@ export const evaluateCreditProgression = ({
    // reaches the limit or several small loans add up to it. Lateness doesn't block it: most late
    // repayments are tech trouble (wallets, exchanges), not the borrower's fault.
    const isFullLimitLoan = principal >= normalizedLimit;
-   const tooFast = isFastRepay(fundedAt, paidAt);
+   const tooFast = isTooEarlyRepay(fundedAt, paidAt, dueDate, dueTimezone);
    const canLevelUp = isVerified && isFullyRepaid && isFullLimitLoan && normalizedLimit < MAX_CREDIT_LIMIT && !tooFast;
 
    return {

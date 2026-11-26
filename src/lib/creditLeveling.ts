@@ -3,6 +3,7 @@ import { toNumber } from '@/utils/decimalHelpers';
 import { getLoanPastDueAt } from '@/utils/loanOverdue';
 
 import { CREDIT_TIERS, getNextCreditTier, MAX_CREDIT_LIMIT, STARTING_CREDIT_LIMIT } from '@/config/creditTiers';
+import { getRewardFromAt } from '@/lib/loanDeadline';
 import type { Loan } from '@/types/loanTypes';
 
 export const MIN_CREDIT_LIMIT = STARTING_CREDIT_LIMIT;
@@ -53,10 +54,35 @@ export const isFastRepay = (fundedAt: string | null | undefined, paidAt: string 
    const paid = paidAt ? Date.parse(paidAt) : NaN;
    return Number.isFinite(funded) && Number.isFinite(paid) && paid - funded < FAST_REPAY_HOURS * 3_600_000;
 };
-/** When a repayment starts counting (48h after funding). */
-export const countsFromAt = (fundedAt: string | null | undefined) => {
+// One rule since 2026-11-27 (George): a repayment grows the limit only in the loan's SECOND HALF — from
+// 00:00 (loan's zone) on its halfway day, never sooner than 48h after funding. Same window as food
+// vouchers (getRewardFromAt), and it always holds a 15th or 30th payday. Loans funded before the switch
+// keep the 48-hour rule they were shown. Kept in sync with supabase/functions/_shared/creditAndPoints.ts.
+export const SECOND_HALF_RULE_FROM = Date.parse('2026-11-27T00:00:00+07:00');
+
+/** When paying this loan starts to grow the limit. Null when the loan has no funding time. */
+export const countsFromAt = (
+   fundedAt: string | null | undefined,
+   dueDate?: string | Date | null,
+   dueTimezone?: string | null
+): Date | null => {
    const funded = fundedAt ? Date.parse(fundedAt) : NaN;
-   return Number.isFinite(funded) ? new Date(funded + FAST_REPAY_HOURS * 3_600_000) : null;
+   if (!Number.isFinite(funded)) return null;
+   const fast = new Date(funded + FAST_REPAY_HOURS * 3_600_000);
+   if (funded < SECOND_HALF_RULE_FROM || !dueDate) return fast;
+   return getRewardFromAt(new Date(funded), dueDate, dueTimezone || 'Asia/Manila') ?? fast;
+};
+
+/** True when paying at `paidAt` is too early to grow the limit (before `countsFromAt`). */
+export const isTooEarlyRepay = (
+   fundedAt: string | null | undefined,
+   paidAt: string | null | undefined,
+   dueDate?: string | Date | null,
+   dueTimezone?: string | null
+) => {
+   const from = countsFromAt(fundedAt, dueDate, dueTimezone);
+   const paid = paidAt ? Date.parse(paidAt) : NaN;
+   return from !== null && Number.isFinite(paid) && paid < from.getTime();
 };
 
 export const evaluateCreditProgression = ({
@@ -83,7 +109,11 @@ export const evaluateCreditProgression = ({
    // repayments are tech trouble (wallets, exchanges), not the borrower's fault.
    const isFullLimitLoan = principal >= normalizedLimit;
    const canLevelUp =
-      isVerified && isFullyRepaid && isFullLimitLoan && normalizedLimit < MAX_CREDIT_LIMIT && !isFastRepay(fundedAt, paidAt);
+      isVerified &&
+      isFullyRepaid &&
+      isFullLimitLoan &&
+      normalizedLimit < MAX_CREDIT_LIMIT &&
+      !isTooEarlyRepay(fundedAt, paidAt, dueDate, dueTimezone);
 
    return {
       shouldLevelUp: canLevelUp,

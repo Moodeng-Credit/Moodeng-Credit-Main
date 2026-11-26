@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { formatDate } from '@/utils/dateFormatters';
 
-import { evaluateCreditProgression, getFullLimitLoans, isRepaidOnTime } from '@/lib/creditLeveling';
+import { countsFromAt, evaluateCreditProgression, getFullLimitLoans, isRepaidOnTime, isTooEarlyRepay } from '@/lib/creditLeveling';
 import type { User } from '@/types/authTypes';
 import type { Loan } from '@/types/loanTypes';
 import LoanRequestModal from '@/views/dashboard/components/LoanRequestModal';
@@ -721,5 +721,44 @@ describe('the 48-hour rule: a loan repaid within 2 days of funding never levels 
    });
    it('repaid 49 hours after funding: levels up as before', () => {
       expect(evaluateCreditProgression({ ...base, paidAt: '2026-11-18T09:00:00Z' }).shouldLevelUp).toBe(true);
+   });
+});
+
+describe('the second-half rule (loans funded from 2026-11-27 Bangkok): only payments in the 2nd half grow the limit', () => {
+   // Funded Dec 1 09:00 Manila, due Dec 31: the loan ends Jan 1 00:00 Manila, halfway Dec 16 ~04:30, so the
+   // 2nd half starts Dec 16 00:00 Manila (= Dec 15 16:00Z).
+   const base = {
+      currentLimit: 15,
+      isVerified: true,
+      repaidAmount: 16.5,
+      totalRepaymentAmount: 16.5,
+      loanAmount: 15,
+      dueDate: '2026-12-31T00:00:00Z',
+      dueTimezone: 'Asia/Manila',
+      fundedAt: '2026-12-01T01:00:00Z'
+   };
+   it('starts counting at 00:00 Manila on the halfway day', () => {
+      expect(countsFromAt(base.fundedAt, base.dueDate, base.dueTimezone)?.toISOString()).toBe('2026-12-15T16:00:00.000Z');
+   });
+   it('paid on day 5 (after 48 hours, first half): no level-up', () => {
+      expect(isTooEarlyRepay(base.fundedAt, '2026-12-06T01:00:00Z', base.dueDate, base.dueTimezone)).toBe(true);
+      expect(evaluateCreditProgression({ ...base, paidAt: '2026-12-06T01:00:00Z' }).shouldLevelUp).toBe(false);
+   });
+   it('paid one minute before the 2nd half: no level-up; at its start: levels up', () => {
+      expect(evaluateCreditProgression({ ...base, paidAt: '2026-12-15T15:59:00Z' }).shouldLevelUp).toBe(false);
+      expect(evaluateCreditProgression({ ...base, paidAt: '2026-12-15T16:00:00Z' }).shouldLevelUp).toBe(true);
+   });
+   it('paid on day 20 or on the due day: levels up', () => {
+      expect(evaluateCreditProgression({ ...base, paidAt: '2026-12-21T01:00:00Z' }).shouldLevelUp).toBe(true);
+      expect(evaluateCreditProgression({ ...base, paidAt: '2026-12-31T10:00:00Z' }).shouldLevelUp).toBe(true);
+   });
+   it('a loan funded before the switch keeps the 48-hour rule', () => {
+      const old = { ...base, fundedAt: '2026-11-26T01:00:00Z', dueDate: '2026-12-26T00:00:00Z' };
+      expect(countsFromAt(old.fundedAt, old.dueDate, old.dueTimezone)?.toISOString()).toBe('2026-11-28T01:00:00.000Z');
+      expect(evaluateCreditProgression({ ...old, paidAt: '2026-11-29T01:00:00Z' }).shouldLevelUp).toBe(true);
+   });
+   it('a short loan never asks for less than 48 hours', () => {
+      // Funded Dec 1, due Dec 3: halfway is Dec 2, but 48 hours after funding comes later.
+      expect(countsFromAt(base.fundedAt, '2026-12-03T00:00:00Z', 'Asia/Manila')?.toISOString()).toBe('2026-12-03T01:00:00.000Z');
    });
 });

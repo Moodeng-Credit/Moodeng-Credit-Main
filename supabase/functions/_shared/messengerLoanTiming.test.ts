@@ -18,17 +18,20 @@ Deno.test('guessIntent: extensions and cannot-pay stay with a person', () => {
    assertEquals(guessIntent('kailan due date ko'), 'term');
 });
 
-Deno.test('early = before the last week', () => {
+Deno.test('early = before the 2nd half of the loan', () => {
    assert(isEarly(loan(20), NOW));
-   assert(!isEarly(loan(5), NOW));
+   // Funded 2 days ago, due tomorrow: the 2nd half has started.
+   assert(!isEarly(loan(1), NOW));
    assert(!isEarly(null, NOW));
 });
 
-Deno.test('replies: 31 days, last-week window, repay button only when in the window', () => {
+Deno.test('replies: set term, 2nd-half window, repay button only when in the window', () => {
    const term = timingReply('term', loan(20), 'en', NOW);
    assert(term.includes('yours is 2 days') || term.includes('set term'));
-   assert(term.includes('last week before it'));
+   assert(term.includes('2nd half of your loan'));
+   // Funded Nov 18, due Dec 10 (Manila): the 2nd half starts Nov 29.
+   assert(term.includes('Nov 29 to Dec 10'), term);
    assert(timingReply('early', loan(20), 'en', NOW).includes("doesn't help your limit"));
-   assert(timingReply('early', loan(3), 'en', NOW).includes('good time to pay'));
+   assert(timingReply('early', loan(1), 'en', NOW).includes('good time to pay'));
    assert(timingReply('again', null, 'fil', NOW).includes('2 loan sa isang buwan'));
 });

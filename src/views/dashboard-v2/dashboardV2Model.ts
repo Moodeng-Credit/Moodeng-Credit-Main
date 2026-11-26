@@ -81,7 +81,7 @@ const STREAK_COPY: Record<
       earlyPaidTitle: 'Paid early, thank you! 🎉',
       earlyPaidBody: "Early payments don't get the food reward. Want it anyway? Message us.",
       earlyPaidButton: 'Message us',
-      countsFrom: (from) => `🍗 Food reward counts from ${from}. Paying now is fine.`
+      countsFrom: (from) => `🍗 Food reward counts from ${from}.`
    },
    fil: {
       payFor: (php) => `Magbayad on time → ₱${php} food`,
@@ -99,7 +99,7 @@ const STREAK_COPY: Record<
       earlyPaidTitle: 'Maagang bayad, salamat! 🎉',
       earlyPaidBody: 'Walang food reward ang maagang bayad. Gusto mo pa rin? Mag-message sa amin.',
       earlyPaidButton: 'Mag-message sa amin',
-      countsFrom: (from) => `🍗 Bilang ang food reward simula ${from}. Okay lang magbayad ngayon.`
+      countsFrom: (from) => `🍗 Bilang ang food reward simula ${from}.`
    }
 };
 

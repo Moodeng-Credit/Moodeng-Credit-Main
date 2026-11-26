@@ -7,6 +7,7 @@ import { useSelector } from 'react-redux';
 import { useFriendReferrals } from '@/hooks/useFriendReferrals';
 
 import { useLocalization } from '@/i18n';
+import { SECOND_HALF_RULE_FROM } from '@/lib/creditLeveling';
 import type { RepayStreak } from '@/lib/friendReferrals';
 import { isUserVerified } from '@/lib/isUserVerified';
 import type { RootState } from '@/store/store';
@@ -33,6 +34,7 @@ const COPY = {
    en: {
       title: 'Before you repay',
       limitTitle: 'Keep your loan 2+ days',
+      limitTitleHalf: 'Pay in the 2nd half of your loan',
       before: (when: string) => `Before ${when}`,
       from: (when: string) => `From ${when}`,
       limitStays: (amount: number) => `Stays $${amount}`,
@@ -41,10 +43,16 @@ const COPY = {
       noReward: 'No reward',
       why: 'Why?',
       whyTitle: 'Why 2+ days?',
+      whyTitleHalf: 'Why the 2nd half?',
       whyLines: [
          'Your limit grows when you show you can hold a loan and pay on time.',
          'Paying back in 1–2 days doesn’t show that yet.',
          'Keep it 2+ days, pay on time → limit goes up.'
+      ],
+      whyLinesHalf: [
+         'Your limit grows when you show you can hold a loan and pay on time.',
+         'Paying back in the first half doesn’t show that yet.',
+         'Pay in the 2nd half, on time → limit goes up.'
       ],
       back: 'Back',
       next: 'Next',
@@ -54,6 +62,7 @@ const COPY = {
    fil: {
       title: 'Bago ka magbayad',
       limitTitle: 'Hawakan muna ang loan nang 2+ araw',
+      limitTitleHalf: 'Magbayad sa 2nd half ng loan mo',
       before: (when: string) => `Bago ${when}`,
       from: (when: string) => `Simula ${when}`,
       limitStays: (amount: number) => `$${amount} pa rin`,
@@ -62,10 +71,16 @@ const COPY = {
       noReward: 'Walang reward',
       why: 'Bakit?',
       whyTitle: 'Bakit 2+ araw?',
+      whyTitleHalf: 'Bakit sa 2nd half?',
       whyLines: [
          'Tumataas ang limit kapag kaya mong hawakan ang loan at magbayad sa oras.',
          'Hindi pa iyon makikita kung babayaran mo agad sa 1–2 araw.',
          'Hawakan nang 2+ araw, magbayad sa oras → tataas ang limit.'
+      ],
+      whyLinesHalf: [
+         'Tumataas ang limit kapag kaya mong hawakan ang loan at magbayad sa oras.',
+         'Hindi pa iyon makikita kung babayaran mo sa unang kalahati.',
+         'Magbayad sa 2nd half, sa oras → tataas ang limit.'
       ],
       back: 'Bumalik',
       next: 'Susunod',
@@ -220,13 +235,18 @@ export function FastRepayCarousel({
    const slide = slides[Math.min(index, slides.length - 1)];
    const isLast = index >= slides.length - 1;
 
+   // Second-half rule (loans funded since SECOND_HALF_RULE_FROM): it starts at 00:00 on the halfway day,
+   // so the date alone; the 48-hour rule needs the time.
+   const secondHalf = Boolean(notice.fundedAt) && Date.parse(notice.fundedAt as string) >= SECOND_HALF_RULE_FROM;
    const when = notice.countsFrom.toLocaleString('en-US', {
       month: 'short',
       day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
+      ...(secondHalf ? {} : { hour: 'numeric', minute: '2-digit' }),
       timeZone: notice.zone
    });
+   const limitTitle = secondHalf ? copy.limitTitleHalf : copy.limitTitle;
+   const whyTitle = secondHalf ? copy.whyTitleHalf : copy.whyTitle;
+   const whyLines = secondHalf ? copy.whyLinesHalf : copy.whyLines;
 
    useEffect(() => {
       track('fast_repay_notice_shown', {
@@ -316,12 +336,12 @@ export function FastRepayCarousel({
                   <img src={SLIDE_ART[slide]} alt="" className="mt-1 h-[180px] w-[180px] object-contain" draggable={false} />
                   <div className="flex w-full flex-col items-center gap-3 px-5 pb-2 pt-1 text-center">
                      <p className="text-[22px] font-extrabold leading-7 text-[#2b2140] dark:text-[#f5f0ff]">
-                        {slide === 'limit' ? (showWhy ? copy.whyTitle : copy.limitTitle) : copy.foodTitle}
+                        {slide === 'limit' ? (showWhy ? whyTitle : limitTitle) : copy.foodTitle}
                      </p>
                      {slide === 'limit' && notice.levelUp && showWhy ? (
                         <>
                            <ol className="flex w-full flex-col gap-2 rounded-[16px] bg-[#f6f3fd] px-4 py-3 text-left dark:bg-[#211a2d]">
-                              {copy.whyLines.map((line, n) => (
+                              {whyLines.map((line, n) => (
                                  <li
                                     key={line}
                                     className="flex items-start gap-2.5 text-[15px] font-semibold leading-5 text-[#3b2f4a] dark:text-[#e6def2]"

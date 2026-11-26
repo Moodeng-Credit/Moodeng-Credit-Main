@@ -5,7 +5,7 @@ import { getPayWindow } from '@/views/dashboard-v2/components/NextLoanCard';
 const DAY = 86_400_000;
 const HOUR = 3_600_000;
 
-describe('getPayWindow (one rule: pay in your last week)', () => {
+describe('getPayWindow (one rule: pay in the 2nd half of your loan)', () => {
    const funded = Date.UTC(2026, 10, 26, 4);
    const deadline = funded + 30 * DAY;
    const due = {
@@ -14,12 +14,14 @@ describe('getPayWindow (one rule: pay in your last week)', () => {
       rewardFrom: new Date(funded + 15 * DAY).toISOString()
    };
 
-   it('opens 7 days before the deadline on a 30-day loan', () => {
-      expect(getPayWindow(due, funded)?.start).toBe(deadline - 7 * DAY);
+   it('opens on the halfway day of a 30-day loan', () => {
+      expect(getPayWindow(due, funded)?.start).toBe(funded + 15 * DAY);
    });
 
-   it('is too early right after funding, best in the last week, late after the deadline', () => {
+   it('is too early in the first half, best in the 2nd half, late after the deadline', () => {
       expect(getPayWindow(due, funded + HOUR)?.status).toBe('early');
+      expect(getPayWindow(due, funded + 10 * DAY)?.status).toBe('early');
+      expect(getPayWindow(due, funded + 16 * DAY)?.status).toBe('best');
       expect(getPayWindow(due, deadline - 2 * DAY)?.status).toBe('best');
       expect(getPayWindow(due, deadline + HOUR)?.status).toBe('late');
    });

@@ -8,8 +8,8 @@ import type { Loan } from '@/types/loanTypes';
 import { getRepayRewardLabel, getRepayRewardLine, getRewardWindow } from '@/views/dashboard-v2/dashboardV2Model';
 
 // "Before you repay" pop-up for a loan funded under 48 hours ago (George, 2026-11-24): paying it back
-// this soon doesn't raise the limit (the 48-hour rule) and, before the loan's halfway day, earns no
-// food reward. It only shows when waiting actually gains them something, and never when a due date is
+// this soon doesn't raise the limit and earns no food reward. Since 2026-11-27 both start on the loan's
+// halfway day (the second-half rule, countsFromAt); older loans keep the 48-hour limit rule. It only shows when waiting actually gains them something, and never when a due date is
 // close: it must not talk anyone into paying late.
 
 /** Closing it hides it for this long; it comes back once if the loan is still inside the 48 hours. */
@@ -19,7 +19,8 @@ const DUE_SOON_DAYS = 2;
 
 export interface FastRepayNotice {
    loanId: string;
-   /** 48 hours after funding: paying from then on counts for a level-up. */
+   fundedAt: string | null;
+   /** When paying starts to count for a level-up: the halfway day (older loans: 48h after funding). */
    countsFrom: Date;
    zone: string;
    /** Their limit now → after repaying this loan from `countsFrom`. Null when this loan can't level them up. */
@@ -56,7 +57,9 @@ export const getFastRepayNotice = ({
    if (open.some((loan) => getDaysUntilDueDay(currentDueDate(loan), getLoanTimezone(loan), now) <= DUE_SOON_DAYS)) return null;
 
    const fresh = open
-      .map((loan) => ({ loan, countsFrom: countsFromAt(loan.fundedAt) }))
+      // Shown in the loan's first 48 hours only (the snooze brings it back once), not every day until halfway.
+      .filter((loan) => Boolean(loan.fundedAt) && now < Date.parse(loan.fundedAt as string) + 48 * 3_600_000)
+      .map((loan) => ({ loan, countsFrom: countsFromAt(loan.fundedAt, loan.dueDate, loan.dueTimezone) }))
       .filter((entry): entry is { loan: Loan; countsFrom: Date } => Boolean(entry.countsFrom) && now < (entry.countsFrom as Date).getTime())
       .sort((a, b) => b.countsFrom.getTime() - a.countsFrom.getTime());
    const newest = fresh[0];
@@ -91,7 +94,7 @@ export const getFastRepayNotice = ({
 
    if (!levelUp && !rewardLine) return null;
    const reward = rewardLine && window && streak ? { ...window, label: getRepayRewardLabel(streak) } : null;
-   return { loanId: loan.id, countsFrom, zone, levelUp, rewardLine, reward };
+   return { loanId: loan.id, fundedAt: loan.fundedAt ?? null, countsFrom, zone, levelUp, rewardLine, reward };
 };
 
 /** Never seen, or closed over 24 hours ago (and the caller still has a notice). */

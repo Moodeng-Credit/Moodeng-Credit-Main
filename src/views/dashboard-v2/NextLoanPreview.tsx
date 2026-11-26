@@ -27,8 +27,8 @@ const STREAK = { current: 1, best: 1, nextStep: 3, toGo: 2, nextPhp: 50 };
 export default function NextLoanPreview() {
    const only = new URLSearchParams(window.location.search).get('state');
    const states: { key: string; label: string; dues: DashboardV2Due[] }[] = [
-      { key: 'best', label: 'Best days (last week)', dues: [sampleDue(4, 26)] },
-      { key: 'early', label: 'Too early (just funded)', dues: [sampleDue(26, 4)] },
+      { key: 'best', label: 'Best days (2nd half)', dues: [sampleDue(10, 20)] },
+      { key: 'early', label: 'Too early (just funded)', dues: [sampleDue(29, 1)] },
       { key: 'less', label: 'Borrowed less than the limit', dues: [sampleDue(20, 10, 10)] },
       { key: 'none', label: 'No loan out', dues: [] }
    ];
