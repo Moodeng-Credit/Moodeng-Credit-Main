@@ -89,7 +89,7 @@ export default function CreditTrackCard({
 
    return (
       <section
-         className="mx-5 flex flex-col gap-3 rounded-[8px] border border-[#f1d58a] bg-[#fff8e1] px-4 py-4 dark:border-[#5a4818] dark:bg-[#2a2210]"
+         className="mx-5 flex flex-col gap-3 rounded-[20px] border border-[#f1d58a] bg-[#fff8e1] px-4 py-4 dark:border-[#5a4818] dark:bg-[#2a2210]"
          aria-label={copy[track].title}
          data-testid={`credit-track-card-${track}`}
       >

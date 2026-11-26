@@ -111,7 +111,7 @@ function DashboardV2Skeleton() {
    return (
       <div className="mt-[30px] flex flex-col gap-[30px] px-5" aria-busy="true" aria-label="Loading your dashboard">
          {SKELETON_BLOCKS.map(({ id, height }) => (
-            <div key={id} className="animate-pulse rounded-[8px] bg-[#ece9f1] dark:bg-dv2-card" style={{ height }} />
+            <div key={id} className="animate-pulse rounded-[20px] bg-[#ece9f1] dark:bg-dv2-card" style={{ height }} />
          ))}
       </div>
    );
@@ -227,7 +227,7 @@ export default function DashboardV2() {
             onGet={setOpenMilestone}
             onClaim={() => setClaimingVoucher(ownVoucher.voucher)}
          />
-         <div className="-mt-[5px]">
+         <div className="mt-3">
             <DashboardStampStrip preview={!isReal} onOpen={() => navigate('/affiliate')} />
          </div>
       </div>
@@ -255,7 +255,7 @@ export default function DashboardV2() {
             {isLoading ? (
                <DashboardV2Skeleton />
             ) : (
-               <div className="mt-[30px] flex flex-col gap-[30px]">
+               <div className="dv2-stack mt-[30px] flex flex-col gap-[30px]">
                   {/* Instant-wallet borrowers' balance + Cash out (renders nothing otherwise), as on /dashboard. */}
                   {isReal ? (
                      <div className="px-5 empty:hidden">

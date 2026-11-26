@@ -130,7 +130,7 @@ export function MiniStampStrip({
       <button
          type="button"
          onClick={onOpen}
-         className="mx-5 flex w-[calc(100%-40px)] flex-col gap-2 rounded-[8px] bg-white px-3 py-3 text-left shadow-[0_1px_2px_rgba(28,5,61,0.06)] active:scale-[0.99] dark:bg-dv2-card"
+         className="mx-5 flex w-[calc(100%-40px)] flex-col gap-2 rounded-[20px] bg-white px-4 py-3.5 text-left shadow-[var(--dv2-shadow)] transition-transform duration-150 active:scale-[0.98] dark:bg-dv2-card"
          aria-label={`Shark Fighter Card: ${filled} of ${every} friends. $${rewardUsd} per friend who repays on time.`}
       >
          <span className="flex items-center justify-between">

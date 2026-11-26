@@ -33,7 +33,7 @@ export function VerifyIdentityBanner({ onVerify }: { onVerify: () => void }) {
       <button
          type="button"
          onClick={journey.go}
-         className="mx-5 flex w-[calc(100%-40px)] items-center gap-3 rounded-[8px] bg-white px-3 py-3.5 text-left shadow-[0_1px_2px_rgba(28,5,61,0.06)] active:scale-[0.99] dark:bg-dv2-card"
+         className="mx-5 flex w-[calc(100%-40px)] items-center gap-3 rounded-[20px] bg-white px-3.5 py-3.5 text-left shadow-[var(--dv2-shadow)] transition-transform duration-150 active:scale-[0.99] dark:bg-dv2-card"
       >
          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#efeaff] dark:bg-dv2-tab">
             <Video className="h-5 w-5 text-[#6b55f7] dark:text-[#b3a6ff]" aria-hidden="true" />
@@ -59,7 +59,7 @@ export function ConnectWalletBanner({ onConnect }: { onConnect: () => void }) {
             className="aspect-[878/128] h-auto w-full dark:hidden"
          />
          {/* The exported banner has a white card baked in, so dark mode re-sets it in code. */}
-         <span className="mx-5 my-0.5 hidden h-[60px] items-center justify-between gap-2 rounded-[8px] border-2 border-dv2-tab bg-dv2-card px-2.5 text-left dark:flex">
+         <span className="mx-5 my-0.5 hidden h-[60px] items-center justify-between gap-2 rounded-[20px] border-2 border-dv2-tab bg-dv2-card px-2.5 text-left dark:flex">
             <span className="flex min-w-0 flex-col">
                <span className="truncate text-[clamp(17px,5.6vw,24px)] font-black italic leading-6 text-[#d9cfe6]">Connect Wallet</span>
                <span className="truncate text-[clamp(12px,3.7vw,14px)] leading-[18px] text-[#8f819e]">Receive USDC loans</span>
@@ -119,7 +119,7 @@ export function ConnectFacebookBanner({
       <button
          type="button"
          onClick={onConnect}
-         className="mx-5 flex items-center gap-3 rounded-[8px] bg-white px-3 py-3.5 text-left shadow-[0_1px_2px_rgba(28,5,61,0.06)] active:scale-[0.99]"
+         className="mx-5 flex items-center gap-3 rounded-[20px] bg-white px-3.5 py-3.5 text-left shadow-[var(--dv2-shadow)] transition-transform duration-150 active:scale-[0.99]"
       >
          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#e7f0ff] dark:bg-[#102a3f]">
             <Facebook className="h-5 w-5 text-[#0866FF]" aria-hidden="true" />
@@ -139,7 +139,7 @@ export function WithdrawBanner({ onWithdraw }: { onWithdraw: () => void }) {
       <button
          type="button"
          onClick={onWithdraw}
-         className="mx-5 flex items-center gap-3 rounded-[8px] bg-white px-3 py-3.5 text-left shadow-[0_1px_2px_rgba(28,5,61,0.06)] active:scale-[0.99]"
+         className="mx-5 flex items-center gap-3 rounded-[20px] bg-white px-3.5 py-3.5 text-left shadow-[var(--dv2-shadow)] transition-transform duration-150 active:scale-[0.99]"
       >
          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#efeaff] dark:bg-dv2-tab">
             <Wallet className="h-5 w-5 text-[#6b55f7] dark:text-[#b3a6ff]" aria-hidden="true" />
@@ -204,7 +204,8 @@ export function TurnOnRemindersBanner({
          </span>
       </>
    );
-   const cardClass = 'mx-5 flex items-center gap-3 rounded-[8px] bg-white px-3 py-3.5 text-left shadow-[0_1px_2px_rgba(28,5,61,0.06)]';
+   const cardClass =
+      'mx-5 flex items-center gap-3 rounded-[20px] bg-white px-3.5 py-3.5 text-left shadow-[var(--dv2-shadow)] transition-transform duration-150';
 
    if (variant !== 'enable') {
       return <div className={cardClass}>{content}</div>;
