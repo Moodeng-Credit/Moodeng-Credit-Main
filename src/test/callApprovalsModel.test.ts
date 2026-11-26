@@ -67,6 +67,15 @@ describe('groupCallApprovals', () => {
       expect(callResult(groups.completed[0])).toBe('unmarked');
    });
 
+   it('keeps an old undecided call waiting while its call request is still pending', () => {
+      const groups = groupCallApprovals(
+         [row({ userId: 'stuck', callStartsAt: at(-60 * 50), request: { id: 'r2', kind: 'call', reason: null, createdAt: at(-60 * 52) } })],
+         NOW
+      );
+      expect(groups.needsDecision.map((r) => r.userId)).toEqual(['stuck']);
+      expect(groups.completed).toEqual([]);
+   });
+
    it('labels showed-up calls approved and no-shows no-show', () => {
       expect(callResult(row({ outcome: 'attended' }))).toBe('approved');
       expect(callResult(row({ outcome: 'no_show' }))).toBe('no_show');
