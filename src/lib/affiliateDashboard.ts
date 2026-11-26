@@ -20,6 +20,8 @@ export interface AffiliateCode {
    is_active: boolean;
    /** The borrower's own invite code (link /invite/CODE), not a team-made one. */
    personal?: boolean;
+   /** New friends on this code earn the payout when their loan is funded (paid on the 15th and 30th). */
+   pay_on_funding?: boolean;
 }
 
 export type AffiliatePayoutStatus = 'unpaid' | 'paid' | 'voucher' | null;
@@ -37,6 +39,8 @@ export interface AffiliateReferral {
    friend_referral_id?: string | null;
    borrowed: boolean;
    repaid: boolean;
+   /** Earned when their loan was funded (pay_on_funding code, joined after the switch) — not on repayment. */
+   funded_reward?: boolean;
    /** They repaid, but only a loan that doesn't count (held under 24h, or funded by you). */
    repaid_not_counted?: boolean;
    /** They repaid, but paid every loan off more than 2 weeks before it was due — too early to count (no $5). */
@@ -148,6 +152,7 @@ export type AffiliateStage =
    'paid' | 'owed' | 'voucher' | 'locked' | 'repaid' | 'too_early' | 'borrowed' | 'approved' | 'rejected' | 'checking' | 'signed_up';
 
 export function referralStage(r: AffiliateReferral, unlocked = true): AffiliateStage {
+   if (r.funded_reward && r.payout_status) return r.payout_status === 'paid' ? 'paid' : 'owed';
    if (r.repaid && r.claimed) return 'repaid';
    if (r.repaid) {
       if (r.payout_status === 'paid') return 'paid';
@@ -183,6 +188,8 @@ export function affiliateTotals(referrals: AffiliateReferral[], unlocked = true)
       if (r.repaid) {
          totals.repaid += 1;
          totals.earned += amount;
+      } else if (r.funded_reward && r.payout_status) {
+         totals.earned += amount;
       }
       // A $5 taken as a voucher counts as paid: it's theirs, just not in USDC.
       if (stage === 'paid' || stage === 'voucher') totals.paid += amount;
@@ -190,6 +197,22 @@ export function affiliateTotals(referrals: AffiliateReferral[], unlocked = true)
       if ((stage === 'borrowed' || stage === 'locked') && !r.claimed) totals.pending += amount;
    }
    return totals;
+}
+
+/**
+ * Next payday for funded-friend rewards, in Bangkok: the 15th, or the 30th (the last day in February);
+ * after the 30th it's the next month's 15th. Mirrors app_private.affiliate_payday.
+ */
+export function nextAffiliatePayday(now: Date = new Date()): Date {
+   const parts = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Bangkok', year: 'numeric', month: 'numeric', day: 'numeric' })
+      .formatToParts(now)
+      .reduce<Record<string, number>>((acc, p) => (p.type === 'literal' ? acc : { ...acc, [p.type]: Number(p.value) }), {});
+   const { year, month, day } = parts;
+   const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
+   const late = Math.min(30, lastDay);
+   if (day <= 15) return new Date(Date.UTC(year, month - 1, 15));
+   if (day <= late) return new Date(Date.UTC(year, month - 1, late));
+   return new Date(Date.UTC(year, month, 15));
 }
 
 /**

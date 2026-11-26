@@ -11,12 +11,14 @@
 //   { interestRefundId, event: 'sent', decidedBy? } marked Sent in the admin panel → stamp the card.
 //   { invoiceId }                                 an affiliate sent their monthly invoice (affiliate_invoices insert)
 //                                                 → who, which month, how much, which wallet, each friend line.
+//   { payday: 'YYYY-MM-DD' }                      15th / 30th (affiliate-payday cron): one card per code owner with
+//                                                 every unpaid "funded friend" payout (referral_codes.pay_on_funded_from).
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { formatDecidedAt, openInAdminButton, sendAdminCard, stampDecisionCards } from '../_shared/adminCards.ts';
 import { buildPayoutCallback, buildPayoutCard, type PayoutRow, payoutSelect, payoutStampHeader } from '../_shared/referralPayouts.ts';
-import type { TelegramInlineKeyboard } from '../_shared/telegram.ts';
+import { sendTelegramMessage, type TelegramInlineKeyboard } from '../_shared/telegram.ts';
 
 type SupabaseClient = ReturnType<typeof createClient<any>>;
 
@@ -125,7 +127,9 @@ const handleInterestRefund = async (supabase: SupabaseClient, refundId: string, 
       const stamped = await stampDecisionCards(supabase, 'interest_refund', r.id, {
          header: isBonus
             ? `✅ SENT — ${who} got ${usd(r.amount_usd)} USDC Shark Fighter bonus`
-            : isCash ? `✅ SENT — ${who} got ${usd(r.amount_usd)} USDC affiliate reward` : `✅ SENT — ${who} got ${usd(r.amount_usd)} USDC back`,
+            : isCash
+              ? `✅ SENT — ${who} got ${usd(r.amount_usd)} USDC affiliate reward`
+              : `✅ SENT — ${who} got ${usd(r.amount_usd)} USDC back`,
          detail: r.tx_hash ? `Tx: ${r.tx_hash}` : null,
          by: decidedBy ? `${decidedBy} (admin panel)` : 'the admin panel'
       });
@@ -147,27 +151,27 @@ const handleInterestRefund = async (supabase: SupabaseClient, refundId: string, 
            'Send it, then mark ✅ Sent in Admin → Referral codes → Affiliate payouts.'
         ].join('\n')
       : isCash
-      ? [
-           `💸 Pay ${who} ${usd(r.amount_usd)} USDC now — affiliate reward (friend ${friendName} repaid)`,
-           '',
-           `To (USDC on Base): ${r.user?.wallet_address || 'NO WALLET ON FILE — message them first'}`,
-           `Who: ${who}${r.user?.username ? ` (@${r.user.username})` : ''}${r.user?.email ? ` · ${r.user.email}` : ''}`,
-           `Why: their friend ${friendName} joined with their code and repaid a loan on time (${usd(r.amount_usd)} per friend)`,
-           `Owed since: ${formatDecidedAt(new Date(r.created_at))}`,
-           '',
-           'Send it, then mark ✅ Sent in Admin → Referral codes → Affiliate payouts.'
-        ].join('\n')
-      : [
-      `💸 Pay ${who} ${usd(r.amount_usd)} USDC now — interest refund`,
-      '',
-      `To (USDC on Base): ${r.user?.wallet_address || 'NO WALLET ON FILE — message them first'}`,
-      `Who: ${who}${r.user?.username ? ` (@${r.user.username})` : ''}${r.user?.email ? ` · ${r.user.email}` : ''}`,
-      `Why: their friend ${personLabel(r.friend?.referred ?? null)} joined with their code and repaid a loan`,
-      `Their loan: ${usd(r.loan?.loan_amount ?? 0)} → ${usd(r.loan?.total_repayment_amount ?? 0)} (interest ${usd(r.interest_usd)}${Number(r.amount_usd) < Number(r.interest_usd) ? ', capped at $5' : ''})`,
-      `Owed since: ${formatDecidedAt(new Date(r.created_at))}`,
-      '',
-      'Send it, then mark ✅ Sent in Admin → Referral codes → Interest refunds.'
-        ].join('\n');
+        ? [
+             `💸 Pay ${who} ${usd(r.amount_usd)} USDC now — affiliate reward (friend ${friendName} repaid)`,
+             '',
+             `To (USDC on Base): ${r.user?.wallet_address || 'NO WALLET ON FILE — message them first'}`,
+             `Who: ${who}${r.user?.username ? ` (@${r.user.username})` : ''}${r.user?.email ? ` · ${r.user.email}` : ''}`,
+             `Why: their friend ${friendName} joined with their code and repaid a loan on time (${usd(r.amount_usd)} per friend)`,
+             `Owed since: ${formatDecidedAt(new Date(r.created_at))}`,
+             '',
+             'Send it, then mark ✅ Sent in Admin → Referral codes → Affiliate payouts.'
+          ].join('\n')
+        : [
+             `💸 Pay ${who} ${usd(r.amount_usd)} USDC now — interest refund`,
+             '',
+             `To (USDC on Base): ${r.user?.wallet_address || 'NO WALLET ON FILE — message them first'}`,
+             `Who: ${who}${r.user?.username ? ` (@${r.user.username})` : ''}${r.user?.email ? ` · ${r.user.email}` : ''}`,
+             `Why: their friend ${personLabel(r.friend?.referred ?? null)} joined with their code and repaid a loan`,
+             `Their loan: ${usd(r.loan?.loan_amount ?? 0)} → ${usd(r.loan?.total_repayment_amount ?? 0)} (interest ${usd(r.interest_usd)}${Number(r.amount_usd) < Number(r.interest_usd) ? ', capped at $5' : ''})`,
+             `Owed since: ${formatDecidedAt(new Date(r.created_at))}`,
+             '',
+             'Send it, then mark ✅ Sent in Admin → Referral codes → Interest refunds.'
+          ].join('\n');
    const siteUrl = (Deno.env.get('VITE_SITE_URL') ?? Deno.env.get('SITE_URL') ?? 'https://moodeng.app').replace(/\/$/, '');
    const keyboard: TelegramInlineKeyboard = [[{ text: '💸 Mark sent in admin', url: `${siteUrl}/admin/referrals` }]];
    if (r.user?.id) keyboard.push([openInAdminButton(r.user.id, r.user.username)]);
@@ -181,7 +185,9 @@ type InvoiceItem = { amount: number | string; label: string };
 const postInvoiceCard = async (supabase: SupabaseClient, invoiceId: string) => {
    const { data, error } = await supabase
       .from('affiliate_invoices')
-      .select('id, month, owed, ahead, amount, items, wallet_address, note, owner_user_id, owner:users!affiliate_invoices_owner_user_id_fkey(id, username, display_name, email)')
+      .select(
+         'id, month, owed, ahead, amount, items, wallet_address, note, owner_user_id, owner:users!affiliate_invoices_owner_user_id_fkey(id, username, display_name, email)'
+      )
       .eq('id', invoiceId)
       .maybeSingle();
    if (error) throw new Error(error.message);
@@ -224,6 +230,64 @@ const postInvoiceCard = async (supabase: SupabaseClient, invoiceId: string) => {
    return json({ ok: true });
 };
 
+type PaydayRow = {
+   id: string;
+   code: string;
+   amount: number | null;
+   created_at: string;
+   owner_user_id: string;
+   owner: (Person & { wallet_address: string | null }) | null;
+   referred: Person;
+};
+
+// Payday (15th and 30th): what each partner earned from friends we funded, still unpaid. One card per owner.
+const postPaydayCards = async (supabase: SupabaseClient, payday: string) => {
+   const { data, error } = await supabase
+      .from('referral_code_payouts')
+      .select(
+         'id, code, amount, created_at, owner_user_id, owner:users!referral_code_payouts_owner_user_id_fkey(id, username, display_name, email, wallet_address), referred:users!referral_code_payouts_referred_user_id_fkey(username, display_name)'
+      )
+      .eq('earned_on', 'funded')
+      .eq('status', 'unpaid')
+      .order('created_at');
+   if (error) throw new Error(error.message);
+   const rows = (data ?? []) as unknown as PaydayRow[];
+   if (!rows.length) return json({ ok: true, cards: 0 });
+   const chatId = await getSetting(supabase, 'kyc_alert_chat_id');
+   if (!chatId) return json({ error: 'kyc_alert_chat_id is not set' }, 500);
+
+   const byOwner = new Map<string, PaydayRow[]>();
+   for (const r of rows) byOwner.set(r.owner_user_id, [...(byOwner.get(r.owner_user_id) ?? []), r]);
+   const siteUrl = (Deno.env.get('VITE_SITE_URL') ?? Deno.env.get('SITE_URL') ?? 'https://moodeng.app').replace(/\/$/, '');
+   const dayName = new Date(`${payday}T00:00:00Z`).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+
+   for (const [ownerId, lines] of byOwner) {
+      const owner = lines[0].owner;
+      const who = personLabel(owner);
+      const total = lines.reduce((sum, l) => sum + Number(l.amount ?? 0), 0);
+      const text = [
+         `💸 Payday ${dayName}: pay ${who} ${usd(total)} USDC — ${lines.length} funded friend${lines.length === 1 ? '' : 's'}`,
+         '',
+         `To (USDC on Base): ${owner?.wallet_address || 'NO WALLET ON FILE — message them first'}`,
+         `Who: ${who}${owner?.username ? ` (@${owner.username})` : ''}${owner?.email ? ` · ${owner.email}` : ''}`,
+         '',
+         ...lines
+            .slice(0, 30)
+            .map(
+               (l) =>
+                  `• ${usd(Number(l.amount ?? 0))} — ${l.code}: ${personLabel(l.referred)} (funded ${formatDecidedAt(new Date(l.created_at))})`
+            ),
+         ...(lines.length > 30 ? [`• …and ${lines.length - 30} more`] : []),
+         '',
+         'Deal: $5 per friend we verified and funded, paid on the 15th and 30th. Pay it in Admin → Affiliate payouts (one tap sends USDC and marks every line paid).'
+      ].join('\n');
+      const keyboard: TelegramInlineKeyboard = [[{ text: '💸 Pay in admin', url: `${siteUrl}/admin/affiliates` }]];
+      keyboard.push([openInAdminButton(ownerId, owner?.username ?? null)]);
+      await sendTelegramMessage(chatId, text, { inlineKeyboard: keyboard, aboutUserIds: [ownerId] });
+   }
+   return json({ ok: true, cards: byOwner.size });
+};
+
 serve(async (req) => {
    if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
@@ -231,7 +295,8 @@ serve(async (req) => {
    if (!(await isAuthorized(supabase, req))) return json({ error: 'Unauthorized' }, 401);
 
    try {
-      const { payoutId, event, decidedBy, claimId, interestRefundId, invoiceId } = (await req.json().catch(() => ({}))) as {
+      const { payoutId, event, decidedBy, claimId, interestRefundId, invoiceId, payday } = (await req.json().catch(() => ({}))) as {
+         payday?: string;
          invoiceId?: string;
          payoutId?: string;
          event?: string;
@@ -239,6 +304,7 @@ serve(async (req) => {
          claimId?: string;
          interestRefundId?: string;
       };
+      if (payday) return await postPaydayCards(supabase, payday);
       if (invoiceId) return await postInvoiceCard(supabase, invoiceId);
       if (claimId) return await postClaimCard(supabase, claimId);
       if (interestRefundId) return await handleInterestRefund(supabase, interestRefundId, event, decidedBy);
