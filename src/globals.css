@@ -119,10 +119,12 @@ a {
 /* Borrower dashboard (dashboard-v2) surfaces, used via the `dv2-*` Tailwind colors. Dark card matches
    the global card remap below (#1b1525) so the dashboard sits flush with the rest of the app. */
 :root {
-   --dv2-page: #f7f7f7;
+   --dv2-page: #f6f3fb;
    --dv2-card: #ffffff;
    --dv2-card-tint: #f8f6ff;
    --dv2-tab: #efeaff;
+   /* Soft lilac lift under every dashboard card (dark mode swaps it for a hairline). */
+   --dv2-shadow: 0 1px 2px rgba(76, 45, 140, 0.05), 0 12px 28px -14px rgba(96, 16, 210, 0.18);
 }
 
 html.dark {
@@ -130,6 +132,36 @@ html.dark {
    --dv2-card: #1b1525;
    --dv2-card-tint: #221a31;
    --dv2-tab: #2a2042;
+   --dv2-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+/* Dashboard cards rise in one after another on load. "backwards" leaves no transform behind once
+   it ends, so popups (position: fixed) inside a card still cover the whole screen. */
+@keyframes dv2-rise {
+   from {
+      opacity: 0;
+      transform: translateY(10px);
+   }
+}
+.dv2-stack > * {
+   animation: dv2-rise 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+.dv2-stack > :nth-child(2) {
+   animation-delay: 0.05s;
+}
+.dv2-stack > :nth-child(3) {
+   animation-delay: 0.1s;
+}
+.dv2-stack > :nth-child(4) {
+   animation-delay: 0.15s;
+}
+.dv2-stack > :nth-child(n + 5) {
+   animation-delay: 0.2s;
+}
+@media (prefers-reduced-motion: reduce) {
+   .dv2-stack > * {
+      animation: none;
+   }
 }
 
 /* Light mode paints its own page. Left blank, a phone or computer in dark mode filled it with black

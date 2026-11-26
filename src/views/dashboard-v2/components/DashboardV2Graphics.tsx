@@ -32,7 +32,7 @@ export function TabbedCard({
       <section className={clsx('relative mx-5', className)} aria-labelledby={titleId}>
          <div
             className={clsx(
-               'absolute right-0 flex h-10 items-start rounded-t-[12px] bg-gradient-to-b from-dv2-tab to-dv2-card-tint pl-2.5 pt-1.5',
+               'absolute right-0 flex h-10 items-start rounded-t-[16px] bg-gradient-to-b from-dv2-tab to-dv2-card-tint pl-2.5 pt-1.5',
                overlapTitle ? 'top-0' : '-top-0.5'
             )}
             style={{ width: tabWidth }}
@@ -47,7 +47,7 @@ export function TabbedCard({
          </h2>
          <div
             className={clsx(
-               'relative rounded-[8px] rounded-tr-none bg-dv2-card bg-gradient-to-b from-dv2-card-tint to-dv2-card to-[48px]',
+               'relative rounded-[20px] rounded-tr-none bg-dv2-card shadow-[var(--dv2-shadow)] bg-gradient-to-b from-dv2-card-tint to-dv2-card to-[48px]',
                overlapTitle ? 'mt-2.5' : 'mt-4'
             )}
          >

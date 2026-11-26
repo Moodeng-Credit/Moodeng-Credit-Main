@@ -126,10 +126,7 @@ export default function NextLoanCard({
    }
 
    return (
-      <div
-         className="mt-3 flex flex-col gap-4 rounded-[16px] border border-[#EEE8F5] bg-white px-4 py-4 dark:border-[#3A2F55] dark:bg-dv2-page"
-         data-testid="next-loan-card"
-      >
+      <div className="mt-3 flex flex-col gap-4 rounded-[18px] bg-[#FAF7FF] px-4 py-4 dark:bg-dv2-page" data-testid="next-loan-card">
          <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
                <p className="text-[13px] font-medium tracking-[-0.01em] text-[#70617F] dark:text-[#A89BB8]">{t.eyebrow}</p>
@@ -162,7 +159,7 @@ export default function NextLoanCard({
                   <div className="relative h-5">
                      {todayPct !== null ? (
                         <span
-                           className="absolute -translate-x-1/2 rounded-full bg-[#040033] px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white dark:bg-[#F0EAFF] dark:text-[#040033]"
+                           className="absolute -translate-x-1/2 rounded-full bg-[#040033] px-1.5 py-0.5 text-[10px] font-semibold leading-none text-white dark:bg-[#F0EAFF] dark:text-[#16112a]"
                            style={{ left: `${Math.min(94, Math.max(6, todayPct))}%` }}
                         >
                            {t.today}
@@ -175,7 +172,7 @@ export default function NextLoanCard({
                      <span className="h-full flex-1 bg-[#F06A6A]" />
                      {todayPct !== null ? (
                         <span
-                           className="absolute top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-white bg-[#040033] shadow dark:border-dv2-page dark:bg-[#F0EAFF]"
+                           className="absolute top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-[#FAF7FF] bg-[#040033] shadow dark:border-dv2-page dark:bg-[#F0EAFF]"
                            style={{ left: `${todayPct}%` }}
                         />
                      ) : null}
@@ -189,7 +186,7 @@ export default function NextLoanCard({
                   </div>
                </div>
 
-               <div className="flex items-center justify-between rounded-xl bg-[#FBFAFD] px-3.5 py-3 dark:bg-[#221A30]">
+               <div className="flex items-center justify-between rounded-[14px] bg-white px-3.5 py-3 shadow-[0_1px_3px_rgba(76,45,140,0.08)] dark:bg-[#221A30] dark:shadow-none">
                   <div>
                      <p className="text-[12px] font-medium text-[#70617F] dark:text-[#A89BB8]">{t.payBetween}</p>
                      <p className="text-[16px] font-semibold tracking-[-0.02em] text-[#040033] dark:text-[#F0EAFF]">
