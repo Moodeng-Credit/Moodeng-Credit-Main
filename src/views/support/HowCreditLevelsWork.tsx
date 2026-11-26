@@ -14,7 +14,7 @@ export type CreditLevelsVariant = 'support' | 'public';
 
 const PAGE_TITLE = 'How Credit Levels Work on Moodeng Credit';
 const PAGE_DESCRIPTION =
-   'Credit Levels set how much you can borrow on Moodeng Credit. You start at $15 and each full-limit loan you repay adds $10. Learn what a Credit-Building Loan is and how to unlock your next level.';
+   'Credit Levels set how much you can borrow on Moodeng Credit. You start at $15 and your limit grows each time you repay a full-limit loan on time. Learn what a Credit-Building Loan is and how to unlock your next level.';
 // The public marketing route is the canonical home for this content so search
 // engines index one URL even though it also renders inside the in-app support area.
 const CANONICAL_PATH = '/learn/how-credit-levels-work';
@@ -48,7 +48,7 @@ const pillars = [
       icon: 'stairs',
       eyebrow: 'The pace',
       title: 'One level at a time',
-      lead: 'You start at $15. Each full-limit loan you repay adds $10.',
+      lead: 'You start at $15. Each full-limit loan you repay on time raises your limit, and your Dashboard shows your next one.',
       detail: 'No skipping or buying ahead — each level is earned from the one before.',
       shot: 'levelup' as const
    }
@@ -109,7 +109,7 @@ const faqs = [
    },
    {
       q: 'How do I move to the next level?',
-      a: 'Take a Credit-Building Loan at your full current limit and repay it in full and on time. A clean repayment adds $10 to your limit: $15, then $25, then $35, and so on.'
+      a: 'Take a Credit-Building Loan at your full current limit and repay it in full and on time, in the 2nd half of the loan. Your limit goes up after each one, and your Dashboard always shows your next limit.'
    },
    {
       q: 'Does borrowing a small amount level me up?',
@@ -463,7 +463,7 @@ function PillarShot({ kind }: { kind: 'limit' | 'apply' | 'levelup' }): JSX.Elem
             <div className="hclw-shot__track">
                <i style={{ width: '25%' }} />
             </div>
-            <div className="hclw-shot__hint">$15 → $25 → $35 → $45</div>
+            <div className="hclw-shot__hint">$15 → your next limit</div>
          </Link>
       );
    }

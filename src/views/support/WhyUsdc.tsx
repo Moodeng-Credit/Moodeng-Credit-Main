@@ -149,7 +149,7 @@ const relatedGuides = [
    {
       slug: 'how-credit-levels-work',
       title: 'How Credit Levels work',
-      blurb: 'How your borrowing limit grows $15 → $25 → $35 → $45 as you repay.'
+      blurb: 'How your borrowing limit grows from $15 as you repay.'
    }
 ];
 

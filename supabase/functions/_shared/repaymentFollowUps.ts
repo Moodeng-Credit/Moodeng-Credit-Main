@@ -8,7 +8,7 @@
 //   always  → the Discord repay feed line
 //
 // Never throws; side-effect failures come back in `errors` (the payment is recorded either way).
-import { evaluateCreditProgression, getEffectiveCreditLimit, toNumber } from './creditAndPoints.ts';
+import { evaluateCreditProgression, getEffectiveCreditLimit, getIncomeNextLimit, toNumber } from './creditAndPoints.ts';
 import { postDiscord } from './discord.ts';
 import { notifyBorrowerPartialRepayment } from './partialRepaymentNotice.ts';
 import { postPartialRepaymentToTeam } from './teamLoanFeed.ts';
@@ -65,8 +65,10 @@ export const applyCreditProgression = async (
    if (ceilingError) {
       errors.push({ type: 'credit_progression', message: `ceiling lookup failed: ${ceilingError.message}` });
    } else if (ceiling > 0) {
-      nextLimit = Math.min(nextLimit, ceiling);
-      if (nextLimit <= toNumber(borrower.cs ?? 0)) return { errors, levelUp: null };
+      // Their income ladder (getIncomeNextLimit): the step and the top both follow their income.
+      const current = getEffectiveCreditLimit(borrower.cs, true);
+      nextLimit = getIncomeNextLimit(current, ceiling, borrower.created_at ?? null, (loan.funded_at as string | null | undefined) ?? null);
+      if (nextLimit <= current) return { errors, levelUp: null };
    }
 
    // Compare-and-set on the limit we evaluated against: if two final repayments race, only the

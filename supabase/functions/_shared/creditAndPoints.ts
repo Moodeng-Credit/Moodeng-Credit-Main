@@ -67,6 +67,35 @@ export const getNextCreditTier = (
    return Math.min(next ?? MAX_CREDIT_LIMIT, MAX_CREDIT_LIMIT);
 };
 
+/**
+ * Income ladders (George, 2026-11-27: "connect their income to the credit ladder"). Low or no income
+ * (income ceiling $35, app_private.limit_ceiling) climbs in $5 steps: $15 → $20 → $25 → $30 → $35. Everyone
+ * else keeps the normal $10 steps. Every ladder stops at the borrower's ceiling ($60 by default, $140 with
+ * team-approved proof of ₱23k+/month). Borrowers only ever see their own next number, never the tiers.
+ * The $5 steps apply to Track B loans funded from INCOME_LADDER_FROM (and to "what's next" when no loan is
+ * out); a loan already running keeps the step it was shown, capped at the ceiling. Never lowers a limit.
+ * Kept in sync between src/config/creditTiers.ts and supabase/functions/_shared/creditAndPoints.ts.
+ */
+export const INCOME_LADDER_FROM = Date.parse('2026-11-28T00:00:00+07:00');
+export const LOW_INCOME_CEILING = 35;
+export const LOW_INCOME_LADDER: readonly number[] = [15, 20, 25, 30, 35];
+
+/** The next limit after a full-limit loan, on the borrower's income ladder and never past their ceiling. */
+export const getIncomeNextLimit = (
+   currentAmount: number,
+   ceiling: number | null | undefined,
+   joinedAt?: string | number | Date | null,
+   fundedAt?: string | number | Date | null
+): number => {
+   const trackNext = getNextCreditTier(currentAmount, joinedAt, fundedAt);
+   if (!ceiling || !Number.isFinite(ceiling) || ceiling <= 0) return trackNext;
+   const funded = fundedAt == null ? Number.NaN : new Date(fundedAt).getTime();
+   const smallSteps =
+      ceiling <= LOW_INCOME_CEILING && getCreditTrack(joinedAt) === 'B' && (!Number.isFinite(funded) || funded >= INCOME_LADDER_FROM);
+   const next = smallSteps ? (LOW_INCOME_LADDER.find((tier) => tier > currentAmount) ?? currentAmount) : trackNext;
+   return Math.max(currentAmount, Math.min(next, ceiling, MAX_CREDIT_LIMIT));
+};
+
 // Admin "one level up / down" (Directory card): the next step on the borrower's track above or below the
 // current limit, clamped to $15–$135. An off-ladder limit snaps to the nearest step in that direction.
 // Returns the current limit when already at the end of the ladder.

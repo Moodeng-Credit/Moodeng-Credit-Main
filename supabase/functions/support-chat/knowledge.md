@@ -34,7 +34,7 @@ They go up with on-time, in-full repayments and drop with late payments or defau
 
 Credit Levels control how much you can borrow at a time.
 
-You start at Level 1 with a $15 limit. Each full repayment of a Credit-Building loan adds $10 to your limit and unlocks the next level: $15, then $25, then $35, and so on.
+You start at Level 1 with a $15 limit. Each full, on-time repayment of a Credit-Building loan raises your limit and unlocks the next level. Your Dashboard always shows your next limit.
 
 ### Which wallet does Moodeng use?
 
@@ -74,7 +74,7 @@ We don't claim to replace banks for everyone. But for the people currently using
 
 A credit-building loan is a loan you take out specifically to grow your credit limit on Moodeng. To qualify as one, the loan must be at your full current Credit Level limit — not below it.
 
-Here's how it works. You start at Credit Level 1 with a $15 borrowing limit. Borrow the full $15 and repay it on time, and your limit moves up to $25. Borrow that full $25 next time and repay, you unlock $35. Then $45. Each level adds $10.
+Here's how it works. You start at Credit Level 1 with a $15 borrowing limit. Borrow the full $15 and repay it on time, in the 2nd half of the loan, and your limit moves up. Borrow your new full limit next time and repay it the same way, and it moves up again. Your Dashboard always shows your next limit.
 
 Smaller loans below your full limit are called Trust-Building Loans. Those still help — they grow your repayment record and reputation with moo-lenders — but they don't raise your Credit Level. So if your goal is to build credit and unlock larger loans, you specifically want to take out and repay full-limit Credit-Building Loans.
 
@@ -86,7 +86,7 @@ Yes — small loans are exactly what Moodeng is built for. New borrowers start a
 
 There are no minimum loan amounts, no monthly subscriptions, no setup costs, and no fees. You request what you need (up to your current Credit Level limit); in the Philippines every loan is 30 days with a flat 10%, and moo-lenders decide whether to fund you.
 
-Each full-limit loan you repay on time, in the 2nd half of the loan, adds $10 to your limit. So you can start small to test the platform with low stakes, build your reputation, and grow into larger loans only as you're ready.
+Each full-limit loan you repay on time, in the 2nd half of the loan, raises your limit. So you can start small to test the platform with low stakes, build your reputation, and grow into larger loans only as you're ready.
 
 ## Account FAQ — everyone
 
@@ -138,7 +138,7 @@ Your credit limit goes up when you borrow your full limit and repay it on time. 
 
 If your limit is $20 and you only borrow $15, that doesn't count toward the next level — even if you repay it perfectly. The system needs to see you can handle the full limit before it raises the ceiling.
 
-Each step adds $10: $15, then $25, then $35, and so on. One step at a time: borrow your max, repay on time, repeat.
+One step at a time: borrow your max, repay it on time in the 2nd half of the loan, repeat. Your Dashboard always shows your next limit.
 
 ## Account FAQ — lenders
 
@@ -215,7 +215,7 @@ Because your Pandesal points are tied to your wallet, they travel with you — t
 
 Credit Levels determine how much you can borrow at a time.
 
-Everyone starts at Level 1 with a $15 limit. As you borrow and fully repay, each full-limit loan you repay adds $10 to your limit ($15, then $25, then $35) and unlocks a new level.
+Everyone starts at Level 1 with a $15 limit. As you borrow and fully repay, each full-limit loan you repay on time raises your limit and unlocks a new level. Your Dashboard always shows your next limit.
 
 You only advance by completing a Credit-Building Loan: a loan at your full current limit, repaid in full and on time.
 
@@ -250,7 +250,7 @@ Submitting your repayment on or before the scheduled deadline is the most effect
 When you repay on time, the following benefits are applied to your profile:
 
 - More Pandesal Points: Your Pandesal points increase for either Credit-Building or Trust-Building loans, reflecting your reliability to the community.
-- Credit Limit Progression: For Credit-Building loans, your current borrowing limit increases, successfully unlocking the next credit level (e.g., advancing from $15 → $25).
+- Credit Limit Progression: For Credit-Building loans, your current borrowing limit increases, successfully unlocking the next credit level (your Dashboard shows your next limit).
 - Verified Lending History: Your successful repayment history becomes visible to potential moo-lenders, significantly streamlining the funding process for your future requests.
 
 Repayment Scoring Breakdown
@@ -542,7 +542,7 @@ Four short guides, each about the practical mechanics of using USDC on Base:
 
 Two in-depth articles live here (plus the same guide library also reachable from Support → Guides):
 
-- **How Credit Levels work** — the ladder is **Level 1 = $15 → Level 2 = $25 → Level 3 = $35 → Level 4 = $45**, and each level after adds $10. You start at Level 1. Never tell a borrower there is a fixed top limit or name one; if asked, say the limit keeps growing with on-time full-limit repayments. Only repaying a **full-limit loan** (a "Credit-Building" or "Credit Growth" loan) on time unlocks the next level — borrowing less than your limit ("Trust-Building") grows your Pandesal points but not your limit. You can't skip levels, and paying extra or early doesn't skip you ahead either — one level at a time. Missing a repayment pauses progress and lowers your Pandesal points, but your level itself never resets.
+- **How Credit Levels work** — you start at Level 1 with $15, and each full-limit loan repaid on time (in the 2nd half of the loan) raises the limit. The size of each step and the top depend on the borrower and are set by Moodeng: NEVER quote a fixed step (like "+$10"), a ladder of amounts, or say that steps or tops differ by income. Point them to the **Your next loan** card on their Dashboard, which shows their own next limit. Never tell a borrower there is a fixed top limit or name one; if asked, say the limit keeps growing with on-time full-limit repayments. Only repaying a **full-limit loan** (a "Credit-Building" or "Credit Growth" loan) on time unlocks the next level — borrowing less than your limit ("Trust-Building") grows your Pandesal points but not your limit. You can't skip levels, and paying extra or early doesn't skip you ahead either — one level at a time. Missing a repayment pauses progress and lowers your Pandesal points, but your level itself never resets.
 - **Why we use USDC** — USDC transfers are free and gasless on Base (a $20 loan arrives as $20), settle in seconds, and are regulated/backed 1:1 by cash and short-term US Treasuries (Circle publishes monthly reserve reports). It holds a stable $1 value, unlike volatile crypto. Moodeng is community lending with USDC as the settlement rail — it is not a DeFi yield or staking product, and Moodeng does not offer staking or yield on your USDC.
 
 ## Blogs (`/blogs`)
@@ -551,7 +551,7 @@ Longer editorial pieces on predatory lending, borrower dignity, and fair credit 
 
 ## Credit Leveling Guide (`/credit-leveling-guide`)
 
-A dedicated page spelling out the same ladder as "How Credit Levels work": **$15 → $25 → $35 → $45**, +$10 each level. The rule in one line: **full limit + on-time repayment = next level.** Borrowing below your limit builds trust but not your limit; borrowing your full limit and repaying it on time unlocks the next one; paying extra never skips a level.
+A dedicated page explaining the same thing as "How Credit Levels work" (start at $15; the Dashboard shows your next limit). The rule in one line: **full limit + on-time repayment = next level.** Borrowing below your limit builds trust but not your limit; borrowing your full limit and repaying it on time unlocks the next one; paying extra never skips a level.
 
 ## Reputation Milestones / Pandesal points (`/milestones`)
 
@@ -737,11 +737,11 @@ There is ONE rule. A loan grows the limit when all three are true:
 
 Paying in the first half is always allowed — the loan is paid and it counts as on time — but the limit stays the same. (Loans funded before 27 Nov 2026 used the older rule: anything paid at least 48 hours after funding counted.)
 
-When someone asks why their limit didn't go up, check which of the three it was and say it in one kind sentence, then the next step, e.g. "Your limit stayed $15 because this loan was paid in its first half. Next time, borrow your full $15 and pay between those dates on your Dashboard, and it goes to $25." Say "stays", never "reset" or "punished". Never promise a bigger limit, a date for one, or an exception — only the team can decide those; offer to connect them. If they need more money for something specific (stock for a store, a bill), be warm, explain the rule, and offer to pass it to the team.
+When someone asks why their limit didn't go up, check which of the three it was and say it in one kind sentence, then the next step, e.g. "Your limit stayed $15 because this loan was paid in its first half. Next time, borrow your full $15 and pay between those dates on your Dashboard, and it goes up." Don't name the next amount unless it's on their Dashboard card; never quote a fixed step like "+$10" or say steps differ by income. Say "stays", never "reset" or "punished". Never promise a bigger limit, a date for one, or an exception — only the team can decide those; offer to connect them. If they need more money for something specific (stock for a store, a bill), be warm, explain the rule, and offer to pass it to the team.
 
 ## Can I have more than one loan at a time?
 
-Yes — you can have more than one active loan at the same time, as long as the new amount fits within your **available credit limit**. Your available limit is your level's limit (it starts at $15 and grows $10 a level) minus what you already owe on any active loans. So if your current loans already use up your whole limit, you'll need to repay (fully or partly) before you can request more. (Some accounts may also have a cap on how many loans can be active at once — if the app says you've reached your maximum number of active loans, repay one first.)
+Yes — you can have more than one active loan at the same time, as long as the new amount fits within your **available credit limit**. Your available limit is your level's limit (it starts at $15 and grows as they repay full-limit loans on time) minus what you already owe on any active loans. So if your current loans already use up your whole limit, you'll need to repay (fully or partly) before you can request more. (Some accounts may also have a cap on how many loans can be active at once — if the app says you've reached your maximum number of active loans, repay one first.)
 
 ## Paying in parts (some now, some later)
 

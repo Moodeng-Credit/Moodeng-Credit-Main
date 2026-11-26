@@ -1,5 +1,6 @@
 import { toNumber } from '@/utils/decimalHelpers';
 
+import { getIncomeNextLimit } from '@/config/creditTiers';
 import { countsFromAt, evaluateCreditProgression, getEffectiveCreditLimit } from '@/lib/creditLeveling';
 import type { RepayStreak } from '@/lib/friendReferrals';
 import { getDaysUntilDueDay, getDueDayEnd, getLoanTimezone, getRewardFromAt } from '@/lib/loanDeadline';
@@ -87,7 +88,7 @@ export const getFastRepayNotice = ({
       joinedAt: joinedAt ?? null
    });
    const limitNow = getEffectiveCreditLimit(currentLimit, isVerified);
-   const nextLimit = ceiling ? Math.min(progression.nextLimit, Math.max(ceiling, limitNow)) : progression.nextLimit;
+   const nextLimit = ceiling ? getIncomeNextLimit(limitNow, ceiling, joinedAt ?? null, loan.fundedAt ?? null) : progression.nextLimit;
    const levelUp = progression.shouldLevelUp && nextLimit > limitNow ? { from: limitNow, to: nextLimit } : null;
 
    const rewardFrom = loan.fundedAt ? getRewardFromAt(loan.fundedAt, loan.dueDate, zone) : null;

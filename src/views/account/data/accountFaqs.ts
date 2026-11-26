@@ -73,7 +73,7 @@ So if you want to grow your reputation quickly, Trust-Building Loans are a great
 
 If your limit is $20 and you only borrow $15, that doesn't count toward the next level — even if you repay it perfectly. The system needs to see you can handle the full limit before it raises the ceiling.
 
-Each step adds $10: $15, then $25, then $35, and so on. One step at a time: borrow your max, repay on time, repeat.`
+One step at a time: borrow your max, repay it on time in the 2nd half of the loan, repeat. Your Dashboard always shows your next limit.`
    }
 ];
 

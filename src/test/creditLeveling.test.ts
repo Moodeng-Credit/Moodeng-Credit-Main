@@ -762,3 +762,50 @@ describe('the second-half rule (loans funded from 2026-11-27 Bangkok): only paym
       expect(countsFromAt(base.fundedAt, '2026-12-03T00:00:00Z', 'Asia/Manila')?.toISOString()).toBe('2026-12-03T01:00:00.000Z');
    });
 });
+
+describe('income ladders (2026-11-27): the income ceiling picks the steps', () => {
+   const newB = '2026-11-20T00:00:00Z'; // Track B
+   const after = '2026-11-29T00:00:00Z'; // funded after INCOME_LADDER_FROM
+   it('low income ($35): +$5 steps to $35', async () => {
+      const { getIncomeNextLimit } = await import('@/config/creditTiers');
+      expect([15, 20, 25, 30, 35].map((l) => getIncomeNextLimit(l, 35, newB, after))).toEqual([20, 25, 30, 35, 35]);
+   });
+   it('default ($60): the normal +$10 steps, top $60', async () => {
+      const { getIncomeNextLimit } = await import('@/config/creditTiers');
+      expect([15, 25, 35, 45, 55, 60].map((l) => getIncomeNextLimit(l, 60, newB, after))).toEqual([25, 35, 45, 55, 60, 60]);
+   });
+   it('approved proof of ₱23k+ ($140): still the normal +$10 steps, just no $60 top', async () => {
+      const { getIncomeNextLimit } = await import('@/config/creditTiers');
+      expect([15, 25, 55, 65, 125].map((l) => getIncomeNextLimit(l, 140, newB, after))).toEqual([25, 35, 65, 75, 135]);
+   });
+   it('a loan funded before the switch keeps its +$10 step, capped at the ceiling', async () => {
+      const { getIncomeNextLimit } = await import('@/config/creditTiers');
+      expect(getIncomeNextLimit(15, 35, newB, '2026-11-26T00:00:00Z')).toBe(25);
+      expect(getIncomeNextLimit(25, 35, newB, '2026-11-26T00:00:00Z')).toBe(35);
+      expect(getIncomeNextLimit(35, 35, newB, '2026-11-26T00:00:00Z')).toBe(35);
+   });
+   it('never lowers a limit above the ceiling; no ceiling = the old ladder', async () => {
+      const { getIncomeNextLimit } = await import('@/config/creditTiers');
+      expect(getIncomeNextLimit(100, 60, newB, after)).toBe(100);
+      expect(getIncomeNextLimit(15, null, newB, after)).toBe(25);
+   });
+   it('early members (Track A) keep their ladder, capped at the ceiling', async () => {
+      const { getIncomeNextLimit } = await import('@/config/creditTiers');
+      expect(getIncomeNextLimit(20, 60, '2026-09-01T00:00:00Z', after)).toBe(40);
+      expect(getIncomeNextLimit(40, 60, '2026-09-01T00:00:00Z', after)).toBe(60);
+      expect(getIncomeNextLimit(20, 35, '2026-09-01T00:00:00Z', after)).toBe(35);
+   });
+   it('server and app agree', async () => {
+      const client = await import('@/config/creditTiers');
+      const server = await import('../../supabase/functions/_shared/creditAndPoints.ts');
+      for (const ceiling of [35, 60, 140, null]) {
+         for (const limit of [15, 20, 25, 30, 35, 40, 45, 55, 60, 75, 100]) {
+            for (const funded of [after, '2026-11-26T00:00:00Z', null]) {
+               expect(server.getIncomeNextLimit(limit, ceiling, newB, funded)).toBe(
+                  client.getIncomeNextLimit(limit, ceiling, newB, funded)
+               );
+            }
+         }
+      }
+   });
+});
