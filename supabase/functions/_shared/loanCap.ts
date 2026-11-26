@@ -3,6 +3,8 @@
 // The team caps a borrower after a call. A request that takes them past the cap is held off the public
 // board ('over_cap') and the team is alerted. Funding it needs an override with a written reason
 // (admin-fund-loan action cap_override): saved on the loan, posted to the team, and the hold released.
+// A soft cap (borrower_loan_caps.soft) holds nothing and needs no override: the team alert and the Fund
+// modal just say the request is over it. The borrower is never told.
 import { postDiscord } from './discord.ts';
 import { sendTelegramMessage } from './telegram.ts';
 
@@ -13,6 +15,7 @@ export const MIN_OVERRIDE_REASON = 10;
 
 export type CapStatus = {
    capped: boolean;
+   soft: boolean;
    cap: number | null;
    note: string | null;
    inUse: number;
@@ -50,17 +53,18 @@ export const capStatus = async (svc: Svc, loanId: string, principal?: number | n
       .eq('loan_id', loanId)
       .maybeSingle();
    const override = ov ? { reason: ov.reason, at: ov.overridden_at, by: ov.overridden_by, cap: ov.cap_usd } : null;
-   if (!loan.borrower_user_id) return { capped: false, cap: null, note: null, inUse: 0, amount, over: false, override };
-   const { data: capRow } = await svc.from('borrower_loan_caps').select('cap_usd, note').eq('user_id', loan.borrower_user_id).maybeSingle();
-   if (!capRow) return { capped: false, cap: null, note: null, inUse: 0, amount, over: false, override };
+   const none = { capped: false, soft: false, cap: null, note: null, inUse: 0, amount, over: false, override };
+   if (!loan.borrower_user_id) return none;
+   const { data: capRow } = await svc.from('borrower_loan_caps').select('cap_usd, note, soft').eq('user_id', loan.borrower_user_id).maybeSingle();
+   if (!capRow) return none;
    const cap = Number(capRow.cap_usd);
    const inUse = await capInUse(svc, loan.borrower_user_id, loan.id);
-   return { capped: true, cap, note: capRow.note ?? null, inUse, amount, over: inUse + amount > cap + 1e-9, override };
+   return { capped: true, soft: capRow.soft === true, cap, note: capRow.note ?? null, inUse, amount, over: inUse + amount > cap + 1e-9, override };
 };
 
-/** Error text when funding must stop: over the cap and no override yet. */
+/** Error text when funding must stop: over a hard cap and no override yet. Soft caps never block. */
 export const capBlock = (s: CapStatus): string | null =>
-   s.over && !s.override
+   s.over && !s.override && !s.soft
       ? `Over this borrower's cap (${money(s.cap ?? 0)}, ${money(s.inUse)} in use, this loan ${money(s.amount)}). Tap Override and write why first.`
       : null;
 
@@ -83,6 +87,7 @@ export const overrideCap = async (svc: Svc, loanId: string, adminId: string, raw
    if (reason.length < MIN_OVERRIDE_REASON) return { ok: false, error: `Write a reason (at least ${MIN_OVERRIDE_REASON} characters)` };
    const status = await capStatus(svc, loanId);
    if (!status.capped) return { ok: false, error: 'This borrower has no cap' };
+   if (status.soft) return { ok: false, error: 'This is a soft cap: nothing to override, you can fund it' };
 
    const { data: loan, error } = await svc
       .from('loans')
