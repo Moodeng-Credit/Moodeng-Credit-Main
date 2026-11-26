@@ -11,6 +11,7 @@ import { fileMarkers, gcashRefIssues, type ImageInfo, imageInfo, isAiSize, rowKe
 import { sendTelegramFiles, sendTelegramMessage, type TelegramInlineKeyboard, type TelegramUpload } from './telegram.ts';
 import { idLocaleOf, idResendReason, isIdTrackUser, loadIdStatus, notifyIdNextStep, sendIdTelegram } from './idTrack.ts';
 import { withToday } from './aiToday.ts';
+import { docMonthlyPhp, incomeLadderLine } from './incomeLadder.ts';
 import { chatTokens, logAiUsage } from './aiUsage.ts';
 
 // Proof of income sent from moodeng.app/documents (see the income_documents migration).
@@ -2118,7 +2119,26 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
          questions: questions.length ? questions : null,
          ...(autoApprove ? { decision: 'approved', decided_at: new Date().toISOString(), decided_by: decidedBy } : {})
       },
-      [`${headline} · score ${score}/100${aiNote ? ` · AI: ${aiNote.direction.toLowerCase()}` : ''}`, aiNote ? opinionText(aiNote) : null, checkLine, memo].filter(Boolean).join('\n\n').slice(0, 3900)
+      [
+         `${headline} · score ${score}/100${aiNote ? ` · AI: ${aiNote.direction.toLowerCase()}` : ''}`,
+         // What approving this does to their credit ladder (2026-11-27): said at sign-up vs what it shows.
+         incomeLadderLine(
+            user?.monthly_income ?? null,
+            docMonthlyPhp({
+               currency: doc.currency,
+               net_pay: metrics.net_pay,
+               months_covered: metrics.months_covered,
+               regular_deposits: metrics.regular_deposits,
+               monthly_in: metrics.monthly_in
+            })
+         ),
+         aiNote ? opinionText(aiNote) : null,
+         checkLine,
+         memo
+      ]
+         .filter(Boolean)
+         .join('\n\n')
+         .slice(0, 3900)
    );
    if (autoApprove) await notifyIncomeDecision(supabase, id);
    // They already sent DOCS on Messenger while this was being read: the bot asks the first question there.
