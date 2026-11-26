@@ -75,6 +75,9 @@ export const SAMPLE_STATES: Record<Exclude<DashboardV2PreviewState, 'real'>, Das
             daysRemaining: 5,
             deadline: sampleDeadline(5),
             rewardFrom: sampleDeadline(1),
+            // A full-limit $15 loan in its last week: the "Your next loan" card shows "best days".
+            fundedAt: sampleDeadline(-25),
+            principal: 15,
             lenderName: 'Maricar Cruz',
             isOverdue: false
          },

@@ -32,6 +32,10 @@ export interface DashboardV2Due {
    rewardFrom?: string | null;
    /** The zone its due day is measured in, for showing dates. */
    zone?: string;
+   /** When the money was sent, ISO (repaying within 48h of this never raises the limit). */
+   fundedAt?: string | null;
+   /** Amount borrowed, USD (a full-limit loan is the one that levels up). */
+   principal?: number;
    lenderName: string;
    isOverdue: boolean;
 }
