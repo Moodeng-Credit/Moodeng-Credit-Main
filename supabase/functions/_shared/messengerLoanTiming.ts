@@ -42,7 +42,7 @@ export const guessIntent = (text: string): TimingIntent => {
 
 export type OpenLoan = { funded_at: string | null; due_date: string | null; due_timezone: string | null; owed: number };
 
-const fmtDate = (iso: string, tz: string | null, locale: Locale) =>
+export const fmtDate = (iso: string, tz: string | null, locale: Locale) =>
    new Intl.DateTimeFormat(locale === 'fil' ? 'fil-PH' : 'en-US', { month: 'short', day: 'numeric', timeZone: tz || 'Asia/Manila' }).format(new Date(iso));
 
 /** Before the last-week window opens (so "paying now" is early). Pure. */
