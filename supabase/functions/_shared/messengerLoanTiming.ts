@@ -92,8 +92,8 @@ export const timingReply = (intent: Exclude<TimingIntent, 'other'>, loan: OpenLo
          fil ? 'Salamat sa gustong magbayad agad! 🙏' : 'Thanks for wanting to pay early! 🙏',
          window,
          fil
-            ? 'Ang pagbayad sa unang kalahati ng loan ay hindi nakakatulong sa limit mo, at puwede kang hindi makakuha ng rewards. Hindi rin namin tinatanggap ang paghiram at pagbayad nang mabilis para lang tumaas ang limit.'
-            : "Paying in the first half of your loan doesn't help your limit, and you can miss rewards. Borrowing and repaying fast just to push your limit up doesn't work here.",
+            ? 'Puwede ka pa ring magbayad ngayon kung gusto mo. Ang pagbayad sa unang kalahati ng loan ay hindi nakakatulong sa limit mo, at puwede kang hindi makakuha ng rewards. Hindi rin namin tinatanggap ang paghiram at pagbayad nang mabilis para lang tumaas ang limit.'
+            : "You can still pay now if you want. Paying in the first half of your loan doesn't help your limit, and you can miss rewards. Borrowing and repaying fast just to push your limit up doesn't work here.",
          builder
       ].join('\n\n');
    }
