@@ -53,7 +53,7 @@ The key detail: always choose Base as the network when sending USDC. The full gu
       question: 'How do I repay my loan?',
       answer: `Open the Repay screen — it shows the exact amount due and the repayment address. Send USDC there from any wallet, exchange, or local service. If you don't hold USDC yet, buy it first (Binance P2P, Coins.ph (temporarily paused), PDAX, GCrypto, and more) — always on the Base network.
 
-Repay before the due date — on-time repayment builds your Pandesal points, and repaying a loan at your full limit on time unlocks the next Credit Level. The full guide walks through each way to repay.`,
+Pay by the due date — on-time repayment builds your Pandesal points. To unlock the next Credit Level, borrow your full limit and pay in the 2nd half of the loan (the Dashboard shows your exact dates); paying in the first half is okay, but your limit stays the same. The full guide walks through each way to repay.`,
       readMorePath: '/academy/money/repay',
       readMoreLabel: 'Read the full guide'
    },
@@ -116,7 +116,7 @@ You can track all your active loans and repayment statuses from your Moo-lender 
    {
       id: 'when-do-i-get-repaid',
       question: 'When do I get repaid?',
-      answer: `The due date is set by the borrower when they post their request — you'll see it clearly on the loan card before you fund, so you always know the timeline upfront.
+      answer: `In the Philippines every loan is 30 days and pays back a flat 10% (fund $15, get $16.50 back). The due date is on the loan card before you fund, so you always know the timeline upfront.
 
 Once the loan is due, the borrower repays directly to your wallet — usually your Base Account (or your Instant Wallet, if you use one). You can track the status of all your active loans on your Moo-lender Dashboard.`
    }
@@ -165,7 +165,7 @@ Ang pinakamahalaga: laging piliin ang Base bilang network kapag nagpapadala ng U
       question: 'Paano ko babayaran ang loan ko?',
       answer: `Buksan ang Magbayad screen — makikita mo roon ang eksaktong halagang dapat bayaran at ang repayment address. Magpadala ng USDC doon mula sa kahit anong wallet, exchange, o local service. Kung wala ka pang USDC, bumili muna (Binance P2P, Coins.ph (pansamantalang naka-pause), PDAX, GCrypto, at iba pa) — laging sa Base network.
 
-Magbayad bago ang due date — nagdadagdag ng Pandesal points ang bayad na on time, at kapag nabayaran mo nang on time ang loan na katumbas ng buong limit mo, maa-unlock ang susunod na Credit Level. Nasa buong gabay ang bawat paraan ng pagbabayad.`,
+Magbayad hanggang sa due date — nagdadagdag ng Pandesal points ang bayad na on time. Para ma-unlock ang susunod na Credit Level, hiramin ang buong limit mo at magbayad sa 2nd half ng loan (nasa Dashboard ang eksaktong petsa); okay lang magbayad sa unang kalahati, pero hindi tataas ang limit mo. Nasa buong gabay ang bawat paraan ng pagbabayad.`,
       readMorePath: '/academy/money/repay',
       readMoreLabel: 'Basahin ang buong gabay'
    },
