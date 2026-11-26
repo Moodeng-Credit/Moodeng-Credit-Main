@@ -651,8 +651,8 @@ export const filipinoCoverageG: Record<string, string> = {
    'Repay your $80 loan on time': 'Bayaran on time ang $80 loan mo',
    'Repay your $100 loan on time': 'Bayaran on time ang $100 loan mo',
    'Repay your $120 loan on time': 'Bayaran on time ang $120 loan mo',
-   'You start at $15. Each full-limit loan you repay adds $10.':
-      'Magsisimula ka sa $15. Bawat full-limit na loan na nabayaran mo ay dagdag na $10.',
+   'You start at $15. Each full-limit loan you repay on time raises your limit, and your Dashboard shows your next one.':
+      'Magsisimula ka sa $15. Bawat full-limit na loan na nabayaran mo on time ay nagpapataas ng limit mo, at nasa Dashboard mo ang susunod.',
    'you need a smaller amount, or want to build trust first.': 'mas maliit na halaga ang kailangan mo, o gusto mo munang bumuo ng tiwala.',
    'also called a Credit Growth Loan': 'tinatawag ding Credit Growth Loan',
    'you’re ready to grow your limit and sure you can repay on time.':
@@ -1096,7 +1096,7 @@ export const filipinoCoverageG: Record<string, string> = {
    "full-limit loan unlocks a $25 limit": "na full-limit loan ang magbubukas ng $25 na limit",
    "left to repay for a $25 limit": "na lang ang babayaran para sa $25 na limit",
    "…and $10 more for each level after that.": "…at dagdag na $10 sa bawat susunod na level.",
-   "Start at $15, add $10 each level": "Simula sa $15, dagdag $10 bawat level",
+   "Start at $15 and grow as you repay": "Simula sa $15, tumataas habang nagbabayad ka",
    "Top level for now": "Pinakamataas na level sa ngayon",
    "Top level": "Pinakamataas na level",
    "Example: borrowing the full $25 limit to unlock the $35 level.": "Halimbawa: hiramin ang buong $25 na limit para ma-unlock ang $35 na level.",

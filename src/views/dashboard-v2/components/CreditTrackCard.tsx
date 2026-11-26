@@ -16,14 +16,17 @@ const COPY: Record<
 > = {
    en: {
       A: { title: 'Early member perk 🎉', body: 'You joined early, so you keep the bigger steps.' },
-      B: { title: 'New levels', body: 'Each full loan you pay back adds $10.' },
-      promise: (next: number) => `Pay this loan back: $${next}. After that, +$10 each time.`,
+      B: { title: 'New levels', body: 'Each full loan you pay back on time raises your limit. Your next limit is on your Dashboard.' },
+      promise: (next: number) => `Pay this loan back: $${next}. After that, your next limit shows on your Dashboard.`,
       button: 'Got it'
    },
    fil: {
       A: { title: 'Perk ng early member 🎉', body: 'Maaga kang sumali, kaya sa iyo pa rin ang mas malalaking hakbang.' },
-      B: { title: 'Bagong levels', body: 'Bawat buong loan na nabayaran mo, +$10.' },
-      promise: (next: number) => `Bayaran ang loan na ito: $${next}. Pagkatapos, +$10 bawat level.`,
+      B: {
+         title: 'Bagong levels',
+         body: 'Bawat buong loan na nabayaran mo on time ay nagpapataas ng limit mo. Nasa Dashboard mo ang susunod.'
+      },
+      promise: (next: number) => `Bayaran ang loan na ito: $${next}. Pagkatapos, nasa Dashboard mo ang susunod mong limit.`,
       button: 'Sige'
    }
 };

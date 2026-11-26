@@ -16,7 +16,7 @@ import { useLimitCeiling } from '@/hooks/useLimitCeiling';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useVerificationJourney } from '@/hooks/useVerificationJourney';
 
-import { getNextCreditTier } from '@/config/creditTiers';
+import { getIncomeNextLimit, getNextCreditTier } from '@/config/creditTiers';
 import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
 import type { ClaimableVoucher } from '@/lib/friendReferrals';
 import { recordGuidedTourEvent } from '@/lib/guidedTourEvents';
@@ -182,7 +182,9 @@ export default function DashboardV2() {
    const rawNextLimit = payOnTimeLimit
       ? getNextCreditTier(payOnTimeLimit, authUser?.createdAt, findOpenFullLimitLoan(myLoans, payOnTimeLimit)?.fundedAt ?? null)
       : 0;
-   const payOnTimeNextLimit = ceiling ? Math.min(rawNextLimit, Math.max(ceiling, payOnTimeLimit)) : rawNextLimit;
+   const payOnTimeNextLimit = payOnTimeLimit
+      ? getIncomeNextLimit(payOnTimeLimit, ceiling, authUser?.createdAt, findOpenFullLimitLoan(myLoans, payOnTimeLimit)?.fundedAt ?? null)
+      : 0;
    const atCeiling = Boolean(ceiling) && payOnTimeLimit > 0 && payOnTimeLimit >= (ceiling ?? 0) && rawNextLimit > payOnTimeLimit;
    const previewTrack = isPreviewHost() && (trackParam === 'A' || trackParam === 'B') ? trackParam : undefined;
    const showTour = searchParams.has('tour') && shouldShowGuidedTour(BORROWER_GUIDED_TOUR_ID, userId, false);

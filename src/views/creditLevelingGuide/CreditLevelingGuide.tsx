@@ -74,7 +74,7 @@ export default function CreditLevelingGuide(): JSX.Element {
    usePageSeo({
       title: 'Credit Leveling Guide | Moodeng Credit',
       description:
-         'How Moodeng credit levels work: you start at $15 and each full-limit loan you repay on time adds $10, plus trust-building vs credit-building loans.',
+         'How Moodeng credit levels work: you start at $15 and your limit grows each time you repay a full-limit loan on time, plus trust-building vs credit-building loans.',
       canonicalPath: '/credit-leveling-guide'
    });
 

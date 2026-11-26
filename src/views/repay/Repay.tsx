@@ -41,7 +41,7 @@ import useWallet, { type PaymentMethod, toSettlementMethod, useActivePaymentMeth
 import { parseDateSafely } from '@/utils/dateFormatters';
 import { formatCurrency, toNumber } from '@/utils/decimalHelpers';
 
-import { getCreditLevelNumber, getNextCreditTier, STARTING_CREDIT_LIMIT } from '@/config/creditTiers';
+import { getCreditLevelNumber, getIncomeNextLimit, getNextCreditTier, STARTING_CREDIT_LIMIT } from '@/config/creditTiers';
 import { COINS_PH_SUSPENDED, COINS_PH_SUSPENDED_MESSAGE, COINS_PH_SUSPENDED_TITLE } from '@/config/paymentRails';
 import { ALLOWED_CHAIN_ID, BASE_USDC_ADDRESS } from '@/config/wagmiConfig';
 import { useLocalization } from '@/i18n';
@@ -2346,7 +2346,9 @@ export default function Repay() {
          joinedAt: user.createdAt ?? null
       });
       const currentLimit = user.cs || STARTING_CREDIT_LIMIT;
-      const cappedNext = limitCeiling ? Math.min(progression.nextLimit, Math.max(limitCeiling, currentLimit)) : progression.nextLimit;
+      const cappedNext = limitCeiling
+         ? getIncomeNextLimit(currentLimit, limitCeiling, user.createdAt ?? null, selectedLoan.fundedAt ?? null)
+         : progression.nextLimit;
       const nextLimit = progression.shouldLevelUp ? cappedNext : currentLimit;
       // Too early to grow the limit (the second-half rule; older loans the 48-hour one): say so before they
       // pay, with when it would.

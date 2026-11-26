@@ -33,7 +33,7 @@ They go up with on-time, in-full repayments and drop with late payments or defau
       question: 'What is a Credit Level?',
       answer: `Credit Levels control how much you can borrow at a time.
 
-You start at Level 1 with a $15 limit. Each full repayment of a Credit-Building loan adds $10 to your limit and unlocks the next level: $15, then $25, then $35, and so on.`
+You start at Level 1 with a $15 limit. Each full, on-time repayment of a Credit-Building loan raises your limit and unlocks the next level. Your Dashboard always shows your next limit.`
    },
    {
       id: 'what-is-a-base-wallet',
@@ -78,7 +78,7 @@ We don't claim to replace banks for everyone. But for the people currently using
       question: 'What is a credit-building loan?',
       answer: `A credit-building loan is a loan you take out specifically to grow your credit limit on Moodeng. To qualify as one, the loan must be at your full current Credit Level limit — not below it.
 
-Here's how it works. You start at Credit Level 1 with a $15 borrowing limit. Borrow the full $15 and repay it on time, and your limit moves up to $25. Borrow that full $25 next time and repay, you unlock $35. Then $45. Each level adds $10.
+Here's how it works. You start at Credit Level 1 with a $15 borrowing limit. Borrow the full $15 and repay it on time, in the 2nd half of the loan, and your limit moves up. Borrow your new full limit next time and repay it the same way, and it moves up again. Your Dashboard always shows your next limit.
 
 Smaller loans below your full limit are called Trust-Building Loans. Those still help — they grow your repayment record and reputation with moo-lenders — but they don't raise your Credit Level. So if your goal is to build credit and unlock larger loans, you specifically want to take out and repay full-limit Credit-Building Loans.
 
@@ -91,7 +91,7 @@ Unlike a bank credit card or traditional credit-builder product, Moodeng's credi
 
 There are no minimum loan amounts, no monthly subscriptions, no setup costs, and no fees. You request what you need (up to your current Credit Level limit); in the Philippines every loan is 30 days with a flat 10%, and moo-lenders decide whether to fund you.
 
-Each full-limit loan you repay on time, in the 2nd half of the loan, adds $10 to your limit. So you can start small to test the platform with low stakes, build your reputation, and grow into larger loans only as you're ready.`
+Each full-limit loan you repay on time, in the 2nd half of the loan, raises your limit. So you can start small to test the platform with low stakes, build your reputation, and grow into larger loans only as you're ready.`
    }
 ];
 
@@ -124,7 +124,7 @@ Tumataas ito kapag nagbabayad ka nang on time at buo, at bumababa kapag late ang
       question: 'Ano ang Credit Level?',
       answer: `Ang Credit Level ang nagtatakda kung magkano ang puwede mong hiramin sa isang pagkakataon.
 
-Magsisimula ka sa Level 1 na may $15 limit. Bawat Credit-Building Loan na nabayaran mo nang buo ay nagdadagdag ng $10 sa limit mo at nag-a-unlock ng susunod na level: $15, tapos $25, tapos $35, at tuloy-tuloy.`
+Magsisimula ka sa Level 1 na may $15 limit. Bawat Credit-Building Loan na nabayaran mo nang buo at on time ay nagpapataas ng limit mo at nag-a-unlock ng susunod na level. Laging nasa Dashboard mo ang susunod mong limit.`
    },
    {
       id: 'what-is-a-base-wallet',
@@ -182,7 +182,7 @@ Hindi tulad ng bank credit card o traditional na credit-builder product, hindi n
 
 Walang minimum na halaga ng loan, walang monthly subscription, walang setup cost, at walang fee. Ire-request mo ang kailangan mo (hanggang sa current Credit Level limit mo); sa Pilipinas, 30 araw at flat na 10% ang bawat loan, at ang mga moo-lender ang magpapasya kung popondohan ka nila.
 
-Bawat full-limit na loan na nabayaran mo on time, sa 2nd half ng loan, ay nagdadagdag ng $10 sa limit mo. Kaya puwede kang magsimula sa maliit para subukan ang platform nang mababa ang risk, bumuo ng reputasyon, at lumipat sa mas malalaking loan kapag handa ka na.`
+Bawat full-limit na loan na nabayaran mo on time, sa 2nd half ng loan, ay nagpapataas ng limit mo. Kaya puwede kang magsimula sa maliit para subukan ang platform nang mababa ang risk, bumuo ng reputasyon, at lumipat sa mas malalaking loan kapag handa ka na.`
    }
 ];
 
