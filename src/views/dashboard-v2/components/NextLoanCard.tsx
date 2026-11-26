@@ -61,7 +61,10 @@ const COPY = {
       nowLate: 'Your loan is late. Pay as soon as you can.',
       notFull: (limit: number, next: number) => `Borrow your full $${limit} next time to reach $${next}.`,
       steps: (limit: number) => [`Borrow your full $${limit}`, 'Pay in the 2nd half of your loan', 'Your limit goes up'],
-      top: 'You are at the top limit. Keep paying on time.'
+      top: 'You are at the top limit. Keep paying on time.',
+      ceiling: (limit: number) =>
+         `We set your limit so payments fit what you earn. $${limit} is the most we can lend on what you've shown us.`,
+      ceilingLink: 'Show your income to go higher'
    },
    fil: {
       eyebrow: 'Susunod mong loan',
@@ -79,7 +82,10 @@ const COPY = {
       nowLate: 'Late na ang loan mo. Magbayad agad.',
       notFull: (limit: number, next: number) => `Hiramin ang buong $${limit} sa susunod para umabot ng $${next}.`,
       steps: (limit: number) => [`Hiramin ang buong $${limit}`, 'Magbayad sa 2nd half ng loan mo', 'Tataas ang limit mo'],
-      top: 'Nasa pinakamataas na limit ka na. Ituloy ang on-time na bayad.'
+      top: 'Nasa pinakamataas na limit ka na. Ituloy ang on-time na bayad.',
+      ceiling: (limit: number) =>
+         `Itinakda namin ang limit mo para kaya ng kita mo ang bayad. $${limit} ang pinakamalaking maipapahiram namin batay sa naipakita mo.`,
+      ceilingLink: 'Ipakita ang kita mo para tumaas pa'
    }
 };
 
@@ -91,12 +97,15 @@ export default function NextLoanCard({
    dues,
    limit,
    nextLimit,
+   atCeiling = false,
    streak,
    now
 }: {
    dues: DashboardV2Due[];
    limit: number;
    nextLimit: number;
+   /** At their income ceiling: say why the limit stays, and invite proof of income. */
+   atCeiling?: boolean;
    streak?: RepayStreak;
    /** Preview only: a fixed "today". */
    now?: number;
@@ -238,9 +247,19 @@ export default function NextLoanCard({
                   </li>
                ))}
             </ol>
-         ) : (
+         ) : atCeiling ? null : (
             <p className="text-[14px] text-[#70617F] dark:text-[#A89BB8]">{t.top}</p>
          )}
+
+         {atCeiling ? (
+            // Income ceiling (2026-11-27): fair wording, never a label like "low income"; proof is optional.
+            <div className="flex flex-col gap-2 rounded-[14px] bg-white px-3.5 py-3 shadow-[0_1px_3px_rgba(76,45,140,0.08)] dark:bg-[#221A30] dark:shadow-none">
+               <p className="text-[14px] leading-[20px] text-[#40344F] dark:text-[#D9CFEA]">{t.ceiling(limit)}</p>
+               <a href="/documents" className="text-[14px] font-semibold text-[#6010D2] dark:text-[#C4B8FF]">
+                  {t.ceilingLink} ›
+               </a>
+            </div>
+         ) : null}
 
          {streakCopy ? (
             <p className="flex items-center gap-2 border-t border-[#F1ECF7] pt-3 text-[13px] font-medium text-[#40344F] dark:border-[#2E2540] dark:text-[#D9CFEA]">

@@ -12,6 +12,7 @@ import VerifyYourselfModal from '@/components/verification/VerifyYourselfModal';
 
 import { useConfirmVoucherReceived } from '@/hooks/useFriendReferrals';
 import { useIsBorrower } from '@/hooks/useIsBorrower';
+import { useLimitCeiling } from '@/hooks/useLimitCeiling';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useVerificationJourney } from '@/hooks/useVerificationJourney';
 
@@ -173,9 +174,16 @@ export default function DashboardV2() {
    const creditLimitNow = model.isVerified ? getEffectiveCreditLimit(authUser?.cs, true) : 0;
    // The "Pay on time" card's limit line: repay a full-limit loan → this next limit.
    const payOnTimeLimit = model.creditLimit > 0 ? model.creditLimit : 0;
-   const payOnTimeNextLimit = payOnTimeLimit
+   // Income ceiling (2026-11-27): the next limit never goes past it; at it, the card says why and invites
+   // proof of income. Preview: ?ceiling=35.
+   const liveCeiling = useLimitCeiling(isReal);
+   const previewCeiling = !isReal && searchParams.get('ceiling') ? Number(searchParams.get('ceiling')) : null;
+   const ceiling = previewCeiling && Number.isFinite(previewCeiling) ? previewCeiling : (liveCeiling?.ceiling ?? null);
+   const rawNextLimit = payOnTimeLimit
       ? getNextCreditTier(payOnTimeLimit, authUser?.createdAt, findOpenFullLimitLoan(myLoans, payOnTimeLimit)?.fundedAt ?? null)
       : 0;
+   const payOnTimeNextLimit = ceiling ? Math.min(rawNextLimit, Math.max(ceiling, payOnTimeLimit)) : rawNextLimit;
+   const atCeiling = Boolean(ceiling) && payOnTimeLimit > 0 && payOnTimeLimit >= (ceiling ?? 0) && rawNextLimit > payOnTimeLimit;
    const previewTrack = isPreviewHost() && (trackParam === 'A' || trackParam === 'B') ? trackParam : undefined;
    const showTour = searchParams.has('tour') && shouldShowGuidedTour(BORROWER_GUIDED_TOUR_ID, userId, false);
    // "Before you repay" carousel for a loan funded under 48 hours ago. Preview: ?fast=1.
@@ -307,7 +315,7 @@ export default function DashboardV2() {
                   ) : null}
                   {/* Anything to repay sits near the top, with the streak and what paying on time earns. */}
                   {model.dues.length ? (
-                     <UpcomingDuesSection model={model} limit={payOnTimeLimit} nextLimit={payOnTimeNextLimit} />
+                     <UpcomingDuesSection model={model} limit={payOnTimeLimit} nextLimit={payOnTimeNextLimit} atCeiling={atCeiling} />
                   ) : null}
                   {voucherFollowUp ? (
                      <VoucherFollowUpCard
@@ -321,7 +329,7 @@ export default function DashboardV2() {
                   {milestonesAndVoucher}
                   <LoanSummarySection model={model} />
                   {!model.dues.length ? (
-                     <UpcomingDuesSection model={model} limit={payOnTimeLimit} nextLimit={payOnTimeNextLimit} />
+                     <UpcomingDuesSection model={model} limit={payOnTimeLimit} nextLimit={payOnTimeNextLimit} atCeiling={atCeiling} />
                   ) : null}
                </div>
             )}
