@@ -76,7 +76,7 @@ const CANNED: { key: string; label: string; text: string }[] = [
   { key: "wallet", label: "Wallet connection", text: "Try disconnecting and reconnecting your wallet, and confirm you're on the right network. Still stuck? Send a screenshot." },
   { key: "limit", label: "Borrowing limit", text: "Your limit grows as you repay on time. Let me check your current limit — one sec." },
   { key: "escalate", label: "Escalating", text: "This needs a closer look — I'm escalating to the team and we'll get back to you shortly." },
-  { key: "hours", label: "After-hours", text: "Our team is offline right now (online 10 AM–midnight, Bangkok time). I've noted your message and we'll reply as soon as we're back." },
+  { key: "hours", label: "After-hours", text: "Our team is offline right now (online 10 AM – 10 PM Thai time, 11 AM – 11 PM Philippine time). I've noted your message and we'll reply as soon as we're back." },
   { key: "close", label: "Closing", text: "Glad that's sorted! I'll close this out — reply anytime and it'll reopen 💚" },
 ];
 

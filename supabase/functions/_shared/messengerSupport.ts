@@ -17,6 +17,7 @@ import { PAGE_INBOX_URL, SITE_URL } from './loanAccess.ts';
 import { lastOutgoingMessengerAt, type MessengerCard, sendMessengerMessage, sendTikTokText, TIKTOK_INBOX_URL } from './sendpulse.ts';
 import type { TelegramInlineKeyboard } from './telegram.ts';
 import { alertTeam, pingTeam, postToTicket } from './supportTickets.ts';
+import { smartAckText } from './messengerSmartAck.ts';
 
 // deno-lint-ignore no-explicit-any
 type Svc = any;
@@ -415,7 +416,21 @@ export const openMessengerTicket = async (
          (contactRow as { locale?: string | null } | null)?.locale ?? (accountRow as { preferred_locale?: string | null } | null)?.preferred_locale
       );
       const withImage = registered ? false : await cardImageAvailable(borrowCardImage(locale));
-      const reply = buildAutoReply({ at: input.at, firstName: input.facebookName?.split(' ')[0] ?? null, registered, locale, withImage });
+      const firstName = input.facebookName?.split(' ')[0] ?? null;
+      let reply = buildAutoReply({ at: input.at, firstName, registered, locale, withImage });
+      // A borrower gets a reply to what they actually wrote (messengerSmartAck.ts); the canned one if the AI can't.
+      if (borrower) {
+         const smart = await smartAckText(svc, {
+            userId: borrower.id,
+            conversationId: conversation.id,
+            firstName,
+            locale,
+            online: isTeamOnline(input.at),
+            latest: [input.text?.trim(), input.hasAttachment ? '(sent a photo)' : null].filter(Boolean).join('\n'),
+            at: input.at
+         });
+         if (smart) reply = { text: smart };
+      }
       const sent = await sendMessengerMessage(input.contactId, reply);
       if (sent.ok) {
          await svc.from('widget_messages').insert({ conversation_id: conversation.id, sender: 'system', body: reply.text, channel_delivered_at: new Date().toISOString() });
