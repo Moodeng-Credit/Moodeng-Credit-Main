@@ -190,7 +190,12 @@ export default function DashboardV2() {
    // Header = the card: a loan out that's below their limit can't grow it, so show their limit, not a next one.
    const heroNextLimit =
       model.dues.length && !model.dues.some((due) => (due.principal ?? 0) >= payOnTimeLimit - 0.01) ? payOnTimeLimit : payOnTimeNextLimit;
-   const atCeiling = Boolean(ceiling) && payOnTimeLimit > 0 && payOnTimeLimit >= (ceiling ?? 0) && rawNextLimit > payOnTimeLimit;
+   const atCeiling =
+      Boolean(ceiling) &&
+      liveCeiling?.source !== 'team' &&
+      payOnTimeLimit > 0 &&
+      payOnTimeLimit >= (ceiling ?? 0) &&
+      rawNextLimit > payOnTimeLimit;
    const previewTrack = isPreviewHost() && (trackParam === 'A' || trackParam === 'B') ? trackParam : undefined;
    const showTour = searchParams.has('tour') && shouldShowGuidedTour(BORROWER_GUIDED_TOUR_ID, userId, false);
    // "Before you repay" carousel for a loan funded under 48 hours ago. Preview: ?fast=1.

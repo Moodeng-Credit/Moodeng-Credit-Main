@@ -22,8 +22,9 @@ const SOURCE: Record<Ladder['source'], string> = {
    sign_up: 'from their sign-up answer'
 };
 
-export const ladderText = (l: Ladder): string => {
-   const steps = l.ceiling <= 35 ? '$3 steps, counts from day 7' : '$10 steps, 2nd half';
+export const ladderText = (l: Ladder, joinedAt?: string | null): string => {
+   const trackA = Boolean(joinedAt) && Date.parse(joinedAt as string) < Date.parse('2026-10-01T00:00:00+07:00');
+   const steps = trackA ? 'early member ladder, 2nd half' : l.ceiling <= 35 ? 'Limit Spin +$2–5, counts from day 7' : '$10 steps, 2nd half';
    const top = l.ceiling >= 135 ? 'no top' : `top $${l.ceiling}`;
    const extra =
       l.source === 'income_proof' && l.monthly_php
@@ -36,7 +37,7 @@ export const ladderText = (l: Ladder): string => {
    return `${top} · ${steps} (${SOURCE[l.source]})${extra}`;
 };
 
-export default function LadderRow({ userId }: { userId: string }) {
+export default function LadderRow({ userId, joinedAt }: { userId: string; joinedAt?: string | null }) {
    const [ladder, setLadder] = useState<Ladder | null>(null);
    const [error, setError] = useState<string | null>(null);
    const [value, setValue] = useState('');
@@ -75,7 +76,7 @@ export default function LadderRow({ userId }: { userId: string }) {
          <div className="flex gap-3">
             <span className="w-36 shrink-0 text-[#a89bb8]">Ladder</span>
             <span className="min-w-0 flex-1 break-words font-bold text-white">
-               {ladder ? ladderText(ladder) : error ? `⚠️ ${error}` : '…'}
+               {ladder ? ladderText(ladder, joinedAt) : error ? `⚠️ ${error}` : '…'}
             </span>
          </div>
          <div className="mt-2 flex flex-wrap items-center gap-2 pl-[9.75rem]">

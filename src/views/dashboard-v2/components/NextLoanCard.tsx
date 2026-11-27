@@ -24,7 +24,7 @@ export type PayWindowStatus = 'early' | 'best' | 'late';
  * 15th or 30th payday; a last-7-days window missed both for almost half of due dates.
  */
 export const getPayWindow = (
-   due: Pick<DashboardV2Due, 'deadline' | 'fundedAt' | 'rewardFrom' | 'finalDeadline'>,
+   due: Pick<DashboardV2Due, 'deadline' | 'fundedAt' | 'rewardFrom' | 'finalDeadline'> & { isOverdue?: boolean },
    now: number = Date.now(),
    opts: { lowIncome?: boolean } = {}
 ): { start: number; deadline: number; funded: number; status: PayWindowStatus } | null => {
@@ -40,7 +40,7 @@ export const getPayWindow = (
          ? fundedRaw + LOW_INCOME_COUNTS_AFTER_DAYS * DAY
          : null;
    const start = Math.min(deadline - HOUR, lowIncomeStart ?? Math.max(funded + 48 * HOUR, Number.isFinite(rewardFrom) ? rewardFrom : 0));
-   const status: PayWindowStatus = now >= deadline ? 'late' : now >= start ? 'best' : 'early';
+   const status: PayWindowStatus = due.isOverdue || now >= deadline ? 'late' : now >= start ? 'best' : 'early';
    return { start, deadline, funded, status };
 };
 
@@ -230,7 +230,13 @@ export default function NextLoanCard({
                      </p>
                   </div>
                   <div className="text-right">
-                     <p className="text-[12px] font-medium text-[#70617F] dark:text-[#A89BB8]">{t.amount}</p>
+                     <p className="text-[12px] font-medium text-[#70617F] dark:text-[#A89BB8]">
+                        {t.amount}
+                        {/* Two-payment loan: this amount is the next part, due on its own day. */}
+                        {due.finalDeadline && due.finalDeadline !== due.deadline
+                           ? ` · ${dayLabel(new Date(due.deadline).getTime() - 1, due.zone)}`
+                           : ''}
+                     </p>
                      <p className="text-[16px] font-bold tracking-[-0.02em] text-[#B07A00] tabular-nums dark:text-[#F5C451]">
                         {money(due.amount)}
                      </p>

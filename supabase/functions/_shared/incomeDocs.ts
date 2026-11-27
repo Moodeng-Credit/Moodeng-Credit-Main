@@ -155,9 +155,10 @@ export const computeMetrics = (doc: Extracted): Metrics => {
    const months = new Set(tx.map((t) => monthKey(t.date)).filter(Boolean));
    const spanMonths = (() => {
       if (doc.period_start && doc.period_end) {
-         // Inclusive: Nov 1–15 is 15 days (exclusive read ~8% high and could cross a ladder line).
-         const days = (Date.parse(doc.period_end) - Date.parse(doc.period_start)) / 86_400_000 + 1;
-         if (Number.isFinite(days) && days > 0) return Math.max(0.25, days / 30.4);
+         // Inclusive: Nov 1–15 is 15 days (exclusive read ~8% high and could cross a ladder line). One date
+         // only (start == end, e.g. a payslip's pay date) is no period at all: fall through to one month.
+         const span = (Date.parse(doc.period_end) - Date.parse(doc.period_start)) / 86_400_000;
+         if (Number.isFinite(span) && span > 0) return Math.max(0.25, (span + 1) / 30.4);
       }
       return Math.max(1, months.size);
    })();

@@ -742,7 +742,7 @@ function Approval({ d }: { d: Dossier }) {
          <Row label="Approved">{u.loan_access_approved_at ? bkkDateTime(u.loan_access_approved_at) : null}</Row>
          <Row label="Reject reason">{u.loan_access_reject_reason}</Row>
          <Row label="Credit limit">{u.cs != null ? `${usd(u.cs)}${u.credit_progression_paused ? ' (paused)' : ''}` : null}</Row>
-         <LadderRow userId={u.id} />
+         <LadderRow userId={u.id} joinedAt={u.created_at} />
          <Row label="Loan cap">{d.loan_cap ? `${usd(d.loan_cap.cap_usd)}${d.loan_cap.note ? ` — ${d.loan_cap.note}` : ''}` : null}</Row>
          <Row label="Requests blocked">{u.loan_requests_blocked ? 'Yes' : null}</Row>
          {d.access_requests.length ? (

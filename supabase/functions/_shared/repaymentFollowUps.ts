@@ -56,7 +56,8 @@ export const applyCreditProgression = async (
    const lowIncome = ceiling > 0 && ceiling <= LOW_INCOME_CEILING && getCreditTrack(borrower.created_at ?? null) === 'B';
 
    const evaluation = evaluateCreditProgression({
-      lowIncome,
+      // Ceiling unreadable: judge by the most lenient rule (day 7) so a real level-up reaches the HOLD below.
+      lowIncome: lowIncome || Boolean(ceilingError),
       currentLimit: borrower.cs ?? 0,
       // Any supported identity method grants verified status for credit progression, mirroring the
       // frontend isUserVerified(). Didit is the majority path; gating on World ID alone stalled
