@@ -120,9 +120,35 @@
       <link rel="dns-prefetch" href="https://telegram.org" />
       <link rel="dns-prefetch" href="https://oauth.telegram.org" />
       <script src="/meta-pixel.js"></script>
+      <!-- Boot splash: the app is one big JS file, and on a slow phone the page sat blank for seconds while it
+           downloaded (PostHog 2026-11-23: ~7.6s p75 on /onboarding/connect). The hippo flip-book from
+           HippoStory ('grow') plays in plain CSS until React replaces #root. Fades in after 0.6s so fast loads
+           never see it. -->
+      <style>
+         #boot-splash { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; opacity: 0; animation: boot-in 0.3s ease 0.6s forwards; font-family: Inter, system-ui, sans-serif; }
+         #boot-splash .f { position: relative; width: min(60vw, 200px); height: min(60vw, 200px); }
+         #boot-splash img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; opacity: 0; animation: boot-frame 4.4s step-end infinite; }
+         #boot-splash img:nth-child(2) { animation-delay: -3.3s; }
+         #boot-splash img:nth-child(3) { animation-delay: -2.2s; }
+         #boot-splash img:nth-child(4) { animation-delay: -1.1s; }
+         #boot-splash p { margin: 0; font-size: 15px; font-weight: 700; color: #594d65; }
+         @media (prefers-color-scheme: dark) { #boot-splash p { color: #d9cfe8; } }
+         @keyframes boot-in { to { opacity: 1; } }
+         @keyframes boot-frame { 0% { opacity: 1; } 25%, 100% { opacity: 0; } }
+      </style>
    </head>
    <body>
-      <div id="root"></div>
+      <div id="root">
+         <div id="boot-splash" aria-hidden="true">
+            <div class="f">
+               <img alt="" src="/hippos/loadstory/frame-a.webp" />
+               <img alt="" src="/hippos/loadstory/frame-b.webp" />
+               <img alt="" src="/hippos/loadstory/frame-c.webp" />
+               <img alt="" src="/hippos/loadstory/frame-d.webp" />
+            </div>
+            <p>Loading Moodeng…</p>
+         </div>
+      </div>
       <script type="module" src="/src/main.tsx"></script>
    </body>
 </html>

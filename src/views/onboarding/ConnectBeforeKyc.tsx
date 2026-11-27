@@ -15,6 +15,7 @@ import type { AppDispatch, RootState } from '@/store/store';
 import type { User } from '@/types/authTypes';
 import { ApprovedNextSteps, CONNECT_HIPPOS, StepCelebration, StepTrail } from '@/views/dashboard/components/connectKit';
 import ConnectStep, { type ConnectPage, LoanAccessPendingCard, LoanAccessRejectedCard } from '@/views/dashboard/components/ConnectStep';
+import ConnectLoading from '@/views/onboarding/ConnectLoading';
 import GrowingWalletHippo from '@/views/onboarding/GrowingWalletHippo';
 import OnboardingBio from '@/views/onboarding/OnboardingBio';
 import { OnboardingHeader } from '@/views/onboarding/OnboardingHeader';
@@ -115,11 +116,11 @@ export default function ConnectBeforeKyc() {
    // Indonesia track: its own, longer onboarding (/id/onboarding) replaces this one.
    const idTrack = useIdTrackStatus();
 
-   if (!user) return null;
-   if (!isPreview && idTrack.isLoading) return null;
+   if (!user) return <ConnectLoading />;
+   if (!isPreview && idTrack.isLoading) return <ConnectLoading />;
    if (!isPreview && idTrack.isIndo) return <Navigate replace to={ID_PATHS.onboarding} />;
    if (!user.userRole) return <Navigate replace to="/onboarding/role" />;
-   if (isLoading) return null;
+   if (isLoading) return <ConnectLoading />;
    // Through onboarding (the team approved them, or the gate is off): straight to the loan form —
    // the ID check is the last step of sending their first request.
    if (!isGated) return <Navigate replace state={{ openLoanRequest: true }} to="/request-board" />;
@@ -133,7 +134,7 @@ export default function ConnectBeforeKyc() {
          return <Navigate replace state={{ returnTo: 'connect' }} to="/onboarding/wallet" />;
       }
    }
-   if (isTikTok && phoneState === 'checking') return null;
+   if (isTikTok && phoneState === 'checking') return <ConnectLoading />;
 
    // Book call: one screen tall, so the time picker scrolls inside and its button stays pinned at the
    // bottom (VideoCallStep). A page that grew pushed "I'll be ready" below the fold (2026-11-23).
