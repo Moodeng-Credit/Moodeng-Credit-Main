@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { useFloatingParticles } from '@/components/motion/TapDelight';
 
@@ -11,6 +11,10 @@ import { useLocalization } from '@/i18n';
 // rainbow slices with big upright numbers, a still gold hub with Moodeng, and a pointer that ticks. Two
 // "Try again" slices: sometimes the first spin lands there and they get one more spin, which then lands on
 // their real result (the result never changes).
+// The win is an ACHIEVEMENT, not a jackpot (George: "the feeling of victory… not gambling but an
+// achievement, maybe even badges"): "You earned it… because you paid back on time", the new limit counting
+// up, an achievement badge (On-time payer, or a limit milestone they just reached), stars + confetti, the
+// earned slice glowing and a warm chime. No casino cues: no "YOU WON", no raining coins, no tick sounds.
 type Slice = { value: number | 'again'; fill: string; light: string; ink: string };
 const SLICES: readonly Slice[] = [
    { value: 3, fill: '#e8244f', light: '#ff6b8a', ink: '#fff' },
@@ -37,7 +41,58 @@ const STYLES = `
 @keyframes lswBulb { 0%, 100% { opacity: 1; } 50% { opacity: 0.25; } }
 @keyframes lswTick { 0%, 100% { transform: translateX(-50%) rotate(0deg); } 50% { transform: translateX(-50%) rotate(-16deg); } }
 @keyframes lswPop { 0% { transform: scale(0.6); opacity: 0; } 60% { transform: scale(1.12); opacity: 1; } 100% { transform: scale(1); } }
+@keyframes lswFade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes lswSlam { 0% { transform: scale(0.2); opacity: 0; } 55% { transform: scale(1.25); opacity: 1; } 75% { transform: scale(0.94); } 100% { transform: scale(1); } }
+@keyframes lswGlow { 0%, 100% { opacity: 0.35; } 50% { opacity: 1; } }
+@keyframes lswStar { 0% { transform: translateY(0) scale(0.4) rotate(0deg); opacity: 0; } 15% { opacity: 1; } 100% { transform: translateY(260px) scale(1) rotate(200deg); opacity: 0; } }
+@keyframes lswBadge { 0% { transform: translateY(16px) scale(0.85); opacity: 0; } 100% { transform: translateY(0) scale(1); opacity: 1; } }
+@keyframes lswShine { 0% { transform: translateX(-120%) rotate(20deg); } 100% { transform: translateX(320%) rotate(20deg); } }
+@keyframes lswMedal { 0% { transform: scale(0) rotate(-30deg); } 60% { transform: scale(1.18) rotate(8deg); } 100% { transform: scale(1) rotate(0deg); } }
+@keyframes lswTwinkle { 0%, 100% { transform: scale(0.4); opacity: 0; } 50% { transform: scale(1); opacity: 1; } }
+@keyframes lswBar { from { width: 0; } }
 `;
+
+// Achievement badges: a limit milestone they just reached, else "On-time payer" (every spin = a repayment).
+const MILESTONES = [
+   { at: 35, icon: '🏆', en: 'Top of the ladder', fil: 'Tuktok ng hagdan' },
+   { at: 30, icon: '🥇', en: '$30 club', fil: '$30 club' },
+   { at: 25, icon: '🥈', en: '$25 club', fil: '$25 club' },
+   { at: 20, icon: '🥉', en: '$20 club', fil: '$20 club' }
+];
+export const spinBadge = (fromLimit: number, toLimit: number) =>
+   MILESTONES.find((m) => fromLimit < m.at && toLimit >= m.at) ?? { at: 0, icon: '✅', en: 'On-time payer', fil: 'On-time na nagbayad' };
+// The next badge to aim for, and how far along they are (from the last milestone, or the $15 start). Null at the top.
+export const nextBadge = (toLimit: number) => {
+   const next = [...MILESTONES].reverse().find((m) => m.at > toLimit);
+   if (!next) return null;
+   const base = MILESTONES.find((m) => m.at <= toLimit)?.at ?? 15;
+   return { ...next, progress: Math.max(0.04, Math.min(1, (toLimit - base) / (next.at - base))) };
+};
+
+// A short, warm "ta-da" (C–E–G–C) made in the browser: no sound file. Quiet; silently skipped if blocked.
+const playChime = () => {
+   try {
+      const Ctx = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (!Ctx) return;
+      const ctx = new Ctx();
+      [523.25, 659.25, 783.99, 1046.5].forEach((freq, index) => {
+         const at = ctx.currentTime + index * 0.11;
+         const osc = ctx.createOscillator();
+         const gain = ctx.createGain();
+         osc.type = 'triangle';
+         osc.frequency.value = freq;
+         gain.gain.setValueAtTime(0.0001, at);
+         gain.gain.exponentialRampToValueAtTime(0.16, at + 0.02);
+         gain.gain.exponentialRampToValueAtTime(0.0001, at + (index === 3 ? 0.9 : 0.35));
+         osc.connect(gain).connect(ctx.destination);
+         osc.start(at);
+         osc.stop(at + 1);
+      });
+      window.setTimeout(() => void ctx.close(), 1800);
+   } catch {
+      /* no sound on this device */
+   }
+};
 
 const COPY = {
    en: {
@@ -51,7 +106,14 @@ const COPY = {
       won: (amount: number) => `+$${amount}!`,
       now: (limit: number) => `Your limit is now $${limit}.`,
       bonus: (amount: number) => `🦈 + Shark bonus $${amount}`,
-      done: 'Nice'
+      earned: '🏅 You earned it',
+      because: 'because you paid back on time',
+      newLimit: 'New limit',
+      badge: 'Badge unlocked',
+      proof: 'Proof you pay back on time',
+      next: 'Next badge',
+      top: 'You reached the top! 🏆',
+      done: 'Keep it up 💪'
    },
    fil: {
       title: 'May spin ka!',
@@ -64,7 +126,14 @@ const COPY = {
       won: (amount: number) => `+$${amount}!`,
       now: (limit: number) => `$${limit} na ang limit mo.`,
       bonus: (amount: number) => `🦈 + Shark bonus na $${amount}`,
-      done: 'Ayos'
+      earned: '🏅 Pinaghirapan mo ito',
+      because: 'dahil nagbayad ka on time',
+      newLimit: 'Bagong limit',
+      badge: 'Bagong badge',
+      proof: 'Patunay na on-time kang nagbabayad',
+      next: 'Susunod na badge',
+      top: 'Naabot mo ang tuktok! 🏆',
+      done: 'Tuloy lang 💪'
    }
 };
 
@@ -92,8 +161,31 @@ export default function LimitSpinWheel({
    const [rotation, setRotation] = useState(0);
    const [phase, setPhase] = useState<'ready' | 'spinning' | 'again' | 'done'>('ready');
    const [retried, setRetried] = useState(false);
+   const [landed, setLanded] = useState<number | null>(null);
+   const fromLimit = Math.max(0, toLimit - amount - bonus);
+   const [shownLimit, setShownLimit] = useState(fromLimit);
    const { burst, layer } = useFloatingParticles();
    const spinning = phase === 'spinning';
+   const done = phase === 'done';
+   const badge = spinBadge(fromLimit, toLimit);
+   const upNext = nextBadge(toLimit);
+
+   // The new limit counts up ($15 → $18) once it lands.
+   useEffect(() => {
+      if (!done) return;
+      let raf = 0;
+      const start = performance.now();
+      const step = (at: number) => {
+         const p = Math.min(1, (at - start) / 1100);
+         setShownLimit(Math.round(fromLimit + (toLimit - fromLimit) * (1 - (1 - p) ** 3)));
+         if (p < 1) raf = window.requestAnimationFrame(step);
+      };
+      const delay = window.setTimeout(() => (raf = window.requestAnimationFrame(step)), 500);
+      return () => {
+         window.clearTimeout(delay);
+         window.cancelAnimationFrame(raf);
+      };
+   }, [done, fromLimit, toLimit]);
 
    const spin = () => {
       if (phase !== 'ready' && phase !== 'again') return;
@@ -108,6 +200,7 @@ export default function LimitSpinWheel({
       const sliceCenter = target.index * SLICE_DEG + SLICE_DEG / 2 + (Math.random() - 0.5) * SLICE_DEG * 0.5;
       // Always forward: 6 more turns from wherever it stopped, then onto the slice.
       setRotation((current) => Math.ceil(current / 360) * 360 + 360 * 6 + (360 - sliceCenter));
+      setLanded(target.index);
       setPhase('spinning');
       window.setTimeout(() => {
          if (teaser) {
@@ -116,35 +209,33 @@ export default function LimitSpinWheel({
             return;
          }
          setPhase('done');
+         playChime();
          try {
-            navigator.vibrate?.([30, 40, 60]);
+            navigator.vibrate?.([40, 60, 40, 60, 120]);
          } catch {
             /* no vibration on this device */
          }
          burst((index) => <span className="block h-2.5 w-1.5 rounded-[2px]" style={{ background: CONFETTI[index % CONFETTI.length] }} />, {
-            count: 24,
+            count: 44,
             fullCircle: true,
-            spreadX: 140,
-            rise: 110,
-            originY: '55%'
+            spreadX: 170,
+            rise: 140,
+            originY: '50%'
          });
       }, SPIN_MS);
    };
 
    return (
-      <div className="relative flex flex-col items-center gap-3 text-center" data-testid="limit-spin">
+      <div className="relative flex w-full flex-col items-center gap-3 text-center" data-testid="limit-spin">
          <style>{STYLES}</style>
-         <p
-            key={phase}
-            className="text-[24px] font-extrabold text-[#040033] dark:text-[#F0EAFF]"
-            style={phase === 'done' ? { animation: 'lswPop 420ms ease-out both' } : undefined}
-         >
-            {phase === 'done' ? t.won(amount) : phase === 'again' ? t.again : t.title}
-         </p>
-         {phase === 'done' && bonus > 0 ? <p className="text-[16px] font-bold text-[#2f7a3a] dark:text-[#8FDB9C]">{t.bonus(bonus)}</p> : null}
-         <p className="text-[14px] leading-[20px] text-[#70617F] dark:text-[#A89BB8]">
-            {phase === 'done' ? t.now(toLimit) : phase === 'again' ? t.againBody : t.body}
-         </p>
+         {done ? null : (
+            <>
+               <p key={phase} className="text-[24px] font-extrabold text-[#040033] dark:text-[#F0EAFF]">
+                  {phase === 'again' ? t.again : t.title}
+               </p>
+               <p className="text-[14px] leading-[20px] text-[#70617F] dark:text-[#A89BB8]">{phase === 'again' ? t.againBody : t.body}</p>
+            </>
+         )}
 
          {/* The stage: dark purple with slowly turning light rays behind the wheel. */}
          <div className="relative w-full overflow-hidden rounded-[24px] bg-[radial-gradient(circle_at_50%_45%,#4b1fa3_0%,#24095e_55%,#12042f_100%)] px-4 py-6">
@@ -181,8 +272,9 @@ export default function LimitSpinWheel({
                            fill="#fffbe6"
                            style={{
                               filter: 'drop-shadow(0 0 3px #fff6a8)',
-                              animation: `lswBulb ${spinning ? 0.35 : 1.4}s ease-in-out infinite`,
-                              animationDelay: index % 2 ? `${spinning ? 0.175 : 0.7}s` : '0s'
+                              // Earned: every bulb flashes together. Spinning: a fast chase. Waiting: a slow one.
+                              animation: `lswBulb ${done ? 0.3 : spinning ? 0.35 : 1.4}s ease-in-out infinite`,
+                              animationDelay: done ? '0s' : index % 2 ? `${spinning ? 0.175 : 0.7}s` : '0s'
                            }}
                         />
                      );
@@ -218,6 +310,16 @@ export default function LimitSpinWheel({
                      return (
                         <g key={index}>
                            <path d={`M120,120 L${x1},${y1} A104,104 0 0,1 ${x2},${y2} Z`} fill={`url(#lswS${index})`} stroke="#f7c948" strokeWidth="1.6" />
+                           {done && landed === index ? (
+                              // The earned slice glows.
+                              <path
+                                 d={`M120,120 L${x1},${y1} A104,104 0 0,1 ${x2},${y2} Z`}
+                                 fill="rgba(255,255,255,0.22)"
+                                 stroke="#fff7c2"
+                                 strokeWidth="4"
+                                 style={{ animation: 'lswGlow 0.9s ease-in-out infinite', filter: 'drop-shadow(0 0 6px #fff3a0)' }}
+                              />
+                           ) : null}
                            {/* A gold peg at each slice edge. */}
                            <circle cx={px} cy={py} r="2.6" fill="#ffe27a" stroke="#a86b00" strokeWidth="0.8" />
                            <g transform={`translate(${tx} ${ty})`}>
@@ -275,14 +377,112 @@ export default function LimitSpinWheel({
                   </svg>
                </div>
             </div>
+
+            {done ? (
+               // The achievement moment, over the stage: you earned it, the raise, the new limit counting up.
+               <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-1 bg-[radial-gradient(circle,rgba(18,4,47,0.78)_0%,rgba(18,4,47,0.92)_70%)] px-4 text-white" style={{ animation: 'lswFade 350ms ease-out both' }}>
+                  {Array.from({ length: 16 }, (_, index) => (
+                     <span
+                        key={index}
+                        aria-hidden="true"
+                        className="pointer-events-none absolute top-[-24px] text-[18px]"
+                        style={{
+                           left: `${(index * 61) % 100}%`,
+                           animation: `lswStar ${1.8 + (index % 5) * 0.35}s ease-in ${(index % 7) * 0.18}s both`
+                        }}
+                     >
+                        {index % 3 === 0 ? '✨' : '⭐'}
+                     </span>
+                  ))}
+                  <span className="text-[13px] font-extrabold uppercase tracking-[0.18em] text-[#ffe27a]">{t.earned}</span>
+                  <span
+                     className="bg-[linear-gradient(180deg,#fffbe0_0%,#ffd84d_45%,#f5a400_100%)] bg-clip-text text-[76px] font-black leading-none text-transparent [filter:drop-shadow(0_0_14px_rgba(255,214,77,0.65))]"
+                     style={{ animation: 'lswSlam 650ms cubic-bezier(0.2, 0.9, 0.3, 1.2) 120ms both' }}
+                  >
+                     +${amount}
+                  </span>
+                  {bonus > 0 ? <span className="text-[16px] font-extrabold text-[#8fffb8]">{t.bonus(bonus)}</span> : null}
+                  <span className="text-[14px] font-semibold text-white/85">{t.because}</span>
+                  <span className="mt-2 rounded-full bg-white/15 px-4 py-1.5 text-[16px] font-bold">
+                     {t.newLimit}: <span className="tabular-nums text-[#ffe27a]">${shownLimit}</span>
+                  </span>
+               </div>
+            ) : null}
             {layer}
          </div>
+
+         {done ? (
+            // Achievement badge: proof of what they did, not a prize, and the next one to aim for.
+            <div
+               className="relative w-full overflow-hidden rounded-[22px] border-2 border-[#ffd84d] bg-[linear-gradient(140deg,#fff6d1_0%,#ffffff_55%,#fff1c2_100%)] p-4 text-left shadow-[0_10px_26px_rgba(245,183,0,0.28)] dark:bg-[linear-gradient(140deg,#3a2e10,#1d1530_60%,#2c2210)]"
+               style={{ animation: 'lswBadge 500ms ease-out 700ms both' }}
+            >
+               <span
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-y-[-20%] left-0 w-1/4 bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.85),transparent)]"
+                  style={{ animation: 'lswShine 1.3s ease-in-out 1.3s both' }}
+               />
+               <div className="flex items-center gap-4">
+                  {/* The medal: gold disc on a ribbon, pops in and twinkles. */}
+                  <span className="relative flex h-[76px] w-[64px] shrink-0 justify-center" style={{ animation: 'lswMedal 600ms cubic-bezier(0.2, 0.9, 0.3, 1.3) 900ms both' }}>
+                     <span aria-hidden="true" className="absolute bottom-0 left-[10px] h-[34px] w-[16px] skew-x-[12deg] rounded-b-[3px] bg-[#6010d2]" />
+                     <span aria-hidden="true" className="absolute bottom-0 right-[10px] h-[34px] w-[16px] -skew-x-[12deg] rounded-b-[3px] bg-[#8a3ffc]" />
+                     <span className="relative z-10 flex h-[60px] w-[60px] items-center justify-center rounded-full border-[3px] border-[#fff3b0] bg-[radial-gradient(circle_at_35%_30%,#fff6c2,#f5b700_58%,#a86b00)] text-[30px] shadow-[0_0_18px_rgba(255,214,77,0.8),inset_0_-4px_8px_rgba(0,0,0,0.2)]">
+                        {badge.icon}
+                     </span>
+                     {[
+                        { top: '-4px', left: '-2px', delay: '1.4s' },
+                        { top: '6px', left: '58px', delay: '1.7s' },
+                        { top: '44px', left: '-6px', delay: '2s' }
+                     ].map((sparkle) => (
+                        <span
+                           key={sparkle.delay}
+                           aria-hidden="true"
+                           className="absolute z-20 text-[13px]"
+                           style={{ top: sparkle.top, left: sparkle.left, animation: `lswTwinkle 1.6s ease-in-out ${sparkle.delay} infinite` }}
+                        >
+                           ✨
+                        </span>
+                     ))}
+                  </span>
+                  <span className="flex min-w-0 flex-col">
+                     <span className="text-[12px] font-extrabold uppercase tracking-[0.16em] text-[#b07a00] dark:text-[#ffe27a]">{t.badge}</span>
+                     <span className="text-[22px] font-black leading-tight text-[#040033] dark:text-[#F0EAFF]">{locale === 'fil' ? badge.fil : badge.en}</span>
+                     <span className="mt-0.5 text-[13px] font-semibold text-[#70617F] dark:text-[#A89BB8]">{t.proof}</span>
+                  </span>
+               </div>
+               {/* What's next: always one more badge to earn (until the top). */}
+               <div className="mt-3 rounded-[14px] bg-white/80 px-3 py-2.5 dark:bg-white/10">
+                  {upNext ? (
+                     <>
+                        <div className="flex items-center justify-between text-[13px] font-bold text-[#40344F] dark:text-[#D9CFEA]">
+                           <span>
+                              {t.next}: {upNext.icon} {locale === 'fil' ? upNext.fil : upNext.en}
+                           </span>
+                           <span className="tabular-nums text-[#6010D2] dark:text-[#C4B8FF]">
+                              ${toLimit} / ${upNext.at}
+                           </span>
+                        </div>
+                        <div className="mt-1.5 h-2.5 overflow-hidden rounded-full bg-[#ece4fb] dark:bg-[#3A2F55]">
+                           <div
+                              className="h-full rounded-full bg-[linear-gradient(90deg,#8a3ffc,#6010d2)]"
+                              style={{ width: `${upNext.progress * 100}%`, animation: 'lswBar 900ms ease-out 1.4s both' }}
+                           />
+                        </div>
+                     </>
+                  ) : (
+                     <span className="text-[14px] font-bold text-[#2f7a3a] dark:text-[#8FDB9C]">{t.top}</span>
+                  )}
+               </div>
+            </div>
+         ) : null}
 
          {phase === 'done' ? (
             <button
                type="button"
                onClick={onDone}
-               className="h-12 w-full rounded-2xl bg-[#6010D2] text-[16px] font-bold text-white transition-transform active:scale-[0.97]"
+               className="h-[52px] w-full rounded-2xl bg-[linear-gradient(180deg,#7a2cf0,#5a0fc8)] text-[17px] font-extrabold text-white shadow-[0_5px_0_#3d0890,0_10px_20px_rgba(96,16,210,0.3)] transition-transform active:translate-y-[3px] active:shadow-[0_2px_0_#3d0890]"
+               style={{ animation: 'lswBadge 400ms ease-out 1.1s both' }}
             >
                {t.done}
             </button>
