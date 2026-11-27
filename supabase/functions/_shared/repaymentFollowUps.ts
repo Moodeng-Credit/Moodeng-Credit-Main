@@ -15,6 +15,7 @@ import {
    getCreditTrack,
    getEffectiveCreditLimit,
    getIncomeNextLimit,
+   limitSpinUnlockAt,
    LOW_INCOME_CEILING,
    MAX_CREDIT_LIMIT,
    toNumber
@@ -27,7 +28,8 @@ import { postPartialRepaymentToTeam } from './teamLoanFeed.ts';
 type Admin = any;
 
 export type SideEffectError = { type: 'award_points' | 'loan_notification' | 'credit_progression'; message: string };
-export type CreditLevelUp = { fromLimit: number; toLimit: number; spin?: boolean };
+// unlocksAt: a Limit Spin paid before day 3 waits until then (the limit isn't raised yet).
+export type CreditLevelUp = { fromLimit: number; toLimit: number; spin?: boolean; unlocksAt?: string };
 
 // On a fully-repaid full-limit loan, level up the borrower's credit limit. (The limit the loan was
 // measured against is recorded by public.record_loan_payment in the same update that marks it Paid.)
@@ -50,13 +52,13 @@ export const applyCreditProgression = async (
    }
 
    // Income ceiling (migrations 20261127010000 / 20261127030000), read first: it sets how far the limit can
-   // grow, the step, and (low income) that a repayment counts from day 7.
+   // grow, the step, and (low income) that a repayment counts any time (its spin unlocks on day 3).
    const { data: ceilingRow, error: ceilingError } = await admin.rpc('limit_ceiling_for', { p_user: borrower.id });
    const ceiling = toNumber((ceilingRow as { ceiling?: number | string } | null)?.ceiling ?? 0);
    const lowIncome = ceiling > 0 && ceiling <= LOW_INCOME_CEILING && getCreditTrack(borrower.created_at ?? null) === 'B';
 
    const evaluation = evaluateCreditProgression({
-      // Ceiling unreadable: judge by the most lenient rule (day 7) so a real level-up reaches the HOLD below.
+      // Ceiling unreadable: judge by the most lenient rule (any time) so a real level-up reaches the HOLD below.
       lowIncome: lowIncome || Boolean(ceilingError),
       currentLimit: borrower.cs ?? 0,
       // Any supported identity method grants verified status for credit progression, mirroring the
@@ -97,6 +99,33 @@ export const applyCreditProgression = async (
          ? Math.max(current, Math.min(current + spin, ceiling, MAX_CREDIT_LIMIT))
          : getIncomeNextLimit(current, ceiling, borrower.created_at ?? null, fundedAt);
    if (nextLimit <= current) return { errors, levelUp: null };
+
+   // Paid before day 3: the spin waits. Drawn now and saved; app_private.unlock_limit_spins (cron) raises
+   // the limit at unlocks_at, which also sends "your spin is ready" (admin-messenger limit_up).
+   const unlockAt = spin !== null ? limitSpinUnlockAt(fundedAt) : null;
+   if (spin !== null && unlockAt && unlockAt.getTime() > Date.now()) {
+      const { error: waitError } = await admin.from('limit_boost_spins').insert({
+         user_id: borrower.id,
+         loan_id: (loan.id as string | undefined) ?? null,
+         drawn: spin,
+         from_limit: current,
+         to_limit: nextLimit,
+         unlocks_at: unlockAt.toISOString(),
+         applied_at: null,
+         waited: true
+      });
+      // 23505: this loan's spin is already saved (a repeated follow-up), nothing to add.
+      if (waitError && waitError.code !== '23505') {
+         const message = `waiting spin not saved: ${waitError.message}`;
+         errors.push({ type: 'credit_progression', message });
+         await postDiscord(
+            { content: `⚠️ ${loan.tracking_id}: a Limit Spin was earned but NOT saved (${message}). Raise their limit by hand on day 3.` },
+            { prefer: ['DISCORD_REPAY_WEBHOOK_URL'] }
+         );
+         return { errors, levelUp: null };
+      }
+      return { errors, levelUp: { fromLimit: current, toLimit: nextLimit, spin: true, unlocksAt: unlockAt.toISOString() } };
+   }
 
    // Compare-and-set on the limit we evaluated against: if two final repayments race, only the
    // first raises the limit, so one full-limit loan can never level a borrower up twice.
