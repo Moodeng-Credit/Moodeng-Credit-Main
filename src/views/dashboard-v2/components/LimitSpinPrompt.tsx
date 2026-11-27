@@ -8,7 +8,7 @@ import LimitSpinWheel from '@/views/dashboard-v2/components/LimitSpinWheel';
 // was confirmed somewhere else. Paid before day 3 (2026-11-28), the spin waits: then it's a countdown
 // ("Your spin unlocks Thu, Dec 4", public.my_next_limit_spin). Renders nothing when there's no spin.
 
-type UnseenSpin = { id: string; drawn: number; from_limit: number; to_limit: number };
+type UnseenSpin = { id: string; drawn: number; from_limit: number; to_limit: number; bonus?: number };
 
 export const UNSEEN_LIMIT_SPIN_KEY = ['my-unseen-limit-spin'] as const;
 export const NEXT_LIMIT_SPIN_KEY = ['my-next-limit-spin'] as const;
@@ -71,14 +71,17 @@ export default function LimitSpinPrompt({ enabled = true, className = '' }: { en
                </p>
                {/* The days they wait: something fun to do (2026-11-28). */}
                <a href="/game" className="text-[14px] font-semibold text-[#6010D2] dark:text-[#C4B8FF]">
-                  Play Shark Chomp while you wait 🦈
+                  Beat level 3 of Shark Chomp: +$1 on your spin 🦈
                </a>
             </div>
          </section>
       );
    }
 
-   const amount = Math.max(0, Number(spin.to_limit) - Number(spin.from_limit));
+   const raise = Math.max(0, Number(spin.to_limit) - Number(spin.from_limit));
+   // The wheel lands on the spin; Shark Chomp's bonus shows on top (both already in to_limit).
+   const bonus = Math.min(Number(spin.bonus ?? 0) || 0, raise);
+   const amount = raise - bonus;
    const done = async () => {
       await getSupabaseBrowserClient().rpc('mark_limit_spin_seen', { p_id: spin.id });
       queryClient.setQueryData(UNSEEN_LIMIT_SPIN_KEY, null);
@@ -90,7 +93,7 @@ export default function LimitSpinPrompt({ enabled = true, className = '' }: { en
          className={`rounded-[20px] bg-white px-4 py-5 shadow-[var(--dv2-shadow)] dark:bg-dv2-card ${className}`}
          aria-label="Limit spin"
       >
-         <LimitSpinWheel amount={amount} toLimit={Number(spin.to_limit)} onDone={() => void done()} />
+         <LimitSpinWheel amount={amount} bonus={bonus} toLimit={Number(spin.to_limit)} onDone={() => void done()} />
       </section>
    );
 }
