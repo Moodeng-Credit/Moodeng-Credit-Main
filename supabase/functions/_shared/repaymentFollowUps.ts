@@ -8,7 +8,14 @@
 //   always  → the Discord repay feed line
 //
 // Never throws; side-effect failures come back in `errors` (the payment is recorded either way).
-import { evaluateCreditProgression, getEffectiveCreditLimit, getIncomeNextLimit, toNumber } from './creditAndPoints.ts';
+import {
+   evaluateCreditProgression,
+   getCreditTrack,
+   getEffectiveCreditLimit,
+   getIncomeNextLimit,
+   LOW_INCOME_CEILING,
+   toNumber
+} from './creditAndPoints.ts';
 import { postDiscord } from './discord.ts';
 import { notifyBorrowerPartialRepayment } from './partialRepaymentNotice.ts';
 import { postPartialRepaymentToTeam } from './teamLoanFeed.ts';
@@ -39,7 +46,14 @@ export const applyCreditProgression = async (
       return { errors, levelUp: null };
    }
 
+   // Income ceiling (migrations 20261127010000 / 20261127030000), read first: it sets how far the limit can
+   // grow, the step, and (low income) that a repayment counts from day 7.
+   const { data: ceilingRow, error: ceilingError } = await admin.rpc('limit_ceiling_for', { p_user: borrower.id });
+   const ceiling = toNumber((ceilingRow as { ceiling?: number | string } | null)?.ceiling ?? 0);
+   const lowIncome = ceiling > 0 && ceiling <= LOW_INCOME_CEILING && getCreditTrack(borrower.created_at ?? null) === 'B';
+
    const evaluation = evaluateCreditProgression({
+      lowIncome,
       currentLimit: borrower.cs ?? 0,
       // Any supported identity method grants verified status for credit progression, mirroring the
       // frontend isUserVerified(). Didit is the majority path; gating on World ID alone stalled
@@ -57,19 +71,27 @@ export const applyCreditProgression = async (
 
    if (!evaluation.shouldLevelUp) return { errors, levelUp: null };
 
-   // Income ceiling (2026-11-27, migration 20261127010000_limit_ceilings): growth stops at what we know
-   // they can repay. Never lowers a limit. If the lookup fails, the earned level-up still happens.
-   let nextLimit = evaluation.nextLimit;
-   const { data: ceilingRow, error: ceilingError } = await admin.rpc('limit_ceiling_for', { p_user: borrower.id });
-   const ceiling = toNumber((ceilingRow as { ceiling?: number | string } | null)?.ceiling ?? 0);
-   if (ceilingError) {
-      errors.push({ type: 'credit_progression', message: `ceiling lookup failed: ${ceilingError.message}` });
-   } else if (ceiling > 0) {
-      // Their income ladder (getIncomeNextLimit): the step and the top both follow their income.
-      const current = getEffectiveCreditLimit(borrower.cs, true);
-      nextLimit = getIncomeNextLimit(current, ceiling, borrower.created_at ?? null, (loan.funded_at as string | null | undefined) ?? null);
-      if (nextLimit <= current) return { errors, levelUp: null };
+   // No ceiling read = no raise: hold it and tell the team (a raise past someone's ceiling can't be undone).
+   if (ceilingError || !(ceiling > 0)) {
+      const message = `level-up held: income ceiling couldn't be read (${ceilingError?.message ?? 'empty'})`;
+      errors.push({ type: 'credit_progression', message });
+      await postDiscord(
+         {
+            content: `⚠️ ${loan.tracking_id}: a full-limit loan was repaid but the level-up was HELD (${message}). Check their limit and raise by hand.`
+         },
+         { prefer: ['DISCORD_REPAY_WEBHOOK_URL'] }
+      );
+      return { errors, levelUp: null };
    }
+   // Their income ladder (getIncomeNextLimit): the step and the top both follow their income. Never lowers.
+   const current = getEffectiveCreditLimit(borrower.cs, true);
+   const nextLimit = getIncomeNextLimit(
+      current,
+      ceiling,
+      borrower.created_at ?? null,
+      (loan.funded_at as string | null | undefined) ?? null
+   );
+   if (nextLimit <= current) return { errors, levelUp: null };
 
    // Compare-and-set on the limit we evaluated against: if two final repayments race, only the
    // first raises the limit, so one full-limit loan can never level a borrower up twice.

@@ -41,7 +41,7 @@ import useWallet, { type PaymentMethod, toSettlementMethod, useActivePaymentMeth
 import { parseDateSafely } from '@/utils/dateFormatters';
 import { formatCurrency, toNumber } from '@/utils/decimalHelpers';
 
-import { getCreditLevelNumber, getIncomeNextLimit, getNextCreditTier, STARTING_CREDIT_LIMIT } from '@/config/creditTiers';
+import { getCreditLevelNumber, getIncomeNextLimit, getNextCreditTier, isLowIncomeLadder, STARTING_CREDIT_LIMIT } from '@/config/creditTiers';
 import { COINS_PH_SUSPENDED, COINS_PH_SUSPENDED_MESSAGE, COINS_PH_SUSPENDED_TITLE } from '@/config/paymentRails';
 import { ALLOWED_CHAIN_ID, BASE_USDC_ADDRESS } from '@/config/wagmiConfig';
 import { useLocalization } from '@/i18n';
@@ -1390,7 +1390,9 @@ export default function Repay() {
                   : null,
                fastRepayLimit:
                   !serverLevelUp &&
-                  isTooEarlyRepay(selectedLoan.fundedAt ?? null, new Date().toISOString(), selectedLoan.dueDate, selectedLoan.dueTimezone)
+                  isTooEarlyRepay(selectedLoan.fundedAt ?? null, new Date().toISOString(), selectedLoan.dueDate, selectedLoan.dueTimezone, {
+                     lowIncome: isLowIncomeLadder(limitCeiling, user.createdAt)
+                  })
                      ? user.cs || STARTING_CREDIT_LIMIT
                      : null,
                fastRepaySecondHalf: Boolean(selectedLoan.fundedAt) && Date.parse(selectedLoan.fundedAt as string) >= SECOND_HALF_RULE_FROM
@@ -2343,7 +2345,8 @@ export default function Repay() {
          dueTimezone: selectedLoan.dueTimezone,
          paidAt: new Date().toISOString(),
          fundedAt: selectedLoan.fundedAt ?? null,
-         joinedAt: user.createdAt ?? null
+         joinedAt: user.createdAt ?? null,
+         lowIncome: isLowIncomeLadder(limitCeiling, user.createdAt)
       });
       const currentLimit = user.cs || STARTING_CREDIT_LIMIT;
       const cappedNext = limitCeiling
@@ -2353,8 +2356,12 @@ export default function Repay() {
       // Too early to grow the limit (the second-half rule; older loans the 48-hour one): say so before they
       // pay, with when it would.
       const fastCountsFrom =
-         clearsLoan && isTooEarlyRepay(selectedLoan.fundedAt ?? null, new Date().toISOString(), selectedLoan.dueDate, selectedLoan.dueTimezone)
-            ? countsFromAt(selectedLoan.fundedAt, selectedLoan.dueDate, selectedLoan.dueTimezone)
+         clearsLoan && isTooEarlyRepay(selectedLoan.fundedAt ?? null, new Date().toISOString(), selectedLoan.dueDate, selectedLoan.dueTimezone, {
+                     lowIncome: isLowIncomeLadder(limitCeiling, user.createdAt)
+                  })
+            ? countsFromAt(selectedLoan.fundedAt, selectedLoan.dueDate, selectedLoan.dueTimezone, {
+                 lowIncome: isLowIncomeLadder(limitCeiling, user.createdAt)
+              })
             : null;
       const fastSecondHalf = Boolean(selectedLoan.fundedAt) && Date.parse(selectedLoan.fundedAt as string) >= SECOND_HALF_RULE_FROM;
       const fastNote = fastCountsFrom ? (

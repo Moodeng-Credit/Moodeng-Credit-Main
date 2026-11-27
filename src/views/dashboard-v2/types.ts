@@ -30,6 +30,8 @@ export interface DashboardV2Due {
    deadline: string;
    /** From when paying it counts for food vouchers (the loan's halfway day), ISO; null when unknown. */
    rewardFrom?: string | null;
+   /** End of the loan's FINAL due day (a two-payment loan's last part): the limit window ends here. */
+   finalDeadline?: string | null;
    /** The zone its due day is measured in, for showing dates. */
    zone?: string;
    /** When the money was sent, ISO (repaying within 48h of this never raises the limit). */

@@ -4,18 +4,21 @@ import { docMonthlyPhp, incomeLadderLine } from '../../supabase/functions/_share
 
 describe('proof of income → monthly amount for the credit ladder', () => {
    it('scales a half-month payslip to a month', () => {
-      expect(docMonthlyPhp({ currency: 'PHP', net_pay: 9000, months_covered: 0.5 })).toBe(18000);
+      expect(docMonthlyPhp({ currency: 'PHP', doc_type: 'payslip', net_pay: 9000, months_covered: 0.5 })).toBe(18000);
    });
    it('a payslip with no usable period counts as one month', () => {
-      expect(docMonthlyPhp({ currency: 'PHP', net_pay: 25125, months_covered: 1 })).toBe(25125);
-      expect(docMonthlyPhp({ currency: 'PHP', net_pay: 25125, months_covered: 0 })).toBe(25125);
+      expect(docMonthlyPhp({ currency: 'PHP', doc_type: 'payslip', net_pay: 25125, months_covered: 1 })).toBe(25125);
+      expect(docMonthlyPhp({ currency: 'PHP', doc_type: 'payslip', net_pay: 25125, months_covered: 0 })).toBe(25125);
+   });
+   it('a bank statement uses money coming in, not a stray net-pay figure', () => {
+      expect(docMonthlyPhp({ currency: 'PHP', doc_type: 'bank_statement', net_pay: 3014, monthly_in: 8229 })).toBe(8229);
    });
    it('no net pay: the regular deposit, else money in per month', () => {
       expect(docMonthlyPhp({ currency: 'PHP', regular_deposits: [{ amount: 18848 }], monthly_in: 43149 })).toBe(18848);
       expect(docMonthlyPhp({ currency: 'PHP', regular_deposits: [], monthly_in: 8229.02 })).toBe(8229);
    });
    it('not pesos or nothing readable: no amount', () => {
-      expect(docMonthlyPhp({ currency: 'IDR', net_pay: 2_500_000 })).toBeNull();
+      expect(docMonthlyPhp({ currency: 'IDR', doc_type: 'payslip', net_pay: 2_500_000 })).toBeNull();
       expect(docMonthlyPhp({ currency: 'PHP' })).toBeNull();
    });
 });

@@ -11,7 +11,7 @@
 // People without an account keep the canned reply + sign-up card (buildAutoReply).
 import { withToday } from './aiToday.ts';
 import { GEMINI_MODEL } from './geminiModel.ts';
-import { fmtDate, payFromAt } from './messengerLoanTiming.ts';
+import { fmtDate, isLowIncomeBorrower, payFromAt } from './messengerLoanTiming.ts';
 
 // deno-lint-ignore no-explicit-any
 type Svc = any;
@@ -52,7 +52,7 @@ const money = (n: number) => `$${Number.isInteger(n) ? n : n.toFixed(2)}`;
 export const ackPrompt = (facts: AckFacts): string => {
    const hi = facts.firstName ? `Hi ${facts.firstName}!` : 'Hi!';
    const loan = facts.loan
-      ? `Their open loan: they owe ${money(facts.loan.owed)}, due ${facts.loan.due}. The best time to pay is the 2nd half of the loan: ${facts.loan.payFrom} to ${facts.loan.due}.`
+      ? `Their open loan: they owe ${money(facts.loan.owed)}, due ${facts.loan.due}. The best time to pay is ${facts.loan.payFrom} to ${facts.loan.due}.`
       : 'They have no open loan right now. Do not mention any amounts or dates.';
    return [
       'You write the automatic first reply from Moodeng Credit, a small-loan app for people in the Philippines, to a borrower who just messaged its Facebook Page.',
@@ -138,7 +138,9 @@ const loadLoan = async (svc: Svc, userId: string, locale: Locale): Promise<AckLo
    const loan = open[0];
    const owed = Math.round(Math.max(0, Number(loan.total_repayment_amount ?? 0) - Number(loan.repaid_amount ?? 0)) * 100) / 100;
    if (!owed) return null;
-   const from = payFromAt({ funded_at: loan.funded_at ?? null, due_date: loan.due_date, due_timezone: loan.due_timezone });
+   const { data: me } = await svc.from('users').select('created_at').eq('id', userId).maybeSingle();
+   const lowIncome = await isLowIncomeBorrower(svc, userId, (me as { created_at?: string | null } | null)?.created_at ?? null);
+   const from = payFromAt({ funded_at: loan.funded_at ?? null, due_date: loan.due_date, due_timezone: loan.due_timezone, low_income: lowIncome });
    return {
       owed,
       due: fmtDate(loan.due_date!, loan.due_timezone, locale),

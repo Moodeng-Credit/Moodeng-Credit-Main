@@ -1,13 +1,14 @@
 // Proof of income → credit ladder (George, 2026-11-27). Pure; no imports, so the app's tests can load it.
 //
-// The monthly amount a document shows, read the same way the document checks read it: net pay, else the
-// biggest regular deposit, else money in per month. A payslip's net pay is scaled to a full month by the
-// period it covers (a ₱9k half-month payslip ≈ ₱18k a month). Mirrors app_private.income_doc_monthly_php
+// The monthly amount a document shows: a payslip's net pay scaled to a full month by the period it covers
+// (a ₱9k half-month payslip ≈ ₱18k a month); anything else (bank statement, GCash) the biggest regular
+// deposit, else money in per month. Mirrors app_private.income_doc_monthly_php
 // (migration 20261127030000), which the income ceiling uses for team-approved documents from the last
 // 3 months.
 
 export type DocMonthlyInput = {
    currency?: string | null;
+   doc_type?: string | null;
    net_pay?: number | null;
    months_covered?: number | null;
    regular_deposits?: Array<{ amount: number }> | null;
@@ -17,14 +18,15 @@ export type DocMonthlyInput = {
 export const docMonthlyPhp = (input: DocMonthlyInput): number | null => {
    if ((input.currency ?? 'PHP').toUpperCase() !== 'PHP') return null;
    const net = Number(input.net_pay ?? 0);
-   if (net > 0) {
+   if (input.doc_type === 'payslip' && net > 0) {
       const months = Number(input.months_covered ?? 0);
       return Math.round(months >= 0.2 && months <= 3 ? net / months : net);
    }
    const regular = Number(input.regular_deposits?.[0]?.amount ?? 0);
    if (regular > 0) return Math.round(regular);
    const monthlyIn = Number(input.monthly_in ?? 0);
-   return monthlyIn > 0 ? Math.round(monthlyIn) : null;
+   if (monthlyIn > 0) return Math.round(monthlyIn);
+   return net > 0 ? Math.round(net) : null;
 };
 
 // Sign-up answer (users.monthly_income, US dollars a month) in pesos, as the team thinks about it.

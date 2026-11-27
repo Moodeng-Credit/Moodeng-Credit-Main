@@ -1,6 +1,6 @@
 import { toNumber } from '@/utils/decimalHelpers';
 
-import { getIncomeNextLimit } from '@/config/creditTiers';
+import { getIncomeNextLimit, isLowIncomeLadder } from '@/config/creditTiers';
 import { countsFromAt, evaluateCreditProgression, getEffectiveCreditLimit } from '@/lib/creditLeveling';
 import type { RepayStreak } from '@/lib/friendReferrals';
 import { getDaysUntilDueDay, getDueDayEnd, getLoanTimezone, getRewardFromAt } from '@/lib/loanDeadline';
@@ -57,13 +57,14 @@ export const getFastRepayNotice = ({
    locale: string;
 }): FastRepayNotice | null => {
    const open = loans.filter(isOpen);
+   const lowIncome = isLowIncomeLadder(ceiling, joinedAt);
    // Something due soon or overdue: paying is the right move, whatever the 48-hour rule says.
    if (open.some((loan) => getDaysUntilDueDay(currentDueDate(loan), getLoanTimezone(loan), now) <= DUE_SOON_DAYS)) return null;
 
    const fresh = open
       // Shown in the loan's first 48 hours only (the snooze brings it back once), not every day until halfway.
       .filter((loan) => Boolean(loan.fundedAt) && now < Date.parse(loan.fundedAt as string) + 48 * 3_600_000)
-      .map((loan) => ({ loan, countsFrom: countsFromAt(loan.fundedAt, loan.dueDate, loan.dueTimezone) }))
+      .map((loan) => ({ loan, countsFrom: countsFromAt(loan.fundedAt, loan.dueDate, loan.dueTimezone, { lowIncome }) }))
       .filter((entry): entry is { loan: Loan; countsFrom: Date } => Boolean(entry.countsFrom) && now < (entry.countsFrom as Date).getTime())
       .sort((a, b) => b.countsFrom.getTime() - a.countsFrom.getTime());
    const newest = fresh[0];
@@ -85,7 +86,8 @@ export const getFastRepayNotice = ({
       dueTimezone: loan.dueTimezone,
       paidAt: countsFrom.toISOString(),
       fundedAt: loan.fundedAt ?? null,
-      joinedAt: joinedAt ?? null
+      joinedAt: joinedAt ?? null,
+      lowIncome
    });
    const limitNow = getEffectiveCreditLimit(currentLimit, isVerified);
    const nextLimit = ceiling ? getIncomeNextLimit(limitNow, ceiling, joinedAt ?? null, loan.fundedAt ?? null) : progression.nextLimit;

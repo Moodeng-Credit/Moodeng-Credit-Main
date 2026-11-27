@@ -17,14 +17,14 @@ const PAGE_ID = '61589106561061';
 const COPY: Record<DashboardV2Language, { title: (limit: number) => string; body: string; ask: string; button: string; docs: string }> = {
    en: {
       title: (limit) => `Your limit stays at $${limit}`,
-      body: 'Only payments in the 2nd half of a loan raise your limit. Next time, borrow your full limit and pay in the 2nd half.',
+      body: 'That loan was paid back too early to count. Next time, borrow your full limit and pay between the dates on your home screen.',
       ask: 'Want to talk about it, or show us more about your income?',
       button: 'Message us on Messenger',
       docs: 'Add proof of income'
    },
    fil: {
       title: (limit) => `Mananatili sa $${limit} ang limit mo`,
-      body: 'Ang bayad lang sa 2nd half ng loan ang nagpapataas ng limit mo. Sa susunod, hiramin ang buong limit mo at magbayad sa 2nd half.',
+      body: 'Masyadong maaga nabayaran ang loan na iyon kaya hindi ito nabilang. Sa susunod, hiramin ang buong limit mo at magbayad sa mga petsang nasa home screen mo.',
       ask: 'Gusto mo bang pag-usapan, o magpakita pa tungkol sa kita mo?',
       button: 'Mag-message sa Messenger',
       docs: 'Magdagdag ng proof of income'

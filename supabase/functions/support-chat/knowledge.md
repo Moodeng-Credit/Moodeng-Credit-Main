@@ -732,8 +732,8 @@ If a user doesn't hold USDC yet and needs to repay:
 There is ONE rule. A loan grows the limit when all three are true:
 
 1. It was a loan for your **full limit** (borrowing less never grows it).
-2. It was **paid in full by the due date**.
-3. It was paid in the **2nd half of the loan** — from its halfway day to the due date. For a 30-day loan that's about the last 15 days. The **Your next loan** card on the Dashboard shows the exact dates ("Pay between Dec 16 – Dec 31") and the next limit.
+2. It was **paid in full** (on time is what we ask for, and it protects their Pandesal points).
+3. It was paid **in its best days, not too early** — for most borrowers that's the 2nd half of the loan (about the last 15 days of a 30-day loan); some borrowers' best days start sooner. The **Your next loan** card on the Dashboard always shows their exact dates ("Pay between Dec 16 – Dec 31") and their next limit, so point them there rather than working the dates out yourself.
 
 Paying in the first half is always allowed — the loan is paid and it counts as on time — but the limit stays the same. (Loans funded before 27 Nov 2026 used the older rule: anything paid at least 48 hours after funding counted.)
 

@@ -60,7 +60,9 @@ export function getNextCreditTier(
 
 /**
  * Income ladders (George, 2026-11-27: "connect their income to the credit ladder"). Low or no income
- * (income ceiling $35, app_private.limit_ceiling) climbs in $5 steps: $15 → $20 → $25 → $30 → $35. Everyone
+ * (income ceiling $35, app_private.limit_ceiling) climbs in $3 steps: $15 → $18 → $21 … → $35, and their
+ * repayment counts from day 7 of the loan (LOW_INCOME_COUNTS_AFTER_DAYS) instead of the 2nd half, since
+ * they get paid weekly or irregularly ("they will probably repay after a week or so"). Everyone
  * else keeps the normal $10 steps. Every ladder stops at the borrower's ceiling ($60 by default, $140 with
  * team-approved proof of ₱23k+/month). Borrowers only ever see their own next number, never the tiers.
  * The $5 steps apply to Track B loans funded from INCOME_LADDER_FROM (and to "what's next" when no loan is
@@ -69,7 +71,12 @@ export function getNextCreditTier(
  */
 export const INCOME_LADDER_FROM = Date.parse('2026-11-28T00:00:00+07:00');
 export const LOW_INCOME_CEILING = 35;
-export const LOW_INCOME_LADDER: readonly number[] = [15, 20, 25, 30, 35];
+export const LOW_INCOME_LADDER: readonly number[] = [15, 18, 21, 24, 27, 30, 33, 35];
+export const LOW_INCOME_COUNTS_AFTER_DAYS = 7;
+
+/** On the low-income ladder ($3 steps, counts from day 7): income ceiling $35 and Track B. */
+export const isLowIncomeLadder = (ceiling: number | null | undefined, joinedAt?: string | number | Date | null): boolean =>
+   Boolean(ceiling) && (ceiling as number) <= LOW_INCOME_CEILING && getCreditTrack(joinedAt) === 'B';
 
 /** The next limit after a full-limit loan, on the borrower's income ladder and never past their ceiling. */
 export const getIncomeNextLimit = (

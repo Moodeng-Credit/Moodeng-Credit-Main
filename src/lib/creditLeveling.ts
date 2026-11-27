@@ -2,7 +2,14 @@ import { parseDateSafely } from '@/utils/dateFormatters';
 import { toNumber } from '@/utils/decimalHelpers';
 import { getLoanPastDueAt } from '@/utils/loanOverdue';
 
-import { CREDIT_TIERS, getNextCreditTier, MAX_CREDIT_LIMIT, STARTING_CREDIT_LIMIT } from '@/config/creditTiers';
+import {
+   CREDIT_TIERS,
+   getNextCreditTier,
+   INCOME_LADDER_FROM,
+   LOW_INCOME_COUNTS_AFTER_DAYS,
+   MAX_CREDIT_LIMIT,
+   STARTING_CREDIT_LIMIT
+} from '@/config/creditTiers';
 import { getRewardFromAt } from '@/lib/loanDeadline';
 import type { Loan } from '@/types/loanTypes';
 
@@ -31,6 +38,8 @@ type CreditProgressionInput = {
    fundedAt?: string | null;
    /** When the borrower joined (users.created_at): before October 2026 = Track A, the old ladder. */
    joinedAt?: string | null;
+   /** Income ceiling $35 (Track B): their repayment counts from day 7 instead of the 2nd half. */
+   lowIncome?: boolean;
 };
 
 type CreditProgressionResult = {
@@ -64,12 +73,16 @@ export const SECOND_HALF_RULE_FROM = Date.parse('2026-11-27T00:00:00+07:00');
 export const countsFromAt = (
    fundedAt: string | null | undefined,
    dueDate?: string | Date | null,
-   dueTimezone?: string | null
+   dueTimezone?: string | null,
+   opts: { lowIncome?: boolean } = {}
 ): Date | null => {
    const funded = fundedAt ? Date.parse(fundedAt) : NaN;
    if (!Number.isFinite(funded)) return null;
    const fast = new Date(funded + FAST_REPAY_HOURS * 3_600_000);
-   if (funded < SECOND_HALF_RULE_FROM || !dueDate) return fast;
+   if (funded < SECOND_HALF_RULE_FROM) return fast;
+   // Low income (ceiling $35): counts from day 7 (creditTiers LOW_INCOME_COUNTS_AFTER_DAYS).
+   if (opts.lowIncome && funded >= INCOME_LADDER_FROM) return new Date(funded + LOW_INCOME_COUNTS_AFTER_DAYS * 86_400_000);
+   if (!dueDate) return fast;
    return getRewardFromAt(new Date(funded), dueDate, dueTimezone || 'Asia/Manila') ?? fast;
 };
 
@@ -78,9 +91,10 @@ export const isTooEarlyRepay = (
    fundedAt: string | null | undefined,
    paidAt: string | null | undefined,
    dueDate?: string | Date | null,
-   dueTimezone?: string | null
+   dueTimezone?: string | null,
+   opts: { lowIncome?: boolean } = {}
 ) => {
-   const from = countsFromAt(fundedAt, dueDate, dueTimezone);
+   const from = countsFromAt(fundedAt, dueDate, dueTimezone, opts);
    const paid = paidAt ? Date.parse(paidAt) : NaN;
    return from !== null && Number.isFinite(paid) && paid < from.getTime();
 };
@@ -95,7 +109,8 @@ export const evaluateCreditProgression = ({
    dueTimezone,
    paidAt,
    fundedAt,
-   joinedAt
+   joinedAt,
+   lowIncome = false
 }: CreditProgressionInput): CreditProgressionResult => {
    const normalizedLimit = getEffectiveCreditLimit(currentLimit, isVerified);
    const repaid = toNumber(repaidAmount ?? 0);
@@ -113,7 +128,7 @@ export const evaluateCreditProgression = ({
       isFullyRepaid &&
       isFullLimitLoan &&
       normalizedLimit < MAX_CREDIT_LIMIT &&
-      !isTooEarlyRepay(fundedAt, paidAt, dueDate, dueTimezone);
+      !isTooEarlyRepay(fundedAt, paidAt, dueDate, dueTimezone, { lowIncome });
 
    return {
       shouldLevelUp: canLevelUp,

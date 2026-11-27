@@ -4,6 +4,9 @@ import { guessIntent, isEarly, mentionsLoanTiming, timingReply } from './messeng
 
 const NOW = Date.parse('2026-11-20T05:00:00Z');
 const loan = (dueInDays: number) => ({ funded_at: '2026-11-18T05:00:00Z', due_date: new Date(NOW + dueInDays * 86_400_000).toISOString(), due_timezone: 'Asia/Manila', owed: 17.5 });
+// Funded after both switches (2nd-half rule 11-27, low-income ladder 11-28).
+const NEW_NOW = Date.parse('2026-12-04T05:00:00Z');
+const newLoan = (low = false) => ({ funded_at: '2026-12-01T05:00:00Z', due_date: '2026-12-31T00:00:00Z', due_timezone: 'Asia/Manila', owed: 16.5, low_income: low });
 
 Deno.test('word check: timing questions in English and Tagalog', () => {
    assert(mentionsLoanTiming('kailan ko babayaran?'));
@@ -18,11 +21,16 @@ Deno.test('guessIntent: extensions and cannot-pay stay with a person', () => {
    assertEquals(guessIntent('kailan due date ko'), 'term');
 });
 
-Deno.test('early = before the 2nd half of the loan', () => {
-   assert(isEarly(loan(20), NOW));
-   // Funded 2 days ago, due tomorrow: the 2nd half has started.
-   assert(!isEarly(loan(1), NOW));
+Deno.test('early follows the server rule: old loans 48h, new loans 2nd half, low income day 7', () => {
+   // Funded Nov 18 (before the switch): 48 hours have passed, so paying now is NOT early.
+   assert(!isEarly(loan(20), NOW));
    assert(!isEarly(null, NOW));
+   // Funded Dec 1: day 3 is early for everyone; day 8 counts for low income only.
+   assert(isEarly(newLoan(), NEW_NOW));
+   assert(isEarly(newLoan(true), NEW_NOW));
+   const day8 = Date.parse('2026-12-09T05:00:00Z');
+   assert(isEarly(newLoan(), day8));
+   assert(!isEarly(newLoan(true), day8));
 });
 
 Deno.test('replies: set term, 2nd-half window, repay button only when in the window', () => {
@@ -31,7 +39,8 @@ Deno.test('replies: set term, 2nd-half window, repay button only when in the win
    assert(term.includes('2nd half of your loan'));
    // Funded Nov 18, due Dec 10 (Manila): the 2nd half starts Nov 29.
    assert(term.includes('Nov 29 to Dec 10'), term);
-   assert(timingReply('early', loan(20), 'en', NOW).includes("doesn't help your limit"));
+   assert(timingReply('early', newLoan(), 'en', NEW_NOW).includes("doesn't help your limit"));
+   assert(timingReply('term', newLoan(true), 'en', NEW_NOW).includes('Dec 8 to Dec 31'));
    assert(timingReply('early', loan(1), 'en', NOW).includes('good time to pay'));
    assert(timingReply('again', null, 'fil', NOW).includes('2 loan sa isang buwan'));
 });

@@ -766,9 +766,9 @@ describe('the second-half rule (loans funded from 2026-11-27 Bangkok): only paym
 describe('income ladders (2026-11-27): the income ceiling picks the steps', () => {
    const newB = '2026-11-20T00:00:00Z'; // Track B
    const after = '2026-11-29T00:00:00Z'; // funded after INCOME_LADDER_FROM
-   it('low income ($35): +$5 steps to $35', async () => {
+   it('low income ($35): +$3 steps to $35', async () => {
       const { getIncomeNextLimit } = await import('@/config/creditTiers');
-      expect([15, 20, 25, 30, 35].map((l) => getIncomeNextLimit(l, 35, newB, after))).toEqual([20, 25, 30, 35, 35]);
+      expect([15, 18, 21, 24, 27, 30, 33, 35].map((l) => getIncomeNextLimit(l, 35, newB, after))).toEqual([18, 21, 24, 27, 30, 33, 35, 35]);
    });
    it('default ($60): the normal +$10 steps, top $60', async () => {
       const { getIncomeNextLimit } = await import('@/config/creditTiers');
@@ -805,6 +805,37 @@ describe('income ladders (2026-11-27): the income ceiling picks the steps', () =
                   client.getIncomeNextLimit(limit, ceiling, newB, funded)
                );
             }
+         }
+      }
+   });
+});
+
+describe('low income: repayment counts from day 7 (2026-11-27 review)', () => {
+   const base = {
+      currentLimit: 15,
+      isVerified: true,
+      repaidAmount: 16.5,
+      totalRepaymentAmount: 16.5,
+      loanAmount: 15,
+      dueDate: '2026-12-31T00:00:00Z',
+      dueTimezone: 'Asia/Manila',
+      fundedAt: '2026-12-01T01:00:00Z',
+      joinedAt: '2026-11-20T00:00:00Z'
+   };
+   it('day 6: too early for everyone', () => {
+      expect(evaluateCreditProgression({ ...base, lowIncome: true, paidAt: '2026-12-07T00:00:00Z' }).shouldLevelUp).toBe(false);
+   });
+   it('day 8: counts for low income, still too early for the 2nd-half rule', () => {
+      expect(evaluateCreditProgression({ ...base, lowIncome: true, paidAt: '2026-12-09T01:00:00Z' }).shouldLevelUp).toBe(true);
+      expect(evaluateCreditProgression({ ...base, paidAt: '2026-12-09T01:00:00Z' }).shouldLevelUp).toBe(false);
+   });
+   it('server and app agree on when it counts', async () => {
+      const server = await import('../../supabase/functions/_shared/creditAndPoints.ts');
+      for (const low of [true, false]) {
+         for (const funded of ['2026-11-26T01:00:00Z', '2026-11-27T12:00:00Z', '2026-12-01T01:00:00Z']) {
+            expect(server.countsFromAt(funded, base.dueDate, 'Asia/Manila', { lowIncome: low })?.toISOString()).toBe(
+               countsFromAt(funded, base.dueDate, 'Asia/Manila', { lowIncome: low })?.toISOString()
+            );
          }
       }
    });
