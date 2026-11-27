@@ -94,9 +94,19 @@ export const applyCreditProgression = async (
    const fundedAt = (loan.funded_at as string | null | undefined) ?? null;
    // Low income: a Limit Spin decides the raise (+$2 usually, up to +$5), never past their ceiling.
    const spin = earnsLimitSpin(ceiling, borrower.created_at ?? null, fundedAt) ? drawLimitSpin() : null;
+   // A Shark bonus they saved by beating level 3 of Shark Chomp after their last spin (chomp_level_reward):
+   // +$1 on this spin, still never past the ceiling. Used up once the spin is saved.
+   let sharkBonus = 0;
+   if (spin !== null) {
+      const { data: bank } = await admin.from('limit_spin_bonus_bank').select('user_id').eq('user_id', borrower.id).maybeSingle();
+      sharkBonus = bank ? 1 : 0;
+   }
+   const useBank = async () => {
+      if (sharkBonus) await admin.from('limit_spin_bonus_bank').delete().eq('user_id', borrower.id);
+   };
    const nextLimit =
       spin !== null
-         ? Math.max(current, Math.min(current + spin, ceiling, MAX_CREDIT_LIMIT))
+         ? Math.max(current, Math.min(current + spin + sharkBonus, ceiling, MAX_CREDIT_LIMIT))
          : getIncomeNextLimit(current, ceiling, borrower.created_at ?? null, fundedAt);
    if (nextLimit <= current) return { errors, levelUp: null };
 
@@ -108,6 +118,7 @@ export const applyCreditProgression = async (
          user_id: borrower.id,
          loan_id: (loan.id as string | undefined) ?? null,
          drawn: spin,
+         bonus: sharkBonus,
          from_limit: current,
          to_limit: nextLimit,
          unlocks_at: unlockAt.toISOString(),
@@ -124,6 +135,7 @@ export const applyCreditProgression = async (
          );
          return { errors, levelUp: null };
       }
+      if (!waitError) await useBank();
       return { errors, levelUp: { fromLimit: current, toLimit: nextLimit, spin: true, unlocksAt: unlockAt.toISOString() } };
    }
 
@@ -157,10 +169,13 @@ export const applyCreditProgression = async (
          user_id: borrower.id,
          loan_id: (loan.id as string | undefined) ?? null,
          drawn: spin,
+         bonus: sharkBonus,
          from_limit: current,
          to_limit: nextLimit
       });
       if (spinError) errors.push({ type: 'credit_progression', message: `limit spin not saved: ${spinError.message}` });
+      // The raise already includes the bonus, so it's used up even if the row didn't save.
+      await useBank();
    }
    return { errors, levelUp: { fromLimit: current, toLimit: nextLimit, spin: spin !== null } };
 };

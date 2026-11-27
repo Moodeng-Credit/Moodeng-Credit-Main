@@ -4,7 +4,8 @@ import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/sup
 // a day), and level 3+ while a Limit Spin waits for day 3 → +$1 "Shark bonus" on that spin. Signed out (or
 // not an approved borrower) → nothing, and the game just plays.
 
-export type LevelReward = { points: number; bonus: boolean };
+// banked: no spin was waiting, so the +$1 is saved for their next spin.
+export type LevelReward = { points: number; bonus: boolean; banked?: boolean };
 
 export async function claimLevelReward(level: number): Promise<LevelReward | null> {
    if (!isSupabaseBrowserConfigured()) return null;
@@ -13,8 +14,8 @@ export async function claimLevelReward(level: number): Promise<LevelReward | nul
       if (!(await client.auth.getSession()).data.session) return null;
       const { data, error } = await client.rpc('chomp_level_reward', { p_level: level });
       if (error || !data || typeof data !== 'object') return null;
-      const value = data as { points?: number; bonus?: boolean };
-      const reward = { points: Number(value.points ?? 0) || 0, bonus: value.bonus === true };
+      const value = data as { points?: number; bonus?: boolean; banked?: boolean };
+      const reward = { points: Number(value.points ?? 0) || 0, bonus: value.bonus === true, banked: value.banked === true };
       return reward.points > 0 || reward.bonus ? reward : null;
    } catch {
       return null;
