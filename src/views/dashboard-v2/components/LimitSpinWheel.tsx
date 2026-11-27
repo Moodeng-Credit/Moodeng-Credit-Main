@@ -5,8 +5,8 @@ import { useFloatingParticles } from '@/components/motion/TapDelight';
 import { useLocalization } from '@/i18n';
 
 // Limit Spin wheel (2026-11-27): the server already drew the raise (limit_boost_spins); this only lands on it.
-// Slices are mostly +$2, like the odds (_shared/creditAndPoints.ts LIMIT_SPIN_ODDS).
-const SLICES = [2, 3, 2, 4, 2, 3, 2, 5] as const;
+// Mostly +$3, like the odds (+$2 25% · +$3 60% · +$4 10% · +$5 5%).
+const SLICES = [3, 2, 3, 4, 3, 2, 3, 5] as const;
 const SLICE_DEG = 360 / SLICES.length;
 const SPIN_MS = 3200;
 const FILLS = ['#7c5cff', '#ffce1b', '#9b84ff', '#ff8fb1', '#7c5cff', '#ffce1b', '#9b84ff', '#3fb46a'];
@@ -55,7 +55,7 @@ export default function LimitSpinWheel({
       if (phase !== 'ready') return;
       // Land on a slice showing this amount (a capped raise smaller than every slice lands on +$2).
       const matches = SLICES.map((value, index) => ({ value, index })).filter((slice) => slice.value === amount);
-      const target = (matches.length ? matches : [{ value: 2, index: 0 }])[Math.floor(Math.random() * Math.max(matches.length, 1))];
+      const target = (matches.length ? matches : [{ value: 2, index: SLICES.indexOf(2) }])[Math.floor(Math.random() * Math.max(matches.length, 1))];
       const sliceCenter = target.index * SLICE_DEG + SLICE_DEG / 2;
       setRotation(360 * 5 + (360 - sliceCenter));
       setPhase('spinning');

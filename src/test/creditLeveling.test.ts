@@ -842,12 +842,13 @@ describe('low income: repayment counts from day 7 (2026-11-27 review)', () => {
    });
 });
 
-describe('Limit Spin (2026-11-27): usually +$2, never less, up to +$5', () => {
+describe('Limit Spin: usually +$3, never less than +$2, up to +$5', () => {
    it('draws by the odds', async () => {
       const { drawLimitSpin } = await import('@/config/creditTiers');
       expect(drawLimitSpin(() => 0)).toBe(2);
-      expect(drawLimitSpin(() => 0.59)).toBe(2);
-      expect(drawLimitSpin(() => 0.6)).toBe(3);
+      expect(drawLimitSpin(() => 0.24)).toBe(2);
+      expect(drawLimitSpin(() => 0.25)).toBe(3);
+      expect(drawLimitSpin(() => 0.84)).toBe(3);
       expect(drawLimitSpin(() => 0.86)).toBe(4);
       expect(drawLimitSpin(() => 0.99)).toBe(5);
    });

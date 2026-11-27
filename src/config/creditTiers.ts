@@ -76,14 +76,15 @@ export const LOW_INCOME_COUNTS_AFTER_DAYS = 7;
 
 /**
  * Limit Spin (George, 2026-11-27): low-income borrowers repay after about a week anyway, so each repayment
- * that counts (from day 7) earns a spin instead of a fixed step: usually +$2, sometimes more, never past
+ * that counts (from day 7) earns a spin instead of a fixed step: at least +$2, usually +$3, never past
  * their ceiling. The server draws it (_shared/repaymentFollowUps.ts) and saves it in limit_boost_spins; the
  * app's wheel only lands on the result. The app shows the guaranteed minimum as "$17+".
  */
 export const LOW_INCOME_MIN_STEP = 2;
 export const LIMIT_SPIN_ODDS: ReadonlyArray<{ amount: number; weight: number }> = [
-   { amount: 2, weight: 60 },
-   { amount: 3, weight: 25 },
+   // George 2026-11-28: most spins win +$1 on top of the $2 (+$3); +$5 stays a small chance.
+   { amount: 2, weight: 25 },
+   { amount: 3, weight: 60 },
    { amount: 4, weight: 10 },
    { amount: 5, weight: 5 }
 ];
