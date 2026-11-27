@@ -26,3 +26,16 @@ export const limitUpWhatsAppLine = (from: number, to: number, lang: LimitUpLang)
    lang === 'fil'
       ? `Tumaas na ang credit limit mo: ${usdc(to)} na (dati ${usdc(from)}). Pwede ka nang humiram hanggang ${usdc(to)} sa moodeng.app`
       : `Your credit limit went up from ${usdc(from)} to ${usdc(to)}. You can now borrow up to ${usdc(to)} at moodeng.app`;
+
+// A Limit Spin that waited for day 3 just unlocked (app_private.unlock_limit_spins): "your spin is ready",
+// no amount (the wheel in the app shows it).
+export const spinReadyMessengerText = (name: string, lang: LimitUpLang) =>
+   lang === 'fil'
+      ? `🎡 ${name}, ready na ang spin mo! Buksan ang Moodeng para mag-spin at makita ang susunod mong loan: https://moodeng.app`
+      : `🎡 ${name}, your spin is ready! Open Moodeng to spin and see your next loan: https://moodeng.app`;
+
+/** {{2}} of moodeng_follow_up for a spin that just unlocked. */
+export const spinReadyWhatsAppLine = (lang: LimitUpLang) =>
+   lang === 'fil'
+      ? 'Ready na ang spin mo 🎡 Buksan ang moodeng.app para mag-spin at makita kung magkano ang susunod mong loan'
+      : 'Your spin is ready 🎡 Open moodeng.app to spin and see how much your next loan can be';

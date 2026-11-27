@@ -61,7 +61,7 @@ export function getNextCreditTier(
 /**
  * Income ladders (George, 2026-11-27: "connect their income to the credit ladder"). Low or no income
  * (income ceiling $35, app_private.limit_ceiling) climbs by a Limit Spin (+$2 to +$5, usually +$2), and their
- * repayment counts from day 7 of the loan (LOW_INCOME_COUNTS_AFTER_DAYS) instead of the 2nd half, since
+ * repayment counts whenever they pay (the spin unlocks on day 3, LIMIT_SPIN_UNLOCK_DAYS), not the 2nd half, since
  * they get paid weekly or irregularly ("they will probably repay after a week or so"). Everyone
  * else keeps the normal $10 steps. Every ladder stops at the borrower's ceiling ($60 by default, $140 with
  * team-approved proof of ₱23k+/month). Borrowers only ever see their own next number, never the tiers.
@@ -72,11 +72,21 @@ export function getNextCreditTier(
 export const INCOME_LADDER_FROM = Date.parse('2026-11-28T00:00:00+07:00');
 export const LOW_INCOME_CEILING = 35;
 export const LOW_INCOME_LADDER: readonly number[] = [15, 18, 21, 24, 27, 30, 33, 35];
-export const LOW_INCOME_COUNTS_AFTER_DAYS = 7;
+/**
+ * Pay anytime, spin on day 3 (George 2026-11-28: "day 7 is too late"). A low-income repayment counts
+ * whenever it's paid; the spin it earns unlocks LIMIT_SPIN_UNLOCK_DAYS after the loan was funded. Paid
+ * sooner, the spin waits (limit_boost_spins.unlocks_at) and app_private.unlock_limit_spins applies it then,
+ * which keeps growth to about one step every few days (nobody can borrow-and-repay their way up fast).
+ */
+export const LIMIT_SPIN_UNLOCK_DAYS = 3;
+export const limitSpinUnlockAt = (fundedAt: string | number | Date | null | undefined): Date | null => {
+   const funded = fundedAt == null ? Number.NaN : new Date(fundedAt).getTime();
+   return Number.isFinite(funded) ? new Date(funded + LIMIT_SPIN_UNLOCK_DAYS * 86_400_000) : null;
+};
 
 /**
  * Limit Spin (George, 2026-11-27): low-income borrowers repay after about a week anyway, so each repayment
- * that counts (from day 7) earns a spin instead of a fixed step: at least +$2, usually +$3, never past
+ * that counts (any time; it unlocks on day 3) earns a spin instead of a fixed step: at least +$2, usually +$3, never past
  * their ceiling. The server draws it (_shared/repaymentFollowUps.ts) and saves it in limit_boost_spins; the
  * app's wheel only lands on the result. The app shows the guaranteed minimum as "$17+".
  */

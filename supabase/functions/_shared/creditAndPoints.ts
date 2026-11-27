@@ -70,7 +70,7 @@ export const getNextCreditTier = (
 /**
  * Income ladders (George, 2026-11-27: "connect their income to the credit ladder"). Low or no income
  * (income ceiling $35, app_private.limit_ceiling) climbs by a Limit Spin (+$2 to +$5, usually +$2), and their
- * repayment counts from day 7 of the loan (LOW_INCOME_COUNTS_AFTER_DAYS) instead of the 2nd half, since
+ * repayment counts whenever they pay (the spin unlocks on day 3, LIMIT_SPIN_UNLOCK_DAYS), not the 2nd half, since
  * they get paid weekly or irregularly ("they will probably repay after a week or so"). Everyone
  * else keeps the normal $10 steps. Every ladder stops at the borrower's ceiling ($60 by default, $140 with
  * team-approved proof of ₱23k+/month). Borrowers only ever see their own next number, never the tiers.
@@ -81,11 +81,21 @@ export const getNextCreditTier = (
 export const INCOME_LADDER_FROM = Date.parse('2026-11-28T00:00:00+07:00');
 export const LOW_INCOME_CEILING = 35;
 export const LOW_INCOME_LADDER: readonly number[] = [15, 18, 21, 24, 27, 30, 33, 35];
-export const LOW_INCOME_COUNTS_AFTER_DAYS = 7;
+/**
+ * Pay anytime, spin on day 3 (George 2026-11-28: "day 7 is too late"). A low-income repayment counts
+ * whenever it's paid; the spin it earns unlocks LIMIT_SPIN_UNLOCK_DAYS after the loan was funded. Paid
+ * sooner, the spin waits (limit_boost_spins.unlocks_at) and app_private.unlock_limit_spins applies it then,
+ * which keeps growth to about one step every few days (nobody can borrow-and-repay their way up fast).
+ */
+export const LIMIT_SPIN_UNLOCK_DAYS = 3;
+export const limitSpinUnlockAt = (fundedAt: string | number | Date | null | undefined): Date | null => {
+   const funded = fundedAt == null ? Number.NaN : new Date(fundedAt).getTime();
+   return Number.isFinite(funded) ? new Date(funded + LIMIT_SPIN_UNLOCK_DAYS * 86_400_000) : null;
+};
 
 /**
  * Limit Spin (George, 2026-11-27): low-income borrowers repay after about a week anyway, so each repayment
- * that counts (from day 7) earns a spin instead of a fixed step: at least +$2, usually +$3, never past
+ * that counts (any time; it unlocks on day 3) earns a spin instead of a fixed step: at least +$2, usually +$3, never past
  * their ceiling. The server draws it (_shared/repaymentFollowUps.ts) and saves it in limit_boost_spins; the
  * app's wheel only lands on the result. The app shows the guaranteed minimum as "$17+".
  */
@@ -201,7 +211,7 @@ export const SECOND_HALF_RULE_FROM = Date.parse('2026-11-27T00:00:00+07:00');
 /**
  * When paying this loan starts to grow the limit. Null when the loan has no funding time.
  * Loans funded before SECOND_HALF_RULE_FROM: 48h. Low income (`lowIncome`, ceiling $35) loans funded from
- * INCOME_LADDER_FROM: day 7. Everyone else: the 2nd half.
+ * INCOME_LADDER_FROM: right away (pay anytime; the spin waits for day 3). Everyone else: the 2nd half.
  */
 export const countsFromAt = (
    fundedAt: string | null | undefined,
@@ -213,7 +223,8 @@ export const countsFromAt = (
    if (!Number.isFinite(funded)) return null;
    const fast = funded + FAST_REPAY_HOURS * 3_600_000;
    if (funded < SECOND_HALF_RULE_FROM) return new Date(fast);
-   if (opts.lowIncome && funded >= INCOME_LADDER_FROM) return new Date(funded + LOW_INCOME_COUNTS_AFTER_DAYS * 86_400_000);
+   // Low income: counts whenever they pay (the spin it earns unlocks on day 3, limitSpinUnlockAt).
+   if (opts.lowIncome && funded >= INCOME_LADDER_FROM) return new Date(funded);
    return secondHalfStartAt(fundedAt, dueDate, dueTimezone) ?? new Date(fast);
 };
 

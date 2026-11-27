@@ -21,13 +21,14 @@ Deno.test('guessIntent: extensions and cannot-pay stay with a person', () => {
    assertEquals(guessIntent('kailan due date ko'), 'term');
 });
 
-Deno.test('early follows the server rule: old loans 48h, new loans 2nd half, low income day 7', () => {
+Deno.test('early follows the server rule: old loans 48h, new loans 2nd half, low income pays anytime', () => {
    // Funded Nov 18 (before the switch): 48 hours have passed, so paying now is NOT early.
    assert(!isEarly(loan(20), NOW));
    assert(!isEarly(null, NOW));
-   // Funded Dec 1: day 3 is early for everyone; day 8 counts for low income only.
+   // Funded Dec 1: day 3 is early on the 2nd-half rule; low income can pay anytime (2026-11-28).
    assert(isEarly(newLoan(), NEW_NOW));
-   assert(isEarly(newLoan(true), NEW_NOW));
+   assert(!isEarly(newLoan(true), NEW_NOW));
+   assert(!isEarly(newLoan(true), Date.parse('2026-12-01T06:00:00Z')));
    const day8 = Date.parse('2026-12-09T05:00:00Z');
    assert(isEarly(newLoan(), day8));
    assert(!isEarly(newLoan(true), day8));
@@ -40,7 +41,10 @@ Deno.test('replies: set term, 2nd-half window, repay button only when in the win
    // Funded Nov 18, due Dec 10 (Manila): the 2nd half starts Nov 29.
    assert(term.includes('Nov 29 to Dec 10'), term);
    assert(timingReply('early', newLoan(), 'en', NEW_NOW).includes("doesn't help your limit"));
-   assert(timingReply('term', newLoan(true), 'en', NEW_NOW).includes('Dec 8 to Dec 31'));
+   // Low income: pay anytime, the spin unlocks 3 days after funding (Dec 4).
+   const low = timingReply('term', newLoan(true), 'en', Date.parse('2026-12-02T05:00:00Z'));
+   assert(low.includes('pay anytime') && low.includes('unlocks Dec 4') && !low.includes('2nd half'), low);
+   assert(timingReply('early', newLoan(true), 'en', Date.parse('2026-12-02T05:00:00Z')).includes('good time to pay'));
    assert(timingReply('early', loan(1), 'en', NOW).includes('good time to pay'));
    assert(timingReply('again', null, 'fil', NOW).includes('2 loan sa isang buwan'));
 });

@@ -839,7 +839,11 @@ export const filipinoCoverageB: Record<string, string> = {
    // Home header without level numbers (2026-11-27).
    'Next loan': 'Susunod na loan',
    // Limit Spin (2026-11-27).
-   'Keep your next loan 7+ days to earn a spin 🎡': 'Panatilihin ang susunod mong loan nang 7+ araw para may spin ka 🎡',
+   // Pay anytime, spin on day 3 (2026-11-28).
+   'Your spin unlocks': 'Magbubukas ang spin mo sa',
+   'Your spin is almost ready': 'Malapit nang ma-ready ang spin mo',
+   'Paying earns a spin.': 'May spin ka kapag nagbayad.',
+   'It unlocks': 'Magbubukas sa',
    'to earn a spin 🎡': 'para may spin ka 🎡',
    'Play Shark Chomp 🦈': 'Laruin ang Shark Chomp 🦈',
    'First loan': 'Unang loan',

@@ -41,7 +41,15 @@ import useWallet, { type PaymentMethod, toSettlementMethod, useActivePaymentMeth
 import { parseDateSafely } from '@/utils/dateFormatters';
 import { formatCurrency, toNumber } from '@/utils/decimalHelpers';
 
-import { earnsLimitSpin, getCreditLevelNumber, getIncomeNextLimit, getNextCreditTier, isLowIncomeLadder, STARTING_CREDIT_LIMIT } from '@/config/creditTiers';
+import {
+   earnsLimitSpin,
+   getCreditLevelNumber,
+   getIncomeNextLimit,
+   getNextCreditTier,
+   isLowIncomeLadder,
+   limitSpinUnlockAt,
+   STARTING_CREDIT_LIMIT
+} from '@/config/creditTiers';
 import { COINS_PH_SUSPENDED, COINS_PH_SUSPENDED_MESSAGE, COINS_PH_SUSPENDED_TITLE } from '@/config/paymentRails';
 import { ALLOWED_CHAIN_ID, BASE_USDC_ADDRESS } from '@/config/wagmiConfig';
 import { useLocalization } from '@/i18n';
@@ -1390,9 +1398,11 @@ export default function Repay() {
                paidAmount: toNumber(selectedLoan.totalRepaymentAmount),
                coin: transferCoin,
                trustPoints: earnedTrustPoints,
-               creditLevelUp: serverLevelUp
-                  ? { toLevel: getCreditLevelNumber(serverLevelUp.toLimit), newLimit: serverLevelUp.toLimit }
-                  : null,
+               // A spin paid before day 3 waits (unlocksAt): no "new limit" yet, the spin card counts down.
+               creditLevelUp:
+                  serverLevelUp && !serverLevelUp.unlocksAt
+                     ? { toLevel: getCreditLevelNumber(serverLevelUp.toLimit), newLimit: serverLevelUp.toLimit }
+                     : null,
                fastRepayLimit:
                   !serverLevelUp &&
                   isTooEarlyRepay(selectedLoan.fundedAt ?? null, new Date().toISOString(), selectedLoan.dueDate, selectedLoan.dueTimezone, {
@@ -1401,7 +1411,7 @@ export default function Repay() {
                      ? user.cs || STARTING_CREDIT_LIMIT
                      : null,
                fastRepaySecondHalf: Boolean(selectedLoan.fundedAt) && Date.parse(selectedLoan.fundedAt as string) >= SECOND_HALF_RULE_FROM,
-               limitSpin: Boolean((serverLevelUp as { spin?: boolean } | null)?.spin),
+               limitSpin: Boolean(serverLevelUp?.spin),
                lowIncome: isLowIncomeLadder(limitCeiling, user.createdAt)
             });
          } else {
@@ -2117,12 +2127,7 @@ export default function Repay() {
                   </div>
                   <div className="flex w-full flex-col gap-2 text-left">
                      {completion.creditLevelUp && !completion.limitSpin ? <DoneRow>New limit: ${completion.creditLevelUp.newLimit}</DoneRow> : null}
-                     {completion.fastRepayLimit && completion.lowIncome ? (
-                        // Low-income ladder: no lesson, just what earns the spin next time (2026-11-27).
-                        <p className="rounded-[14px] bg-[#f3eefb] px-4 py-3 text-[14px] leading-[20px] text-[#4a3a6b] dark:bg-[#2a2138] dark:text-[#d9cfea]">
-                           Keep your next loan 7+ days to earn a spin 🎡
-                        </p>
-                     ) : completion.fastRepayLimit ? (
+                     {completion.fastRepayLimit && !completion.lowIncome ? (
                         <p
                            className="rounded-[14px] bg-[#fff6dc] px-4 py-3 text-[14px] leading-[20px] text-[#6b4a00] dark:bg-[#3a2e10] dark:text-[#ffe27a]"
                            data-testid="repay-fast-note"
@@ -2398,6 +2403,23 @@ export default function Repay() {
                  : 'to raise your limit — keep loans at least 2 days.'}
          </span>
       ) : null;
+      // Low-income spin ladder: paying any time earns the spin; before day 3 it waits until then.
+      const spinUnlock =
+         clearsLoan && progression.shouldLevelUp && earnsLimitSpin(limitCeiling, user.createdAt, selectedLoan.fundedAt)
+            ? limitSpinUnlockAt(selectedLoan.fundedAt)
+            : null;
+      const spinNote = spinUnlock ? (
+         <span className="text-[13px] font-medium leading-[17px] text-[#7a6a4f] dark:text-[#bfb29a]" data-testid="repay-spin-note">
+            🎡 <span>Paying earns a spin.</span>
+            {spinUnlock.getTime() > Date.now() ? (
+               <>
+                  {' '}
+                  <span>It unlocks</span>{' '}
+                  {spinUnlock.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: getLoanTimezone(selectedLoan) })}
+               </>
+            ) : null}
+         </span>
+      ) : null;
       const goTo = (next: WizardStep) => {
          setWizardStep(next);
          window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -2531,7 +2553,7 @@ export default function Repay() {
                )}
                {dueLine}
                {earlyRewardNote}
-               {fastNote}
+               {fastNote ?? spinNote}
             </Card>
             {payLess ? (
                <Card>

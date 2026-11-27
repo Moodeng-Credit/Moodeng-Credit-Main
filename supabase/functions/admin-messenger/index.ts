@@ -3,7 +3,14 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { loadDiditMedia } from '../_shared/diditMedia.ts';
 import { postDiscord } from '../_shared/discord.ts';
-import { limitUpFirstName, limitUpLang, limitUpMessengerText, limitUpWhatsAppLine } from '../_shared/limitUpMessage.ts';
+import {
+   limitUpFirstName,
+   limitUpLang,
+   limitUpMessengerText,
+   limitUpWhatsAppLine,
+   spinReadyMessengerText,
+   spinReadyWhatsAppLine
+} from '../_shared/limitUpMessage.ts';
 import { saveFacebookName, syncMessengerHistory } from '../_shared/messengerContactLog.ts';
 import { cleanTemplateParam, findPsidByName, sendUtilityTemplate } from '../_shared/metaMessenger.ts';
 import {
@@ -298,13 +305,27 @@ serve(async (req) => {
       if (Number(user.cs) !== to) return json({ ok: false, reason: 'limit_changed' });
       const name = limitUpFirstName(user);
       const lang = limitUpLang(user.preferred_locale);
+      // A Limit Spin that waited for day 3 just unlocked (app_private.unlock_limit_spins): "your spin is
+      // ready", without the amount (the wheel shows it). Spins applied right at repayment keep the normal note.
+      const { data: readySpin } = await svc
+         .from('limit_boost_spins')
+         .select('id')
+         .eq('user_id', user.id)
+         .eq('waited', true)
+         .is('seen_at', null)
+         .gte('applied_at', new Date(Date.now() - 15 * 60_000).toISOString())
+         .limit(1)
+         .maybeSingle();
+      const spinReady = Boolean(readySpin);
 
       let messenger = 'no Messenger';
       if (user.messenger_verified_at) {
          const resolved = await resolveContact(svc, user.id, user.messenger_psid);
          if (!resolved) messenger = 'contact not found';
          else {
-            const sent = await sendMessengerMessage(resolved.id, { text: limitUpMessengerText(name, from, to, lang) });
+            const sent = await sendMessengerMessage(resolved.id, {
+               text: spinReady ? spinReadyMessengerText(name, lang) : limitUpMessengerText(name, from, to, lang)
+            });
             if (sent.ok) messenger = 'sent';
             else {
                // Outside 24h (or rejected): the approved utility template moodeng_limit_up, straight through
@@ -329,7 +350,10 @@ serve(async (req) => {
             {
                name: FOLLOW_UP_TEMPLATE.name,
                language: FOLLOW_UP_TEMPLATE.language,
-               params: [cleanTemplateParam(name), cleanTemplateParam(limitUpWhatsAppLine(from, to, lang))]
+               params: [
+                  cleanTemplateParam(name),
+                  cleanTemplateParam(spinReady ? spinReadyWhatsAppLine(lang) : limitUpWhatsAppLine(from, to, lang))
+               ]
             }
          );
          whatsapp = sent.ok ? 'sent' : `not sent (${sent.reason})`;
@@ -338,7 +362,7 @@ serve(async (req) => {
       const who = user.username ? `@${user.username}` : user.id;
       await postDiscord(
          {
-            content: `🎉 Limit up $${from} → $${to} for ${who}${user.is_test ? ' (test)' : ''}. Messenger: ${messenger} · WhatsApp: ${whatsapp}`
+            content: `${spinReady ? '🎡 Spin unlocked (day 3)' : '🎉 Limit up'} $${from} → $${to} for ${who}${user.is_test ? ' (test)' : ''}. Messenger: ${messenger} · WhatsApp: ${whatsapp}`
          },
          { prefer: ['DISCORD_BOOKINGS_WEBHOOK_URL'] }
       );

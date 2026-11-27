@@ -11,7 +11,7 @@
 // A cheap word check first, then Gemini says which one it is (no AI answer → a person handles it). Early repays
 // and quick re-borrows are flagged to the team (⚠️ may be gaming the limit). Every message still becomes
 // a support ticket; extension / can't-pay / problems aren't answered here at all.
-import { countsFromAt, getCreditTrack, LOW_INCOME_CEILING, secondHalfStartAt } from './creditAndPoints.ts';
+import { countsFromAt, getCreditTrack, LOW_INCOME_CEILING, secondHalfStartAt, INCOME_LADDER_FROM, limitSpinUnlockAt } from './creditAndPoints.ts';
 import { GEMINI_MODEL } from './geminiPreScreen.ts';
 import { getAdminChatId } from './loanAccess.ts';
 import { sendMessengerMessage } from './sendpulse.ts';
@@ -47,7 +47,7 @@ export type OpenLoan = {
    due_date: string | null;
    due_timezone: string | null;
    owed: number;
-   /** Income ceiling $35 (Track B): repayment counts from day 7, not the 2nd half. */
+   /** Income ceiling $35 (Track B): pay anytime (loans from 2026-11-28); the spin unlocks on day 3. */
    low_income?: boolean;
 };
 
@@ -55,8 +55,8 @@ export const fmtDate = (iso: string, tz: string | null, locale: Locale) =>
    new Intl.DateTimeFormat(locale === 'fil' ? 'fil-PH' : 'en-US', { month: 'short', day: 'numeric', timeZone: tz || 'Asia/Manila' }).format(new Date(iso));
 
 /**
- * The first of the best days to pay, same as the app's "Your next loan" card: the 2nd half of the loan, or
- * day 7 for the low-income ladder. Pure.
+ * The first of the best days to pay, same as the app's "Your next loan" card: the 2nd half of the loan (the
+ * low-income spin ladder: right away, they can pay anytime). Pure.
  */
 export const payFromAt = (loan: Pick<OpenLoan, 'funded_at' | 'due_date' | 'due_timezone' | 'low_income'> | null): Date | null => {
    if (!loan?.due_date) return null;
@@ -69,7 +69,7 @@ export const payFromAt = (loan: Pick<OpenLoan, 'funded_at' | 'due_date' | 'due_t
 
 /**
  * Paying now wouldn't grow the limit — the SAME rule the server uses (countsFromAt): loans funded before
- * 2026-11-27 keep the 48-hour rule, low income counts from day 7, everyone else the 2nd half. Pure.
+ * 2026-11-27 keep the 48-hour rule, low income counts any time, everyone else the 2nd half. Pure.
  */
 export const isEarly = (loan: OpenLoan | null, now: number) => {
    if (!loan?.due_date) return false;
@@ -95,8 +95,17 @@ export const timingReply = (intent: Exclude<TimingIntent, 'other'>, loan: OpenLo
    const notShark = fil
       ? `Hindi kami loan shark 🙂 May takdang haba ang bawat Moodeng loan${termDays ? ` (ang sa iyo ay ${termDays} araw)` : ` (kadalasan mga isang buwan, hanggang ${LOAN_TERM_DAYS} araw)`}, at sumusunod kami sa patakaran para sa mga nagpapautang.`
       : `We're not a loan shark 🙂 Every Moodeng loan has a set term${termDays ? ` (yours is ${termDays} days)` : ` (usually about a month, up to ${LOAN_TERM_DAYS} days)`}, and we follow the rules for lenders.`;
+   // Low income on the spin ladder (loans from INCOME_LADDER_FROM): pay anytime, the spin unlocks on day 3.
+   const fundedMs = loan?.funded_at ? Date.parse(loan.funded_at) : Number.NaN;
+   const spinLoan = Boolean(loan?.low_income) && Number.isFinite(fundedMs) && fundedMs >= INCOME_LADDER_FROM;
+   const unlockAt = spinLoan ? limitSpinUnlockAt(loan?.funded_at) : null;
+   const unlock = unlockAt && unlockAt.getTime() > now ? fmtDate(unlockAt.toISOString(), loan?.due_timezone ?? null, locale) : null;
    const window = due
-      ? loan?.low_income
+      ? spinLoan
+         ? fil
+            ? `Ang due date mo ay ${due}. Puwede kang magbayad anumang oras bago noon, at may spin ka 🎡 ${unlock ? `na magbubukas sa ${unlock}` : 'pagkabayad mo'}.`
+            : `Your due date is ${due}. You can pay anytime before then, and paying back earns a spin 🎡 ${unlock ? `that unlocks ${unlock}` : 'right away'}.`
+         : loan?.low_income
          ? fil
             ? `Ang due date mo ay ${due}. Pinakamainam magbayad mula ${from} hanggang ${due}.`
             : `Your due date is ${due}. The best time to pay is ${from} to ${due}.`
@@ -106,7 +115,11 @@ export const timingReply = (intent: Exclude<TimingIntent, 'other'>, loan: OpenLo
       : fil
         ? 'Pinakamainam magbayad sa 2nd half ng loan mo, hanggang sa due date.'
         : 'The best time to pay is the 2nd half of your loan, by your due date.';
-   const builder = fil
+   const builder = spinLoan
+      ? fil
+         ? 'Ganito tumataas ang limit mo: hiramin ang buong limit mo at bayaran ito. Bawat loan na nabayaran ay may spin para sa +$2 hanggang +$5.'
+         : 'This is how your limit grows: borrow your full limit and pay it back. Every loan you pay back earns a spin for +$2 to +$5.'
+      : fil
       ? 'Para kami sa mga gustong bumuo ng credit nang pangmatagalan. Ganito tumataas ang limit mo: hiramin ang buong limit mo, at bayaran sa 2nd half ng loan.'
       : "We're here for long-term credit builders. This is how your limit grows: borrow your full limit, and pay it back in the 2nd half of the loan.";
 

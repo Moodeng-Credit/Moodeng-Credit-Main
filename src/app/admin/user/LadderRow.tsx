@@ -24,7 +24,7 @@ const SOURCE: Record<Ladder['source'], string> = {
 
 export const ladderText = (l: Ladder, joinedAt?: string | null): string => {
    const trackA = Boolean(joinedAt) && Date.parse(joinedAt as string) < Date.parse('2026-10-01T00:00:00+07:00');
-   const steps = trackA ? 'early member ladder, 2nd half' : l.ceiling <= 35 ? 'Limit Spin +$2–5, counts from day 7' : '$10 steps, 2nd half';
+   const steps = trackA ? 'early member ladder, 2nd half' : l.ceiling <= 35 ? 'Limit Spin +$2–5, pay anytime, spin unlocks day 3' : '$10 steps, 2nd half';
    const top = l.ceiling >= 135 ? 'no top' : `top $${l.ceiling}`;
    const extra =
       l.source === 'income_proof' && l.monthly_php
