@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 
 import clsx from 'clsx';
 
-import { INCOME_LADDER_FROM, LOW_INCOME_COUNTS_AFTER_DAYS } from '@/config/creditTiers';
+import { INCOME_LADDER_FROM, LIMIT_SPIN_UNLOCK_DAYS } from '@/config/creditTiers';
 import { useLocalization } from '@/i18n';
 import { SECOND_HALF_RULE_FROM } from '@/lib/creditLeveling';
 import type { RepayStreak } from '@/lib/friendReferrals';
@@ -34,10 +34,11 @@ export const getPayWindow = (
    const fundedRaw = due.fundedAt ? new Date(due.fundedAt).getTime() : Number.NaN;
    const rewardFrom = due.rewardFrom ? new Date(due.rewardFrom).getTime() : Number.NaN;
    const funded = Number.isFinite(fundedRaw) ? fundedRaw : deadline - 30 * DAY;
-   // Low income (income ceiling $35): their repayment counts from day 7 (creditTiers LOW_INCOME_COUNTS_AFTER_DAYS).
+   // Low income (income ceiling $35): they can pay anytime; `start` is when the spin unlocks (day 3,
+   // creditTiers LIMIT_SPIN_UNLOCK_DAYS). Paying before that still earns it, it just waits until then.
    const lowIncomeStart =
       opts.lowIncome && Number.isFinite(fundedRaw) && fundedRaw >= INCOME_LADDER_FROM
-         ? fundedRaw + LOW_INCOME_COUNTS_AFTER_DAYS * DAY
+         ? fundedRaw + LIMIT_SPIN_UNLOCK_DAYS * DAY
          : null;
    const start = Math.min(deadline - HOUR, lowIncomeStart ?? Math.max(funded + 48 * HOUR, Number.isFinite(rewardFrom) ? rewardFrom : 0));
    const status: PayWindowStatus = due.isOverdue || now >= deadline ? 'late' : now >= start ? 'best' : 'early';
@@ -57,7 +58,11 @@ const COPY = {
       eyebrow: 'Your next loan',
       upFrom: (from: number) => `↑ from $${from}`,
       spinChip: 'Spin: +$2 to +$5',
-      nowEarlySpin: (from: string) => `You can pay back as early as ${from}, a week after you got it, and spin for +$2 to +$5 🎡`,
+      nowEarlySpin: (from: string) => `Pay anytime. Your spin unlocks ${from} 🎡`,
+      nowBestSpin: 'Pay now and spin for +$2 to +$5 🎡',
+      earlySpin: 'Pay anytime',
+      bestSpin: 'Spin ready',
+      payBy: 'Pay by',
       playWhileWaiting: 'Waiting? Play Shark Chomp 🦈',
       stays: 'Stays the same',
       payBetween: 'Pay between',
@@ -71,7 +76,11 @@ const COPY = {
       nowBest: 'Pay now: these are your best days.',
       nowLate: 'Your loan is late. Pay as soon as you can.',
       notFull: (limit: number, next: number) => `Borrow your full $${limit} next time to reach $${next}.`,
-      steps: (limit: number) => [`Borrow your full $${limit}`, 'Pay in the 2nd half of your loan', 'Your limit goes up'],
+      steps: (limit: number, spin = false) => [
+         `Borrow your full $${limit}`,
+         spin ? 'Pay back anytime, then spin 🎡' : 'Pay in the 2nd half of your loan',
+         'Your limit goes up'
+      ],
       top: 'You are at the top limit. Keep paying on time.',
       ceiling: (limit: number) =>
          `We set your limit so payments fit what you earn. $${limit} is the most we can lend on what you've shown us.`,
@@ -83,8 +92,11 @@ const COPY = {
       eyebrow: 'Susunod mong loan',
       upFrom: (from: number) => `↑ mula $${from}`,
       spinChip: 'Spin: +$2 hanggang +$5',
-      nowEarlySpin: (from: string) =>
-         `Puwede kang magbayad simula ${from}, isang linggo matapos mong makuha, at mag-spin para sa +$2 hanggang +$5 🎡`,
+      nowEarlySpin: (from: string) => `Puwede kang magbayad anumang oras. Magbubukas ang spin mo sa ${from} 🎡`,
+      nowBestSpin: 'Magbayad na at mag-spin para sa +$2 hanggang +$5 🎡',
+      earlySpin: 'Anumang oras',
+      bestSpin: 'Ready ang spin',
+      payBy: 'Magbayad bago',
       playWhileWaiting: 'Naghihintay? Laruin ang Shark Chomp 🦈',
       stays: 'Pareho pa rin',
       payBetween: 'Magbayad sa',
@@ -99,7 +111,11 @@ const COPY = {
       nowBest: 'Magbayad na: ito ang pinakamagandang araw mo.',
       nowLate: 'Late na ang loan mo. Magbayad agad.',
       notFull: (limit: number, next: number) => `Hiramin ang buong $${limit} sa susunod para umabot ng $${next}.`,
-      steps: (limit: number) => [`Hiramin ang buong $${limit}`, 'Magbayad sa 2nd half ng loan mo', 'Tataas ang limit mo'],
+      steps: (limit: number, spin = false) => [
+         `Hiramin ang buong $${limit}`,
+         spin ? 'Magbayad anumang oras, tapos mag-spin 🎡' : 'Magbayad sa 2nd half ng loan mo',
+         'Tataas ang limit mo'
+      ],
       top: 'Nasa pinakamataas na limit ka na. Ituloy ang on-time na bayad.',
       ceiling: (limit: number) =>
          `Itinakda namin ang limit mo para kaya ng kita mo ang bayad. $${limit} ang pinakamalaking maipapahiram namin batay sa naipakita mo.`,
@@ -222,18 +238,20 @@ export default function NextLoanCard({
                   </div>
                   {/* Two labels only, never wrapping: the red tail reads as late by itself. */}
                   <div className="mt-1.5 flex justify-between whitespace-nowrap text-[11px] font-semibold leading-4">
-                     <span className="text-[#A89BB8]">{t.early}</span>
+                     <span className="text-[#A89BB8]">{spinLoan ? t.earlySpin : t.early}</span>
                      <span className="text-[#2F7A3B] dark:text-[#8FDB9C]" style={{ marginRight: '8%' }}>
-                        {t.best} ↑
+                        {spinLoan ? `${t.bestSpin} 🎡` : `${t.best} ↑`}
                      </span>
                   </div>
                </div>
 
                <div className="flex items-center justify-between rounded-[14px] bg-white px-3.5 py-3 shadow-[0_1px_3px_rgba(76,45,140,0.08)] dark:bg-[#221A30] dark:shadow-none">
                   <div>
-                     <p className="text-[12px] font-medium text-[#70617F] dark:text-[#A89BB8]">{t.payBetween}</p>
+                     <p className="text-[12px] font-medium text-[#70617F] dark:text-[#A89BB8]">{spinLoan ? t.payBy : t.payBetween}</p>
                      <p className="text-[16px] font-semibold tracking-[-0.02em] text-[#040033] dark:text-[#F0EAFF]">
-                        {dayLabel(payWindow.start, due.zone)} – {dayLabel(payWindow.deadline - 60_000, due.zone)}
+                        {spinLoan
+                           ? dayLabel(payWindow.deadline - 60_000, due.zone)
+                           : `${dayLabel(payWindow.start, due.zone)} – ${dayLabel(payWindow.deadline - 60_000, due.zone)}`}
                      </p>
                   </div>
                   <div className="text-right">
@@ -261,7 +279,9 @@ export default function NextLoanCard({
                   )}
                >
                   {payWindow.status === 'best'
-                     ? t.nowBest
+                     ? spinLoan && isFullLimit && canGrow
+                        ? t.nowBestSpin
+                        : t.nowBest
                      : payWindow.status === 'late'
                        ? t.nowLate
                        : spinLoan && isFullLimit && canGrow
@@ -283,7 +303,7 @@ export default function NextLoanCard({
          ) : canGrow ? (
             // No loan out: the whole rule in three steps, before they borrow.
             <ol className="flex flex-col gap-2">
-               {t.steps(limit).map((step, index) => (
+               {t.steps(limit, spinLoan).map((step, index) => (
                   <li key={step} className="flex items-center gap-3 text-[14px] font-medium text-[#040033] dark:text-[#F0EAFF]">
                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#F3EEFB] text-[12px] font-bold text-[#6010D2] dark:bg-[#2A2138] dark:text-[#C4B8FF]">
                         {index + 1}

@@ -5,11 +5,21 @@ import LimitSpinWheel from '@/views/dashboard-v2/components/LimitSpinWheel';
 
 // "You earned a spin!" (2026-11-27): shows the borrower's latest Limit Spin they haven't watched yet
 // (public.my_unseen_limit_spin) — on the paid screen right after a repayment, or on home if the repayment
-// was confirmed somewhere else. Renders nothing when there's no spin waiting.
+// was confirmed somewhere else. Paid before day 3 (2026-11-28), the spin waits: then it's a countdown
+// ("Your spin unlocks Thu, Dec 4", public.my_next_limit_spin). Renders nothing when there's no spin.
 
 type UnseenSpin = { id: string; drawn: number; from_limit: number; to_limit: number };
 
 export const UNSEEN_LIMIT_SPIN_KEY = ['my-unseen-limit-spin'] as const;
+export const NEXT_LIMIT_SPIN_KEY = ['my-next-limit-spin'] as const;
+
+const unlockLabel = (iso: string) => {
+   try {
+      return new Date(iso).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'Asia/Manila' });
+   } catch {
+      return new Date(iso).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+   }
+};
 
 export default function LimitSpinPrompt({ enabled = true, className = '' }: { enabled?: boolean; className?: string }) {
    const queryClient = useQueryClient();
@@ -25,7 +35,42 @@ export default function LimitSpinPrompt({ enabled = true, className = '' }: { en
       staleTime: 0,
       refetchOnMount: 'always'
    });
-   if (!spin) return null;
+   const { data: next } = useQuery({
+      queryKey: NEXT_LIMIT_SPIN_KEY,
+      queryFn: async (): Promise<{ unlocks_at: string } | null> => {
+         const { data, error } = await getSupabaseBrowserClient().rpc('my_next_limit_spin');
+         if (error || !data || typeof data !== 'object' || !(data as { unlocks_at?: string }).unlocks_at) return null;
+         return data as { unlocks_at: string };
+      },
+      enabled: enabled && spin === null,
+      staleTime: 0,
+      refetchOnMount: 'always'
+   });
+   if (!spin) {
+      if (!next) return null;
+      // Unlocked but not applied yet (spins unlock 8 AM to 9 PM Manila): "almost ready".
+      const ready = Date.parse(next.unlocks_at) <= Date.now();
+      return (
+         <section
+            className={`flex items-center gap-3 rounded-[20px] bg-white px-4 py-4 shadow-[var(--dv2-shadow)] dark:bg-dv2-card ${className}`}
+            aria-label="Limit spin"
+            data-testid="limit-spin-countdown"
+         >
+            <span className="text-[30px] leading-none" aria-hidden="true">
+               🎡
+            </span>
+            <p className="text-left text-[15px] font-semibold leading-5 text-[#040033] dark:text-[#F0EAFF]">
+               {ready ? (
+                  <span>Your spin is almost ready</span>
+               ) : (
+                  <>
+                     <span>Your spin unlocks</span> <span className="text-[#6010D2] dark:text-[#C4B8FF]">{unlockLabel(next.unlocks_at)}</span>
+                  </>
+               )}
+            </p>
+         </section>
+      );
+   }
 
    const amount = Math.max(0, Number(spin.to_limit) - Number(spin.from_limit));
    const done = async () => {

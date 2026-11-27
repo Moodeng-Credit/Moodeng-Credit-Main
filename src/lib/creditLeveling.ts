@@ -6,7 +6,6 @@ import {
    CREDIT_TIERS,
    getNextCreditTier,
    INCOME_LADDER_FROM,
-   LOW_INCOME_COUNTS_AFTER_DAYS,
    MAX_CREDIT_LIMIT,
    STARTING_CREDIT_LIMIT
 } from '@/config/creditTiers';
@@ -80,8 +79,8 @@ export const countsFromAt = (
    if (!Number.isFinite(funded)) return null;
    const fast = new Date(funded + FAST_REPAY_HOURS * 3_600_000);
    if (funded < SECOND_HALF_RULE_FROM) return fast;
-   // Low income (ceiling $35): counts from day 7 (creditTiers LOW_INCOME_COUNTS_AFTER_DAYS).
-   if (opts.lowIncome && funded >= INCOME_LADDER_FROM) return new Date(funded + LOW_INCOME_COUNTS_AFTER_DAYS * 86_400_000);
+   // Low income (ceiling $35): counts whenever they pay; the spin it earns unlocks on day 3 (creditTiers limitSpinUnlockAt).
+   if (opts.lowIncome && funded >= INCOME_LADDER_FROM) return new Date(funded);
    if (!dueDate) return fast;
    return getRewardFromAt(new Date(funded), dueDate, dueTimezone || 'Asia/Manila') ?? fast;
 };

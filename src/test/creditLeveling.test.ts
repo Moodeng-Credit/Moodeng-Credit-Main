@@ -811,7 +811,7 @@ describe('income ladders (2026-11-27): the income ceiling picks the steps', () =
    });
 });
 
-describe('low income: repayment counts from day 7 (2026-11-27 review)', () => {
+describe('low income: pay anytime, the spin unlocks on day 3 (2026-11-28)', () => {
    const base = {
       currentLimit: 15,
       isVerified: true,
@@ -823,12 +823,22 @@ describe('low income: repayment counts from day 7 (2026-11-27 review)', () => {
       fundedAt: '2026-12-01T01:00:00Z',
       joinedAt: '2026-11-20T00:00:00Z'
    };
-   it('day 6: too early for everyone', () => {
-      expect(evaluateCreditProgression({ ...base, lowIncome: true, paidAt: '2026-12-07T00:00:00Z' }).shouldLevelUp).toBe(false);
+   it('day 1: counts for low income, still too early for the 2nd-half rule', () => {
+      expect(evaluateCreditProgression({ ...base, lowIncome: true, paidAt: '2026-12-01T06:00:00Z' }).shouldLevelUp).toBe(true);
+      expect(evaluateCreditProgression({ ...base, paidAt: '2026-12-01T06:00:00Z' }).shouldLevelUp).toBe(false);
    });
-   it('day 8: counts for low income, still too early for the 2nd-half rule', () => {
-      expect(evaluateCreditProgression({ ...base, lowIncome: true, paidAt: '2026-12-09T01:00:00Z' }).shouldLevelUp).toBe(true);
-      expect(evaluateCreditProgression({ ...base, paidAt: '2026-12-09T01:00:00Z' }).shouldLevelUp).toBe(false);
+   it('a loan funded before the low-income switch keeps the 2nd-half rule', () => {
+      expect(
+         evaluateCreditProgression({ ...base, fundedAt: '2026-11-27T12:00:00Z', lowIncome: true, paidAt: '2026-11-28T12:00:00Z' }).shouldLevelUp
+      ).toBe(false);
+   });
+   it('the spin unlocks 3 days after funding, the same on server and app', async () => {
+      const server = await import('../../supabase/functions/_shared/creditAndPoints.ts');
+      const app = await import('@/config/creditTiers');
+      expect(app.limitSpinUnlockAt(base.fundedAt)?.toISOString()).toBe('2026-12-04T01:00:00.000Z');
+      expect(server.limitSpinUnlockAt(base.fundedAt)?.toISOString()).toBe('2026-12-04T01:00:00.000Z');
+      expect(app.limitSpinUnlockAt(null)).toBeNull();
+      expect(server.LIMIT_SPIN_UNLOCK_DAYS).toBe(app.LIMIT_SPIN_UNLOCK_DAYS);
    });
    it('server and app agree on when it counts', async () => {
       const server = await import('../../supabase/functions/_shared/creditAndPoints.ts');

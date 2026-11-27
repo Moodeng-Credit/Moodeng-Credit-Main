@@ -11,6 +11,7 @@
 // People without an account keep the canned reply + sign-up card (buildAutoReply).
 import { withToday } from './aiToday.ts';
 import { GEMINI_MODEL } from './geminiModel.ts';
+import { INCOME_LADDER_FROM } from './creditAndPoints.ts';
 import { fmtDate, isLowIncomeBorrower, payFromAt } from './messengerLoanTiming.ts';
 
 // deno-lint-ignore no-explicit-any
@@ -24,7 +25,8 @@ const CONTEXT_WINDOW_MS = 3 * DAY;
 const CONTEXT_MESSAGES = 6;
 const MAX_REPLY_CHARS = 280;
 
-export type AckLoan = { owed: number; due: string; payFrom: string };
+// anytime: the low-income spin ladder, who can pay any time before the due date.
+export type AckLoan = { owed: number; due: string; payFrom: string; anytime?: boolean };
 
 export type AckFacts = {
    firstName: string | null;
@@ -52,7 +54,7 @@ const money = (n: number) => `$${Number.isInteger(n) ? n : n.toFixed(2)}`;
 export const ackPrompt = (facts: AckFacts): string => {
    const hi = facts.firstName ? `Hi ${facts.firstName}!` : 'Hi!';
    const loan = facts.loan
-      ? `Their open loan: they owe ${money(facts.loan.owed)}, due ${facts.loan.due}. The best time to pay is ${facts.loan.payFrom} to ${facts.loan.due}.`
+      ? `Their open loan: they owe ${money(facts.loan.owed)}, due ${facts.loan.due}. ${facts.loan.anytime ? 'They can pay any time before the due date.' : `The best time to pay is ${facts.loan.payFrom} to ${facts.loan.due}.`}`
       : 'They have no open loan right now. Do not mention any amounts or dates.';
    return [
       'You write the automatic first reply from Moodeng Credit, a small-loan app for people in the Philippines, to a borrower who just messaged its Facebook Page.',
@@ -144,7 +146,8 @@ const loadLoan = async (svc: Svc, userId: string, locale: Locale): Promise<AckLo
    return {
       owed,
       due: fmtDate(loan.due_date!, loan.due_timezone, locale),
-      payFrom: fmtDate((from ?? new Date(loan.due_date!)).toISOString(), loan.due_timezone, locale)
+      payFrom: fmtDate((from ?? new Date(loan.due_date!)).toISOString(), loan.due_timezone, locale),
+      anytime: lowIncome && Boolean(loan.funded_at) && Date.parse(loan.funded_at as string) >= INCOME_LADDER_FROM
    };
 };
 
