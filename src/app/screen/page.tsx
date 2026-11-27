@@ -42,6 +42,7 @@ import {
    PRESCREEN_CAPS,
    prescreenHippo,
    saidNo,
+   saveDraft,
    sendHelp,
    type SendProblem,
    sendProblemOf
@@ -124,11 +125,15 @@ type Coached = { first: string; hint: string };
 // Typed answers: long enough to say something real, short enough to read on the call.
 const MIN_TEXT = 15;
 const minFor = (q: ScreenQuestion) => Math.max(1, q.min ?? MIN_TEXT);
-/** Same rule as pre_screening_submit: does this question have an answer the server will take? */
-const isAnswered = (q: ScreenQuestion, answers: UploadedAnswer[]) => {
-   if (q.optional || /^money_q/.test(q.id)) return true;
+/**
+ * Same rule as pre_screening_submit: does this question have an answer the server will take?
+ * strict (picking up saved answers): optional and money questions they never reached still count as open.
+ */
+const isAnswered = (q: ScreenQuestion, answers: UploadedAnswer[], strict = false) => {
+   if (!strict && (q.optional || /^money_q/.test(q.id))) return true;
    const a = answers.find((x) => x.q === q.id);
    if (!a) return false;
+   if (a.skip && (q.optional || q.kind === 'photo')) return true;
    if (q.kind === 'photo') return Boolean(a.photo || a.skip);
    if (q.kind === 'doc') return Boolean(a.doc);
    return Boolean(a.video || a.audio || (a.text ?? '').trim().length >= 2);
@@ -656,6 +661,9 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
       preview?.fix ? { q: 'job_photo1', text: 'Your photo at work didn’t reach us. Take it again, then tap Next.' } : null
    );
    const [fixing, setFixing] = useState(false);
+   // Picked up saved answers (another phone, a cleared page): Next skips what's already answered.
+   const [resumed, setResumed] = useState(false);
+   const [afterVideos, setAfterVideos] = useState<'question' | 'proof'>('question');
    const [coached, setCoached] = useState<Record<string, Coached>>(
       preview?.coach
          ? { purpose: { first: 'For my bills this month', hint: 'Tell us which bills, like electricity or rent, so we understand.' } }
@@ -762,6 +770,14 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
          moneyFor
       });
    }, [preview, token, stage, index, questions, askProof, typed, uploaded, uploadedDocs, v2, coached, choices, plannedFor, moneyFor]);
+
+   // Saved on the server as they go (pre_screening_save): proof files and videos watched.
+   useEffect(() => {
+      if (!preview && token && uploadedDocs) saveDraft(token, { docs: uploadedDocs });
+   }, [preview, token, uploadedDocs]);
+   useEffect(() => {
+      if (!preview && token && watched.size) saveDraft(token, { videos: watched.size });
+   }, [preview, token, watched.size]);
 
    // One analytics event per screen they reach, so we see which step people stop at.
    const stepKey = stage === 'question' ? `q:${questions[index]?.id ?? index}` : stage;
@@ -903,6 +919,9 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
          questions?: ScreenQuestion[];
          proof?: boolean;
          v2?: boolean;
+         draft?: UploadedAnswer[];
+         draft_docs?: UploadedDoc[] | null;
+         draft_videos?: number | null;
       } | null;
       if (rpcError)
          return setError(/bad_name/.test(rpcError.message) ? 'Please type your name.' : 'Something went wrong. Please try again.');
@@ -917,7 +936,32 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
       setVideoIndex(0);
       setQuestions(res.questions ?? []);
       setV2(res.v2 === true);
-      setStage(list.length ? 'video' : 'question');
+      const draft = Array.isArray(res.draft) ? res.draft : [];
+      if (!draft.length) return setStage(list.length ? 'video' : 'question');
+
+      // Their answers were saved as they went: pick up where they left off.
+      const qs = res.questions ?? [];
+      const answers = draft.map((a) => ({ ...a, video: a.video ?? null, audio: a.audio ?? null, seconds: a.seconds ?? 0 }));
+      const docsBack = Array.isArray(res.draft_docs) ? res.draft_docs : null;
+      const proofFirst = res.proof !== false && !docsBack;
+      setUploaded(answers);
+      setUploadedDocs(docsBack);
+      setTyped(Object.fromEntries(answers.filter((a) => typeof a.text === 'string').map((a) => [a.q, a.text as string])));
+      setChoices(Object.fromEntries(answers.filter((a) => a.choice).map((a) => [a.q, a.choice as MedicalChoice])));
+      const job = answers.find((a) => qs.find((q) => q.id === a.q)?.kind === 'job')?.text?.trim().toLowerCase();
+      if (job && qs.some((q) => /^job_q/.test(q.id))) setPlannedFor(job);
+      if (job && qs.some((q) => /^money_q/.test(q.id))) setMoneyFor(job);
+      setResumed(true);
+      const gap = qs.findIndex((q) => !isAnswered(q, answers, true));
+      const at = gap >= 0 ? gap : Math.max(0, qs.length - 1);
+      const next: 'question' | 'proof' = proofFirst && (gap < 0 || qs[gap].kind === 'medical') ? 'proof' : 'question';
+      setIndex(at);
+      setAfterVideos(next);
+      if ((res.draft_videos ?? 0) >= list.length) {
+         setWatched(new Set(list.map((v) => v.id)));
+         return setStage(next);
+      }
+      setStage(list.length ? 'video' : next);
    };
 
    const finish = async (answers: UploadedAnswer[], proof: UploadedDoc[]) => {
@@ -955,6 +999,7 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
             // A file that never arrived is redone; a missing answer is answered for the first time.
             const kept = answers.filter((a) => a.q !== target);
             setUploaded(kept);
+            saveDraft(token, { drop: target });
             setFixNote({ q: list[at].id, text });
             setFixing(true);
             setIndex(at);
@@ -1052,6 +1097,8 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
 
    const goBack = () => {
       setError(null);
+      // Going back to look or edit: from here Next walks every question again, nothing skipped.
+      setResumed(false);
       if (stage === 'proof') {
          // v2: proof comes before the medical question, so Back goes to the job step before it.
          if (questions[index]?.kind === 'medical' && index > 0) setIndex(index - 1);
@@ -1101,7 +1148,13 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
       setIndex(at);
    };
 
-   const goOn = (next: UploadedAnswer[], list: ScreenQuestion[], i: number) => {
+   const goOn = (next: UploadedAnswer[], list: ScreenQuestion[], from: number) => {
+      // Picked up saved answers: skip the ones already answered.
+      let i = from;
+      if (resumed) {
+         const open = list.findIndex((q, k) => k >= from && !isAnswered(q, next, true));
+         i = open >= 0 ? open : list.length;
+      }
       // After a stopped send: the next answer still missing, else straight to sending.
       if (fixing) {
          setFixNote(null);
@@ -1127,6 +1180,7 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
    const save = (answer: UploadedAnswer) => {
       const next = [...uploaded.filter((a) => a.q !== answer.q), answer];
       setUploaded(next);
+      if (token && !preview) saveDraft(token, { answer });
       return next;
    };
    const blank = (q: string): UploadedAnswer => ({ q, video: null, audio: null, seconds: 0 });
@@ -1183,8 +1237,10 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
          // Answers to the old follow-ups don't fit the new job.
          kept = uploaded.filter((a) => list.some((q) => q.id === a.q) && !/^job_|^coe$|^work_permit$|^money_/.test(a.q));
       }
-      const next = [...kept.filter((a) => a.q !== question.id), { ...blank(question.id), text: job }];
+      const answer = { ...blank(question.id), text: job };
+      const next = [...kept.filter((a) => a.q !== question.id), answer];
       setUploaded(next);
+      if (token) saveDraft(token, { answer });
       nextAfter(next, list);
    };
 
@@ -1311,7 +1367,7 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
    const video = videos[videoIndex];
    const nextVideo = () => {
       if (videoIndex + 1 < videos.length) setVideoIndex(videoIndex + 1);
-      else setStage('question');
+      else setStage(afterVideos);
    };
 
    if (askCode) return <InviteCodeStep onDone={() => setCodeAnswered(true)} signedIn={signedIn} source="screen" />;

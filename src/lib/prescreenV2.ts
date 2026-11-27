@@ -163,6 +163,30 @@ export const sendHelp = async (
    }
 };
 
+/**
+ * Saves one answer (or the proof files, videos watched, or drops one answer) on the server as they go,
+ * so a reload, a second copy of the page or a new phone loses nothing (pre_screening_save). Fire and
+ * forget, one retry: the final send still carries everything the phone has.
+ */
+export const saveDraft = (
+   token: string,
+   part: { answer?: Record<string, unknown>; docs?: Record<string, unknown>[]; videos?: number; drop?: string }
+) => {
+   const send = () =>
+      getSupabaseBrowserClient().rpc('pre_screening_save', {
+         p_token: token,
+         p_answer: part.answer ?? null,
+         p_docs: part.docs ?? null,
+         p_videos: part.videos ?? null,
+         p_drop: part.drop ?? null
+      });
+   void Promise.resolve(send())
+      .then(({ error }) => {
+         if (error) window.setTimeout(() => void send(), 3000);
+      })
+      .catch(() => window.setTimeout(() => void send(), 3000));
+};
+
 /** A photo, made small enough for the AI and Telegram (longest side 1280 px, JPEG). */
 export const shrinkImage = async (
    source: CanvasImageSource & { width?: number; height?: number },
