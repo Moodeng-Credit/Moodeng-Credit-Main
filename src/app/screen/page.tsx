@@ -41,7 +41,10 @@ import {
    planMoneyQuestions,
    PRESCREEN_CAPS,
    prescreenHippo,
-   saidNo
+   saidNo,
+   sendHelp,
+   type SendProblem,
+   sendProblemOf
 } from '@/lib/prescreenV2';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { audioContextCtor, joinChunks, wavBlob, wavFromMediaFile } from '@/lib/wavAudio';
@@ -100,6 +103,8 @@ export type ScreenPreview = {
    med?: boolean;
    /** A video answer sending (the hippo send story). */
    send?: boolean;
+   /** The "one thing to fix" note after a stopped send. */
+   fix?: boolean;
 };
 
 type UploadedAnswer = PhotoAnswer & {
@@ -119,6 +124,24 @@ type Coached = { first: string; hint: string };
 // Typed answers: long enough to say something real, short enough to read on the call.
 const MIN_TEXT = 15;
 const minFor = (q: ScreenQuestion) => Math.max(1, q.min ?? MIN_TEXT);
+/** Same rule as pre_screening_submit: does this question have an answer the server will take? */
+const isAnswered = (q: ScreenQuestion, answers: UploadedAnswer[]) => {
+   if (q.optional || /^money_q/.test(q.id)) return true;
+   const a = answers.find((x) => x.q === q.id);
+   if (!a) return false;
+   if (q.kind === 'photo') return Boolean(a.photo || a.skip);
+   if (q.kind === 'doc') return Boolean(a.doc);
+   return Boolean(a.video || a.audio || (a.text ?? '').trim().length >= 2);
+};
+/** Our own words when the AI can't explain a stopped send (same as the server's sendHelpFallback). */
+const sendFallback = (problem: SendProblem, kind: string | null) => {
+   if (problem === 'bad_docs' || kind === 'proof') return 'Your proof of income didn’t reach us. Please add it again, then tap Send.';
+   if (problem === 'other' || problem === 'network' || !kind) return 'Something went wrong on our side, not your phone. Please tap Next again. If it keeps happening, message us on Messenger.';
+   if (kind === 'photo') return 'Your photo didn’t reach us. Please take it again, then tap Next.';
+   if (kind === 'video') return 'Your video answer didn’t reach us. Please record it again, then tap Next.';
+   if (kind === 'doc') return 'This document didn’t reach us. Please send it again.';
+   return 'We didn’t get your answer to this question. Please answer it again, then tap Next.';
+};
 // A video answer typed because the camera wouldn't work here: about what they'd say in 20 seconds.
 const MIN_TYPED_INSTEAD = 20;
 // Once the camera wouldn't open on this page, the next questions offer typing straight away.
@@ -228,6 +251,16 @@ const writeProgress = (progress: SavedProgress | null) => {
       // Storage blocked: a reload starts over, as before.
    }
 };
+
+const FixNote = ({ text }: { text: string }) => (
+   <div className="flex gap-3 rounded-[16px] border-2 border-[#f5c451] bg-[#fff8e6] px-4 py-3 dark:border-[#8a6a1f] dark:bg-[#2a2210]" role="alert">
+      <span aria-hidden className="text-[22px] leading-none">🦛</span>
+      <div className="flex min-w-0 flex-col gap-1">
+         <p className="text-[15px] font-extrabold text-[#3b2f4a] dark:text-[#f5f0ff]">Almost done! One thing to fix</p>
+         <p className="text-[14px] font-medium leading-snug text-[#594d65] dark:text-[#d9cfe8]">{text}</p>
+      </div>
+   </div>
+);
 
 const card = 'flex flex-col gap-4 rounded-[20px] bg-white px-5 py-5 dark:bg-dv2-card';
 const fieldClass =
@@ -617,6 +650,12 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
    // v2 (lib/prescreenV2.ts): the server added the job + medical questions to this one.
    const [v2, setV2] = useState(Boolean(preview));
    // The one hint each typed answer can get, with the first try (both are sent).
+   // A stopped send: which question (or 'proof') to fix, the plain reason, and "fixing" = after it, go to the
+   // next unanswered one and send, instead of walking every question again.
+   const [fixNote, setFixNote] = useState<{ q: string; text: string } | null>(
+      preview?.fix ? { q: 'job_photo1', text: 'Your photo at work didn’t reach us. Take it again, then tap Next.' } : null
+   );
+   const [fixing, setFixing] = useState(false);
    const [coached, setCoached] = useState<Record<string, Coached>>(
       preview?.coach
          ? { purpose: { first: 'For my bills this month', hint: 'Tell us which bills, like electricity or rent, so we understand.' } }
@@ -891,12 +930,50 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
          p_videos: videos.filter((v) => watched.has(v.id)).length
       });
       if (rpcError) {
-         setError(
-            askProof ? 'Could not send. Check your connection and try again.' : 'Could not send. Check your connection and tap Next again.'
-         );
+         const { problem, q } = sendProblemOf(rpcError);
+         // Never got there: a real connection problem, so say that.
+         if (problem === 'network' || !token) {
+            setError(
+               askProof ? 'Could not send. Check your connection and try again.' : 'Could not send. Check your connection and tap Next again.'
+            );
+            setStage(askProof ? 'proof' : 'question');
+            return;
+         }
+         // The server stopped it and says which answer: explain it plainly (AI, else our words), bring the
+         // question list in line with the server's, and take them straight to that one.
+         const help = await sendHelp(token, problem, q, locale);
+         const list: ScreenQuestion[] = help?.questions
+            ? help.questions.map((sq) => ({ ...(questions.find((x) => x.id === sq.id) ?? {}), ...(sq as ScreenQuestion) }))
+            : questions;
+         const target = help?.q ?? q;
+         const at = target && target !== 'proof' ? list.findIndex((x) => x.id === target) : -1;
+         const kind = target === 'proof' ? 'proof' : at >= 0 ? (list[at].kind ?? 'video') : null;
+         const text = help?.message || sendFallback(problem, kind);
+         setQuestions(list);
+         setError(null);
+         if (at >= 0) {
+            // A file that never arrived is redone; a missing answer is answered for the first time.
+            const kept = answers.filter((a) => a.q !== target);
+            setUploaded(kept);
+            setFixNote({ q: list[at].id, text });
+            setFixing(true);
+            setIndex(at);
+            setStage('question');
+            return;
+         }
+         if (target === 'proof' || problem === 'bad_docs') {
+            setUploadedDocs(null);
+            setFixNote({ q: 'proof', text });
+            setFixing(true);
+            setStage('proof');
+            return;
+         }
+         setError(text);
          setStage(askProof ? 'proof' : 'question');
          return;
       }
+      setFixNote(null);
+      setFixing(false);
       if (token) savePreScreening(token, true);
       void queryClient.invalidateQueries({ queryKey: ['prescreen-path'] });
       setStage(signedIn ? 'waiting' : 'done');
@@ -920,6 +997,15 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
 
    // v2: the proof of income sits between the job and the medical question.
    const afterProof = (docsUp: UploadedDoc[]) => {
+      if (fixing) {
+         setFixNote(null);
+         const gap = questions.findIndex((q) => !isAnswered(q, uploaded));
+         if (gap >= 0) {
+            setIndex(gap);
+            return setStage('question');
+         }
+         return void finish(uploaded, docsUp);
+      }
       if (questions[index]?.kind === 'medical') return setStage('question');
       void finish(uploaded, docsUp);
    };
@@ -927,7 +1013,10 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
    const sendProof = async () => {
       if (preview) return questions[index]?.kind === 'medical' ? setStage('question') : setStage('done');
       // Already up (only the final send failed, or they came Back from the medical question): carry on.
-      if (uploadedDocs) return afterProof(uploadedDocs);
+      if (uploadedDocs) {
+         setError(null);
+         return afterProof(uploadedDocs);
+      }
       setBusy(true);
       setError(null);
       const storage = getSupabaseBrowserClient().storage.from('pre-screenings');
@@ -980,6 +1069,7 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
       if (
          v2 &&
          !preview &&
+         !fixing &&
          token &&
          beforeProof &&
          moneyFor !== (plannedFor ?? '') &&
@@ -1012,6 +1102,14 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
    };
 
    const goOn = (next: UploadedAnswer[], list: ScreenQuestion[], i: number) => {
+      // After a stopped send: the next answer still missing, else straight to sending.
+      if (fixing) {
+         setFixNote(null);
+         const gap = list.findIndex((q) => !isAnswered(q, next));
+         if (gap >= 0) return setIndex(gap);
+         if (askProof && !uploadedDocs) return setStage('proof');
+         return void finish(next, uploadedDocs ?? []);
+      }
       if (i < list.length) {
          setIndex(i);
          // v2: job first, then income, then the medical question.
@@ -1375,6 +1473,7 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
                         ⏱ About {minutesLeft(questions, index, askProof && !uploadedDocs)} min left
                      </p>
                   ) : null}
+                  {fixNote?.q === question.id ? <FixNote text={fixNote.text} /> : null}
                   {error ? <p className={errorClass}>{error}</p> : null}
                   {question.kind === 'text' || question.kind === 'medical' ? (
                      <>
@@ -1616,6 +1715,7 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
                      title={v2 ? 'Now: proof of income' : 'Last step: proof of income'}
                      trail={trail('Income')}
                   />
+                  {fixNote?.q === 'proof' ? <FixNote text={fixNote.text} /> : null}
                   <ul className="flex flex-col gap-1.5 text-[15px] text-[#594d65] dark:text-[#d9cfe8]">
                      <li>📱 GCash, Maya or bank history (last 30 days)</li>
                      <li>🧾 or your payslip</li>
