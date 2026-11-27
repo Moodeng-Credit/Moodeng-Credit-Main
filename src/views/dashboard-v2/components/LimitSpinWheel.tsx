@@ -106,6 +106,7 @@ const COPY = {
       won: (amount: number) => `+$${amount}!`,
       now: (limit: number) => `Your limit is now $${limit}.`,
       bonus: (amount: number) => `🦈 + Shark bonus $${amount}`,
+      paid: '🎉 Loan paid back!',
       earned: '🏅 You earned it',
       because: 'because you paid back on time',
       newLimit: 'New limit',
@@ -113,6 +114,7 @@ const COPY = {
       proof: 'Proof you pay back on time',
       next: 'Next badge',
       top: 'You reached the top! 🏆',
+      play: 'Play Shark Chomp 🦈',
       done: 'Keep it up 💪'
    },
    fil: {
@@ -126,6 +128,7 @@ const COPY = {
       won: (amount: number) => `+$${amount}!`,
       now: (limit: number) => `$${limit} na ang limit mo.`,
       bonus: (amount: number) => `🦈 + Shark bonus na $${amount}`,
+      paid: '🎉 Bayad na ang loan!',
       earned: '🏅 Pinaghirapan mo ito',
       because: 'dahil nagbayad ka on time',
       newLimit: 'Bagong limit',
@@ -133,6 +136,7 @@ const COPY = {
       proof: 'Patunay na on-time kang nagbabayad',
       next: 'Susunod na badge',
       top: 'Naabot mo ang tuktok! 🏆',
+      play: 'Laruin ang Shark Chomp 🦈',
       done: 'Tuloy lang 💪'
    }
 };
@@ -228,7 +232,11 @@ export default function LimitSpinWheel({
    return (
       <div className="relative flex w-full flex-col items-center gap-3 text-center" data-testid="limit-spin">
          <style>{STYLES}</style>
-         {done ? null : (
+         {done ? (
+            <p className="text-[24px] font-extrabold text-[#040033] dark:text-[#F0EAFF]" style={{ animation: 'lswPop 420ms ease-out both' }}>
+               {t.paid}
+            </p>
+         ) : (
             <>
                <p key={phase} className="text-[24px] font-extrabold text-[#040033] dark:text-[#F0EAFF]">
                   {phase === 'again' ? t.again : t.title}
@@ -368,7 +376,7 @@ export default function LimitSpinWheel({
                {/* The pointer: ticks while the wheel turns. */}
                <div
                   aria-hidden="true"
-                  className="absolute left-1/2 top-[-5%] z-10 h-[15%] w-[11%] drop-shadow-[0_3px_3px_rgba(0,0,0,0.45)]"
+                  className="absolute left-1/2 top-[-5%] z-30 h-[15%] w-[11%] drop-shadow-[0_3px_3px_rgba(0,0,0,0.45)]"
                   style={{ transformOrigin: '50% 20%', animation: spinning ? 'lswTick 140ms ease-in-out infinite' : 'none', transform: 'translateX(-50%)' }}
                >
                   <svg viewBox="0 0 30 42" className="h-full w-full">
@@ -486,7 +494,18 @@ export default function LimitSpinWheel({
             >
                {t.done}
             </button>
-         ) : (
+         ) : null}
+         {phase === 'done' ? (
+            // Keep the good feeling going: the game earns Pandesal points (chomp_level_reward).
+            <a
+               href="/game"
+               className="flex h-12 w-full items-center justify-center rounded-2xl border-2 border-[#6010D2] bg-white text-[16px] font-extrabold text-[#6010D2] transition-transform active:scale-[0.97] dark:bg-transparent dark:text-[#C4B8FF]"
+               style={{ animation: 'lswBadge 400ms ease-out 1.3s both' }}
+            >
+               {t.play}
+            </a>
+         ) : null}
+         {phase !== 'done' ? (
             <button
                type="button"
                disabled={spinning}
@@ -495,7 +514,7 @@ export default function LimitSpinWheel({
             >
                {phase === 'again' ? t.spinAgain : t.spin}
             </button>
-         )}
+         ) : null}
       </div>
    );
 }

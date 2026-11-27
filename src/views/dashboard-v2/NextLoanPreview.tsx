@@ -78,7 +78,7 @@ export default function NextLoanPreview() {
       { key: 'less', label: 'Borrowed less than the limit', dues: [sampleDue(20, 10, 10)] },
       { key: 'none', label: 'No loan out', dues: [] },
       { key: 'ceiling', label: 'At their income ceiling ($35)', dues: [], ceiling: true },
-      { key: 'spin', label: 'Limit Spin (low income, after repaying)', dues: [], spin: true }
+      { key: 'spin', label: 'Limit Spin', dues: [], spin: true }
    ];
    return (
       <div className="min-h-screen bg-dv2-page">
