@@ -5,6 +5,7 @@ import { withToday } from './aiToday.ts';
 import { geminiTokens, logAiUsage } from './aiUsage.ts';
 import type { CreatorApp } from './creatorApplications.ts';
 import { GEMINI_MODEL } from './geminiModel.ts';
+import { scrapeTikTok } from './tiktokApify.ts';
 
 const API = 'https://generativelanguage.googleapis.com';
 
@@ -14,6 +15,7 @@ export type TikTokReach = {
    likes: number | null;
    videos: number | null;
    verified: boolean;
+   private: boolean;
    recent_videos: number;
    avg_views: number | null;
    last_post_days: number | null;
@@ -39,27 +41,18 @@ export const tiktokHandle = (url: string | null | undefined): string | null => {
 };
 
 export async function tiktokReach(apifyToken: string, handle: string, now = Date.now()): Promise<TikTokReach> {
-   const res = await fetch(`https://api.apify.com/v2/acts/clockworks~tiktok-profile-scraper/run-sync-get-dataset-items?timeout=80`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apifyToken}` },
-      body: JSON.stringify({ profiles: [handle], resultsPerPage: 8, shouldDownloadVideos: false, shouldDownloadCovers: false }),
-      signal: AbortSignal.timeout(85_000)
-   });
-   if (!res.ok) throw new Error(`apify ${res.status}`);
-   // deno-lint-ignore no-explicit-any
-   const items = (await res.json()) as any[];
-   if (!Array.isArray(items) || !items.length || items[0]?.error) throw new Error(items?.[0]?.error ?? 'apify: no profile');
-   const author = items[0]?.authorMeta ?? {};
-   const views = items.map((v) => Number(v.playCount)).filter((n) => Number.isFinite(n));
-   const newest = Math.max(...items.map((v) => Date.parse(v.createTimeISO)).filter((n) => Number.isFinite(n)));
+   const { profile, videos } = await scrapeTikTok(apifyToken, handle, { videos: 8, waitSeconds: 60 });
+   const views = videos.map((v) => v.views).filter((x) => Number.isFinite(x));
+   const newest = Math.max(...videos.map((v) => v.created).filter((x) => Number.isFinite(x)));
    return {
-      handle,
-      followers: Number.isFinite(Number(author.fans)) ? Number(author.fans) : null,
-      likes: Number.isFinite(Number(author.heart)) ? Number(author.heart) : null,
-      videos: Number.isFinite(Number(author.video)) ? Number(author.video) : null,
-      verified: author.verified === true,
-      recent_videos: items.length,
-      avg_views: views.length ? Math.round(views.reduce((a, b) => a + b, 0) / views.length) : null,
+      handle: profile?.handle ?? handle,
+      followers: profile?.followers ?? null,
+      likes: profile?.likes ?? null,
+      videos: profile?.videos ?? null,
+      verified: profile?.verified ?? false,
+      private: profile?.private ?? false,
+      recent_videos: videos.length,
+      avg_views: views.length ? Math.round(views.reduce((x, y) => x + y, 0) / views.length) : null,
       last_post_days: Number.isFinite(newest) ? Math.max(0, Math.round((now - newest) / 86_400_000)) : null
    };
 }
@@ -119,6 +112,8 @@ copy-pasted or ChatGPT-sounding pitch with nothing personal, video with nobody o
 Small creators are fine (even 1–5k followers) if the audience is real and engaged. Don't punish poor English.
 
 You get the form as JSON, TikTok numbers if we could read them (null = unknown, not zero), and maybe a video.
+TikTok numbers: followers, likes (all-time hearts), videos (count); avg_views/last_post_days are often null
+because we can't always read single videos — then judge engagement by likes per video and followers.
 Reply ONLY with JSON:
 {"score": 0-100, "verdict": "yes"|"maybe"|"no", "summary": "one plain sentence for the team",
  "strengths": ["short", ...], "flags": ["short", ...],
@@ -246,7 +241,9 @@ const n = (v: number | null) =>
 /** One line for cards: "TikTok @x: 12.3k followers · ~4.1k views/video · last post 2d ago". */
 export const reachLine = (r: TikTokReach | null) =>
    r
-      ? `TikTok @${r.handle}: ${n(r.followers)} followers · ~${n(r.avg_views)} views/video${r.last_post_days !== null ? ` · last post ${r.last_post_days}d ago` : ''}${r.verified ? ' · ✔️ verified' : ''}`
+      ? `TikTok @${r.handle}: ${n(r.followers)} followers · ${
+           r.avg_views !== null ? `~${n(r.avg_views)} views/video` : `${n(r.likes)} likes on ${n(r.videos)} videos`
+        }${r.last_post_days !== null ? ` · last post ${r.last_post_days}d ago` : ''}${r.verified ? ' · ✔️ verified' : ''}${r.private ? ' · 🔒 private' : ''}`
       : null;
 
 export const verdictEmoji = (v: CreatorAi['verdict']) => (v === 'yes' ? '🟢' : v === 'maybe' ? '🟡' : '🔴');
