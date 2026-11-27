@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { buy, callStatus, chomp, LEVELS, lessonFor, nextLevel, POWER_MS, spinWheel, WHEEL, type ChompState, CHOMP_COOLDOWN_MS, COLS, moveHippo, newWave, ROWS, stepSharks } from '@/lib/sharkChomp';
+import { buy, callStatus, chomp, LEVELS, lessonFor, nextLevel, POWER_MS, spinWheel, WHEEL, type ChompState, CHOMP_COOLDOWN_MS, COLS, moveHippo, newWave, ROWS, stepSharks, stepToward, aimAt } from '@/lib/sharkChomp';
 
 // Deterministic rng: always the same value.
 const fixed = (v: number) => () => v;
@@ -126,5 +126,25 @@ describe('Shark Chomp rules', () => {
       expect(callStatus(at, Date.parse('2026-11-25T09:00:00Z'), 'Asia/Manila')).toEqual({ kind: 'later', label: '📅 Your call: Wed 8:30 PM' });
       expect(callStatus(null, 0).kind).toBe('none');
       expect(COLS).toBe(11);
+   });
+
+   it('touch: she swims after the finger, around rocks, and faces seaweed in the way', () => {
+      const s = lagoon([{ x: 9, y: 11 }]); // she starts at (1, 1)
+      expect(stepToward(s, { x: 5.2, y: 1.1 })).toBe('right');
+      expect(stepToward(s, { x: 1.3, y: 0.8 })).toBeNull();
+      // A rock straight below (2, 2): step to the side instead of pushing into it.
+      expect(stepToward({ ...s, hippo: { x: 2, y: 1 } }, { x: 2, y: 5 })).toBe('left');
+      // Longer way blocked by a rock, the other way open: take the open one.
+      expect(stepToward({ ...s, hippo: { x: 2, y: 1 } }, { x: 3, y: 4 })).toBe('right');
+      const grid = s.grid.map((r) => r.slice());
+      grid[1][2] = 'weed';
+      expect(stepToward({ ...s, grid }, { x: 5, y: 1 })).toBe('right');
+   });
+
+   it('touch: a tap aims the bite toward the tapped spot', () => {
+      const s = lagoon([{ x: 9, y: 11 }]);
+      expect(aimAt(s, { x: 1.2, y: 3 })).toBe('down');
+      expect(aimAt(s, { x: 4, y: 2 })).toBe('right');
+      expect(aimAt(s, { x: 1.1, y: 0.9 })).toBeNull();
    });
 });

@@ -7,11 +7,13 @@ import { clarityEvent } from '@/lib/analytics/clarity';
 import { earnGameSpin, GAME_SPIN_TEXT } from '@/lib/spinWheel';
 import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/supabase/client';
 import {
+   aimAt,
    applySnack,
    callStatus,
    nextLevel,
    SHOP,
    spinWheel,
+   stepToward,
    WHEEL,
    WHEEL_TOTAL,
    wheelDueAfter,
@@ -39,8 +41,10 @@ import {
 //   ?join=URL   the call's Zoom link for that Join button (only zoom.us links are used)
 //
 // The rules are tile-based (src/lib/sharkChomp.ts); everything on screen glides between tiles, so
-// Moodeng and the sharks move smoothly instead of jumping. Built for phones: full screen, a thumb
-// joystick on the left, CHOMP on the right, no scrolling or zooming while playing.
+// Moodeng and the sharks move smoothly instead of jumping. Built for phones: full screen, no scrolling
+// or zooming while playing. Touch (2026-11-28, was a joystick + CHOMP button): put a finger on the
+// lagoon and move it around, she swims after it; a quick tap chomps toward where you tapped.
+// Desktop: arrows / WASD + space, or the same with the mouse.
 
 const SPRITES = {
    run1: '/hippos/progress/hippo-jog.png',
@@ -70,7 +74,9 @@ const BEST_KEY = 'md_chomp_best';
 // One tile of swimming. Held input repeats on exactly this beat, so a held direction is one continuous glide.
 const MOVE_MS = 165;
 const STRIDE_MS = 130;
-const JOY_DEAD = 14;
+// A finger that moves this far (px), or stays down this long (ms), is steering, not tapping.
+const DRAG_PX = 12;
+const HOLD_MS = 220;
 
 const readBest = (): number => {
    try {
@@ -174,8 +180,8 @@ export default function SharkChompPage() {
    const fx = useRef<Fx[]>([]);
    const heldDir = useRef<Dir | null>(null);
    const nextMoveAt = useRef(0);
-   const joyOrigin = useRef<{ x: number; y: number; id: number } | null>(null);
-   const [joyKnob, setJoyKnob] = useState<{ dx: number; dy: number } | null>(null);
+   // The finger on the lagoon: where it went down, and the spot (in tiles) it's on now.
+   const finger = useRef<{ id: number; x: number; y: number; at: number; steering: boolean; target: { x: number; y: number } } | null>(null);
 
    const [phase, setPhase] = useState<Phase>('intro');
    const [powers, setPowers] = useState({ fast: 0, shield: 0 });
@@ -293,6 +299,7 @@ export default function SharkChompPage() {
          }
          if (!before.inHouse && next.inHouse) {
             heldDir.current = null;
+            finger.current = null;
             window.setTimeout(() => {
                setWheel({ due: wheelDueAfter(stateRef.current.wave), spun: null, angle: 0 });
                setPending([]);
@@ -702,8 +709,12 @@ export default function SharkChompPage() {
       const loop = () => {
          const at = Date.now();
          if (active) {
-            if (heldDir.current && at >= nextMoveAt.current) {
-               applyMove(heldDir.current, at);
+            // A finger held still is steering too (press and hold on a spot = swim there).
+            const f = finger.current;
+            if (f && !f.steering && at - f.at >= HOLD_MS) f.steering = true;
+            const dir = f?.steering ? stepToward(stateRef.current, f.target) : heldDir.current;
+            if (dir && at >= nextMoveAt.current) {
+               applyMove(dir, at);
                nextMoveAt.current = at + (at < stateRef.current.fastUntil ? FAST_MOVE_MS : MOVE_MS);
             }
             const s = stateRef.current;
@@ -754,36 +765,47 @@ export default function SharkChompPage() {
       };
    }, [bite, active]);
 
-   // Thumb joystick: put your thumb down anywhere in the pad and slide the way you want to swim.
-   const joyDown = (e: ReactPointerEvent<HTMLDivElement>) => {
-      e.preventDefault();
-      e.currentTarget.setPointerCapture(e.pointerId);
-      joyOrigin.current = { x: e.clientX, y: e.clientY, id: e.pointerId };
-      setJoyKnob({ dx: 0, dy: 0 });
+   // Touch: the spot under a finger, in tiles (tile centres are whole numbers).
+   const spotAt = (clientX: number, clientY: number) => {
+      const r = canvasRef.current?.getBoundingClientRect();
+      if (!r || !r.width) return null;
+      return { x: ((clientX - r.left) / r.width) * COLS - 0.5, y: ((clientY - r.top) / r.height) * ROWS - 0.5 };
    };
-   const joyMove = (e: ReactPointerEvent<HTMLDivElement>) => {
-      const o = joyOrigin.current;
-      if (!o || o.id !== e.pointerId) return;
-      const dx = e.clientX - o.x;
-      const dy = e.clientY - o.y;
-      const len = Math.hypot(dx, dy);
-      const max = 38;
-      setJoyKnob({ dx: len > max ? (dx / len) * max : dx, dy: len > max ? (dy / len) * max : dy });
-      if (len < JOY_DEAD) {
-         heldDir.current = null;
+   const tapBite = (target: { x: number; y: number } | null) => {
+      const dir = target ? aimAt(stateRef.current, target) : null;
+      if (dir && stateRef.current.facing !== dir) {
+         stateRef.current = { ...stateRef.current, facing: dir };
+         if (dir === 'left') faceLeft.current = true;
+         if (dir === 'right') faceLeft.current = false;
+      }
+      bite();
+   };
+   const fingerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
+      if (!active || (e.pointerType === 'mouse' && e.button !== 0)) return;
+      e.preventDefault();
+      // A second finger while one steers: chomp straight away, the way she faces.
+      if (finger.current) {
+         if (finger.current.id !== e.pointerId) bite();
          return;
       }
-      const dir: Dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : dy > 0 ? 'down' : 'up';
-      if (heldDir.current !== dir) {
-         heldDir.current = dir;
-         nextMoveAt.current = Math.max(nextMoveAt.current, hippoGlide.current.start + MOVE_MS * 0.6);
-      }
+      const target = spotAt(e.clientX, e.clientY);
+      if (!target) return;
+      e.currentTarget.setPointerCapture(e.pointerId);
+      finger.current = { id: e.pointerId, x: e.clientX, y: e.clientY, at: Date.now(), steering: false, target };
    };
-   const joyUp = (e: ReactPointerEvent<HTMLDivElement>) => {
-      if (joyOrigin.current?.id !== e.pointerId) return;
-      joyOrigin.current = null;
-      heldDir.current = null;
-      setJoyKnob(null);
+   const fingerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
+      const f = finger.current;
+      if (!f || f.id !== e.pointerId) return;
+      const target = spotAt(e.clientX, e.clientY);
+      if (target) f.target = target;
+      if (!f.steering && Math.hypot(e.clientX - f.x, e.clientY - f.y) > DRAG_PX) f.steering = true;
+   };
+   const fingerUp = (e: ReactPointerEvent<HTMLDivElement>) => {
+      const f = finger.current;
+      if (!f || f.id !== e.pointerId) return;
+      finger.current = null;
+      // A quick tap: chomp toward the tapped spot. Lifting after steering just stops her.
+      if (!f.steering && e.type === 'pointerup' && active) tapBite(f.target);
    };
 
    const goldBtn =
@@ -829,7 +851,17 @@ export default function SharkChompPage() {
                </span>
             </div>
 
-            <div className="relative flex min-h-0 flex-1 items-center justify-center" ref={boardRef}>
+            {/* The whole lagoon area takes the finger (the edges too, so a thumb near the side still steers). The
+                lagoon sits at the bottom, in thumb reach. */}
+            <div
+               className="relative flex min-h-0 flex-1 items-end justify-center"
+               onPointerCancel={fingerUp}
+               onPointerDown={fingerDown}
+               onPointerMove={fingerMove}
+               onPointerUp={fingerUp}
+               ref={boardRef}
+               style={{ touchAction: 'none' }}
+            >
                <div className="relative overflow-hidden rounded-[18px] border-[3px] border-[#7661f9] shadow-[0_8px_24px_rgba(107,85,247,0.25)]">
                   <canvas className="block" ref={canvasRef} />
 
@@ -861,7 +893,7 @@ export default function SharkChompPage() {
                         <button className={goldBtn} onClick={start} type="button">
                            ▶ Play
                         </button>
-                        <span className="text-[13px] text-[#7b6b8c]">Slide to swim · tap CHOMP to eat · grab snacks for power</span>
+                        <span className="text-[13px] text-[#7b6b8c]">Move your finger to swim · tap to chomp · grab snacks for power</span>
                      </div>
                   ) : phase === 'over' ? (
                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[#f8f1ffee] px-5 text-center">
@@ -880,40 +912,9 @@ export default function SharkChompPage() {
                </div>
             </div>
 
-            <div className="flex shrink-0 items-center justify-between gap-4 px-1 pt-1">
-               {/* Joystick pad: thumb down anywhere in it, slide to swim. */}
-               <div
-                  aria-label="Swim: slide your thumb"
-                  className="relative flex size-[132px] items-center justify-center rounded-full bg-white/80 shadow-[inset_0_2px_10px_rgba(107,85,247,0.15)]"
-                  onPointerCancel={joyUp}
-                  onPointerDown={joyDown}
-                  onPointerMove={joyMove}
-                  onPointerUp={joyUp}
-                  role="application"
-                  style={{ touchAction: 'none' }}
-               >
-                  <span className="pointer-events-none absolute left-1/2 top-2 -translate-x-1/2 text-[12px] text-[#b3a5c4]">▲</span>
-                  <span className="pointer-events-none absolute bottom-2 left-1/2 -translate-x-1/2 text-[12px] text-[#b3a5c4]">▼</span>
-                  <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-[12px] text-[#b3a5c4]">◀</span>
-                  <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[12px] text-[#b3a5c4]">▶</span>
-                  <span
-                     className="pointer-events-none size-[58px] rounded-full bg-[#7661f9] shadow-[0_4px_10px_rgba(107,85,247,0.45)]"
-                     style={{ transform: `translate(${joyKnob?.dx ?? 0}px, ${joyKnob?.dy ?? 0}px)`, transition: joyKnob ? 'none' : 'transform 120ms ease-out' }}
-                  />
-               </div>
-               <button
-                  className="flex size-[118px] touch-none select-none flex-col items-center justify-center rounded-full bg-[#ffb703] text-[19px] font-black text-[#3b2a00] shadow-[0_7px_0_#d99a00] active:translate-y-[4px] active:shadow-[0_3px_0_#d99a00]"
-                  onPointerDown={(e) => {
-                     e.preventDefault();
-                     bite();
-                  }}
-                  style={{ touchAction: 'none' }}
-                  type="button"
-               >
-                  <img alt="" className="h-[52px] w-auto" draggable={false} src={SPRITES.nomOpen} />
-                  CHOMP
-               </button>
-            </div>
+            <p className="shrink-0 pb-1 text-center text-[13px] font-semibold text-[#9a8bab]">
+               {phase === 'playing' ? 'Move your finger to swim · tap to chomp' : '\u00a0'}
+            </p>
          </div>
 
          {phase === 'house' ? (

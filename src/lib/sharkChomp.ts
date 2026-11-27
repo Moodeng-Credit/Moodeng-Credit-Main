@@ -216,6 +216,43 @@ export const moveHippo = (s: ChompState, dir: Dir, now: number, rng: Rng = Math.
    return sharkContact(moved, now, rng);
 };
 
+// Touch controls (George 2026-11-28: "move my finger around and when I tap it chomps"). Spots are in
+// tiles (fractions OK, tile centres are whole numbers).
+const OPPOSITE: Record<Dir, Dir> = { up: 'down', down: 'up', left: 'right', right: 'left' };
+
+// Which way to swim toward the finger: the longer way first, the other way when that's blocked. A
+// seaweed in the way: face it (a tap then chomps through). A rock straight ahead with nothing to the
+// side to try: step around it. null = she's already under the finger.
+export const stepToward = (s: ChompState, target: { x: number; y: number }): Dir | null => {
+   const dx = target.x - s.hippo.x;
+   const dy = target.y - s.hippo.y;
+   const h: Dir | null = Math.abs(dx) >= 0.5 ? (dx > 0 ? 'right' : 'left') : null;
+   const v: Dir | null = Math.abs(dy) >= 0.5 ? (dy > 0 ? 'down' : 'up') : null;
+   const order = (Math.abs(dx) >= Math.abs(dy) ? [h, v] : [v, h]).filter((d): d is Dir => d !== null);
+   if (!order.length) return null;
+   const tileAt = (d: Dir): Tile => {
+      const p = add(s.hippo, d);
+      return inBounds(p) ? s.grid[p.y][p.x] : 'rock';
+   };
+   const open = order.find((d) => walkable(tileAt(d)));
+   if (open) return open;
+   const weed = order.find((d) => tileAt(d) === 'weed');
+   if (weed) return weed;
+   if (order.length === 1) {
+      const side = DIR_LIST.find((d) => d !== order[0] && d !== OPPOSITE[order[0]] && walkable(tileAt(d)));
+      if (side) return side;
+   }
+   return order[0];
+};
+
+// Which way a tap aims the bite: toward the tapped spot. null = tapped on her (bite the way she faces).
+export const aimAt = (s: ChompState, target: { x: number; y: number }): Dir | null => {
+   const dx = target.x - s.hippo.x;
+   const dy = target.y - s.hippo.y;
+   if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) return null;
+   return Math.abs(dx) >= Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : dy > 0 ? 'down' : 'up';
+};
+
 // The bite: she DASHES forward up to `reach` tiles, eating everything on the way, and ends up where
 // the bite lands (George 2026-11-25: "it goes forward and eats"). Sharks on the path are eaten;
 // seaweed is eaten and ends the dash on its tile (it may leave a snack, which she grabs); a rock
