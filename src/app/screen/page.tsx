@@ -1106,7 +1106,11 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
       if (fixing) {
          setFixNote(null);
          const gap = list.findIndex((q) => !isAnswered(q, next));
-         if (gap >= 0) return setIndex(gap);
+         if (gap >= 0) {
+            // Still not enough for the server (like a one-letter answer): say so here, never a dead end.
+            if (list[gap].id === questions[index]?.id) setError('Please answer this one a little more, then tap Next.');
+            return setIndex(gap);
+         }
          if (askProof && !uploadedDocs) return setStage('proof');
          return void finish(next, uploadedDocs ?? []);
       }
@@ -1134,7 +1138,8 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
    const acceptText = async () => {
       const question = questions[index];
       const text = (typed[question.id] ?? '').trim().slice(0, MAX_TEXT);
-      if (text.length < minFor(question)) return setError('Please write a little more.');
+      // At least 2 letters, like pre_screening_submit: a one-letter answer was taken here, then stopped the send.
+      if (text.length < Math.max(2, minFor(question))) return setError('Please write a little more.');
       const choice = choices[question.id];
       if (question.kind === 'medical' && !saidNo(text) && !choice) return setError('Please pick one.');
       setError(null);

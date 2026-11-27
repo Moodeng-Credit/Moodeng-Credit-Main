@@ -795,7 +795,7 @@ export async function sendHelp(svc: SupabaseClient, userId: string, token: strin
                key,
                sendHelpSystem(locale),
                { problem: p, question: proof ? 'Proof of income: 1 month of GCash, Maya or bank history, payslip or earnings screen' : q?.text, question_kind: kind },
-               6_000,
+               4_500,
                undefined,
                { feature: 'prescreen_send_help' }
             )) as { message?: unknown };

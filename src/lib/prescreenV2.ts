@@ -147,7 +147,7 @@ export const sendHelp = async (
       const call = getSupabaseBrowserClient().functions.invoke('check-loan-input', {
          body: { kind: 'prescreen_send_help', token, problem, q, locale: ['fil', 'id'].includes(locale) ? locale : 'en' }
       });
-      const timeout = new Promise<null>((resolve) => window.setTimeout(() => resolve(null), 9000));
+      const timeout = new Promise<null>((resolve) => window.setTimeout(() => resolve(null), 10000));
       const result = (await Promise.race([call, timeout])) as {
          data?: { ok?: boolean; message?: string; q?: string | null; questions?: PlannedQuestion[] } | null;
       } | null;
