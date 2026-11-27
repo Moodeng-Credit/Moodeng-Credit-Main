@@ -195,7 +195,7 @@ Deno.test('decision message: in Messenger say "reply here", elsewhere "message u
    assert(decisionMessage('resend', reason).body.includes('Message us on Facebook'));
    assert(decisionMessage('resend', reason, false, true).body.endsWith('Questions? Just reply here.'));
    assert(!decisionMessage('declined', null, false, true).body.includes('Facebook'));
-   assert(!PHOTO_NOT_PROOF_REPLY.en.includes('examples shown'));
+   assert(!PHOTO_NOT_PROOF_REPLY.en.includes('proof of income'));
 });
 
 Deno.test('steps: repayment share and balance get stricter at $100', () => {
