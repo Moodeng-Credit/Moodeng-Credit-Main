@@ -1680,10 +1680,12 @@ const ticketForMessengerPhoto = async (supabase: SupabaseClient, userId: string,
    }
 };
 
+// Just a thank-you: a screenshot of the app, a booking, a selfie is obviously not proof of income, so
+// don't lecture them about it (2026-11-27). The team still gets a support ticket for it.
 export const PHOTO_NOT_PROOF_REPLY: Record<'en' | 'fil' | 'id', string> = {
-   en: 'Thanks for the photo! It doesn’t look like proof of income, so we passed it to our team. They’ll reply here soon 🦛\n\nIf you meant to send proof of income: a payslip, your earnings screen, or your GCash or Maya history works.',
-   fil: 'Salamat sa photo! Mukhang hindi ito proof of income, kaya ipinasa namin sa team. Magre-reply sila dito 🦛\n\nKung proof of income ang ipapadala mo: payslip, earnings screen, o GCash o Maya history.',
-   id: 'Terima kasih fotonya! Sepertinya ini bukan bukti penghasilan, jadi kami teruskan ke tim. Mereka akan membalas di sini 🦛\n\nKalau mau kirim bukti penghasilan: slip gaji, layar penghasilan, atau riwayat e-wallet.'
+   en: 'Thanks for sending it! 🦛',
+   fil: 'Salamat sa pag-send! 🦛',
+   id: 'Terima kasih sudah mengirim! 🦛'
 };
 
 /** A Messenger photo that isn't proof: one friendly line in their chat. False when it couldn't be sent. */
