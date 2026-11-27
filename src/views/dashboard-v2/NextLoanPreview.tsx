@@ -36,22 +36,20 @@ function SpinPlayground() {
    return (
       <div className="flex flex-col items-center gap-3">
          <LimitSpinWheel key={round} amount={raise - shownBonus} bonus={shownBonus} toLimit={limit + raise} onDone={() => setLimit(limit + raise)} />
-         <label className="flex items-center gap-2 text-[14px] font-semibold text-[#45556c]">
-            <input checked={bonus} onChange={(e) => setBonus(e.target.checked)} type="checkbox" /> Beat level 3 of Shark Chomp (+$1)
-         </label>
-         <div className="flex gap-2">
+         {/* Test controls (dev page only), kept small. */}
+         <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[12px] text-[#8a7f99]">
             <button
-               className="rounded-full bg-[#6010D2] px-4 py-2 text-[14px] font-bold text-white"
+               className="underline"
                onClick={() => {
                   setDraw(drawLimitSpin());
                   setRound(round + 1);
                }}
                type="button"
             >
-               Next loan: spin again
+               ↻ next loan
             </button>
             <button
-               className="rounded-full border border-[#6010D2] px-4 py-2 text-[14px] font-bold text-[#6010D2]"
+               className="underline"
                onClick={() => {
                   setLimit(15);
                   setDraw(drawLimitSpin());
@@ -59,10 +57,12 @@ function SpinPlayground() {
                }}
                type="button"
             >
-               Start over at $15
+               reset to $15
             </button>
+            <label className="flex items-center gap-1">
+               <input checked={bonus} onChange={(e) => setBonus(e.target.checked)} type="checkbox" /> shark bonus
+            </label>
          </div>
-         <p className="text-[13px] text-[#70617F]">Limit now: ${limit} · top is $35</p>
       </div>
    );
 }

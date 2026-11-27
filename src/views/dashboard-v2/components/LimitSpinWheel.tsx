@@ -12,9 +12,9 @@ import { useLocalization } from '@/i18n';
 // "Try again" slices: sometimes the first spin lands there and they get one more spin, which then lands on
 // their real result (the result never changes).
 // The win is an ACHIEVEMENT, not a jackpot (George: "the feeling of victory… not gambling but an
-// achievement, maybe even badges"): "You earned it… because you paid back on time", the new limit counting
-// up, an achievement badge (On-time payer, or a limit milestone they just reached), stars + confetti, the
-// earned slice glowing and a warm chime. No casino cues: no "YOU WON", no raining coins, no tick sounds.
+// achievement, maybe even badges", then "too many buttons, too much text"): "Loan paid back!", a big +$3,
+// the new limit counting up, one badge (On-time payer, or a limit milestone just reached) with a small bar to
+// the next one, ONE button; stars + confetti, the earned slice glowing and a warm chime. No casino cues: no "YOU WON", no raining coins, no tick sounds.
 type Slice = { value: number | 'again'; fill: string; light: string; ink: string };
 const SLICES: readonly Slice[] = [
    { value: 3, fill: '#e8244f', light: '#ff6b8a', ink: '#fff' },
@@ -97,46 +97,30 @@ const playChime = () => {
 const COPY = {
    en: {
       title: 'You earned a spin!',
-      body: 'Paying back on time grows your limit. Spin to see by how much.',
+      body: 'Spin to grow your limit.',
       spin: 'Spin',
       again: 'So close! Spin again 🔄',
       againBody: 'One more spin, on us.',
       spinAgain: 'Spin again',
       tryAgain: ['TRY', 'AGAIN'],
-      won: (amount: number) => `+$${amount}!`,
-      now: (limit: number) => `Your limit is now $${limit}.`,
       bonus: (amount: number) => `🦈 + Shark bonus $${amount}`,
       paid: '🎉 Loan paid back!',
-      earned: '🏅 You earned it',
-      because: 'because you paid back on time',
       newLimit: 'New limit',
-      badge: 'Badge unlocked',
-      proof: 'Proof you pay back on time',
-      next: 'Next badge',
       top: 'You reached the top! 🏆',
-      play: 'Play Shark Chomp 🦈',
       done: 'Keep it up 💪'
    },
    fil: {
       title: 'May spin ka!',
-      body: 'Ang on-time na bayad ay nagpapalaki ng limit mo. I-spin para makita kung magkano.',
+      body: 'I-spin para lumaki ang limit mo.',
       spin: 'I-spin',
       again: 'Muntik na! I-spin ulit 🔄',
       againBody: 'Isa pang spin, libre.',
       spinAgain: 'I-spin ulit',
       tryAgain: ['SUBOK', 'ULIT'],
-      won: (amount: number) => `+$${amount}!`,
-      now: (limit: number) => `$${limit} na ang limit mo.`,
       bonus: (amount: number) => `🦈 + Shark bonus na $${amount}`,
       paid: '🎉 Bayad na ang loan!',
-      earned: '🏅 Pinaghirapan mo ito',
-      because: 'dahil nagbayad ka on time',
       newLimit: 'Bagong limit',
-      badge: 'Bagong badge',
-      proof: 'Patunay na on-time kang nagbabayad',
-      next: 'Susunod na badge',
       top: 'Naabot mo ang tuktok! 🏆',
-      play: 'Laruin ang Shark Chomp 🦈',
       done: 'Tuloy lang 💪'
    }
 };
@@ -387,7 +371,7 @@ export default function LimitSpinWheel({
             </div>
 
             {done ? (
-               // The achievement moment, over the stage: you earned it, the raise, the new limit counting up.
+               // The achievement moment, over the stage: the raise and the new limit counting up.
                <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-1 bg-[radial-gradient(circle,rgba(18,4,47,0.78)_0%,rgba(18,4,47,0.92)_70%)] px-4 text-white" style={{ animation: 'lswFade 350ms ease-out both' }}>
                   {Array.from({ length: 16 }, (_, index) => (
                      <span
@@ -402,7 +386,6 @@ export default function LimitSpinWheel({
                         {index % 3 === 0 ? '✨' : '⭐'}
                      </span>
                   ))}
-                  <span className="text-[13px] font-extrabold uppercase tracking-[0.18em] text-[#ffe27a]">{t.earned}</span>
                   <span
                      className="bg-[linear-gradient(180deg,#fffbe0_0%,#ffd84d_45%,#f5a400_100%)] bg-clip-text text-[76px] font-black leading-none text-transparent [filter:drop-shadow(0_0_14px_rgba(255,214,77,0.65))]"
                      style={{ animation: 'lswSlam 650ms cubic-bezier(0.2, 0.9, 0.3, 1.2) 120ms both' }}
@@ -410,7 +393,6 @@ export default function LimitSpinWheel({
                      +${amount}
                   </span>
                   {bonus > 0 ? <span className="text-[16px] font-extrabold text-[#8fffb8]">{t.bonus(bonus)}</span> : null}
-                  <span className="text-[14px] font-semibold text-white/85">{t.because}</span>
                   <span className="mt-2 rounded-full bg-white/15 px-4 py-1.5 text-[16px] font-bold">
                      {t.newLimit}: <span className="tabular-nums text-[#ffe27a]">${shownLimit}</span>
                   </span>
@@ -454,9 +436,7 @@ export default function LimitSpinWheel({
                      ))}
                   </span>
                   <span className="flex min-w-0 flex-col">
-                     <span className="text-[12px] font-extrabold uppercase tracking-[0.16em] text-[#b07a00] dark:text-[#ffe27a]">{t.badge}</span>
                      <span className="text-[22px] font-black leading-tight text-[#040033] dark:text-[#F0EAFF]">{locale === 'fil' ? badge.fil : badge.en}</span>
-                     <span className="mt-0.5 text-[13px] font-semibold text-[#70617F] dark:text-[#A89BB8]">{t.proof}</span>
                   </span>
                </div>
                {/* What's next: always one more badge to earn (until the top). */}
@@ -465,7 +445,7 @@ export default function LimitSpinWheel({
                      <>
                         <div className="flex items-center justify-between text-[13px] font-bold text-[#40344F] dark:text-[#D9CFEA]">
                            <span>
-                              {t.next}: {upNext.icon} {locale === 'fil' ? upNext.fil : upNext.en}
+                              {upNext.icon} {locale === 'fil' ? upNext.fil : upNext.en}
                            </span>
                            <span className="tabular-nums text-[#6010D2] dark:text-[#C4B8FF]">
                               ${toLimit} / ${upNext.at}
@@ -494,16 +474,6 @@ export default function LimitSpinWheel({
             >
                {t.done}
             </button>
-         ) : null}
-         {phase === 'done' ? (
-            // Keep the good feeling going: the game earns Pandesal points (chomp_level_reward).
-            <a
-               href="/game"
-               className="flex h-12 w-full items-center justify-center rounded-2xl border-2 border-[#6010D2] bg-white text-[16px] font-extrabold text-[#6010D2] transition-transform active:scale-[0.97] dark:bg-transparent dark:text-[#C4B8FF]"
-               style={{ animation: 'lswBadge 400ms ease-out 1.3s both' }}
-            >
-               {t.play}
-            </a>
          ) : null}
          {phase !== 'done' ? (
             <button
