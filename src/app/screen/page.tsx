@@ -1097,6 +1097,8 @@ export default function PreScreeningPage({ preview }: { preview?: ScreenPreview 
 
    const goBack = () => {
       setError(null);
+      // Going back to look or edit: from here Next walks every question again, nothing skipped.
+      setResumed(false);
       if (stage === 'proof') {
          // v2: proof comes before the medical question, so Back goes to the job step before it.
          if (questions[index]?.kind === 'medical' && index > 0) setIndex(index - 1);
