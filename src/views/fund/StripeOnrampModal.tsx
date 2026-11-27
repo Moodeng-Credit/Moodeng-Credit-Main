@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { LoaderCircle, ShieldCheck, X } from 'lucide-react';
-import { loadStripeOnramp } from '@stripe/crypto';
+// `/pure`: the package's main entry injects Stripe's scripts the moment this file is imported, and
+// this file sits in the main bundle, so every page (sign-up included) downloaded ~300 KB of Stripe.
+// The pure entry fetches them only when loadStripeOnramp() runs, i.e. when the fund sheet opens.
+import { loadStripeOnramp } from '@stripe/crypto/pure';
 import type { StripeOnramp } from '@stripe/crypto';
 
 import {

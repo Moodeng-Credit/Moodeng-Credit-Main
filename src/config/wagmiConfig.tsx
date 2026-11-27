@@ -242,7 +242,23 @@ export type WalletConnectorKey = keyof typeof WALLET_CONNECTOR_NAMES;
 
 const walletConnectProjectId = import.meta.env.VITE_WALLET_CONNECT_PROJECT_ID || '';
 
-const connectors = connectorsForWallets(
+// wagmi runs every connector's setup() when the config is created. For MetaMask and WalletConnect
+// that setup downloads their SDKs (MetaMask SDK, WalletConnect/Reown core: ~1.4 MB of JS) on every
+// page, sign-up included, though borrowers never use them. setup() only listens for a wallet that
+// connects on its own; connect() loads the SDK itself, so dropping setup defers the download to the
+// moment someone taps that wallet. We never auto-reconnect (reconnectOnMount={false}).
+const LAZY_SETUP_CONNECTOR_IDS = new Set(['metaMaskSDK', 'walletConnect']);
+const withLazySdk = (connectorFns: ReturnType<typeof connectorsForWallets>) =>
+   connectorFns.map(
+      (createConnectorFn): (typeof connectorFns)[number] =>
+         (wagmiConfig) => {
+            const connector = createConnectorFn(wagmiConfig);
+            return LAZY_SETUP_CONNECTOR_IDS.has(connector.id) ? { ...connector, setup: undefined } : connector;
+         }
+   );
+
+const connectors = withLazySdk(
+   connectorsForWallets(
    [
       {
          groupName: 'Recommended',
@@ -257,6 +273,7 @@ const connectors = connectorsForWallets(
       appName: 'Moodeng',
       projectId: walletConnectProjectId
    }
+   )
 );
 
 const chainsTuple = chainsWithIcons as unknown as [Chain, ...Chain[]];
