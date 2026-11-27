@@ -87,7 +87,8 @@ export default function NextLoanPreview() {
                .filter((state) => !only || state.key === only)
                .map((state) => (
                   <section key={state.key} className="rounded-[8px] bg-dv2-card px-2.5 pb-3.5 pt-4">
-                     <p className="px-1 text-[13px] font-semibold text-[#45556c]">{state.label}</p>
+                     {/* The spin card has no label in the app, so none here either. */}
+                     {state.spin ? null : <p className="px-1 text-[13px] font-semibold text-[#45556c]">{state.label}</p>}
                      {state.spin ? (
                         <div className="pt-3">
                            <SpinPlayground />
