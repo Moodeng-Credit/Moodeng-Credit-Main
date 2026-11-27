@@ -7,6 +7,7 @@ import { PAGE_INBOX_URL } from '../_shared/loanAccess.ts';
 import { decideAutoMatch, MATCH_WINDOW_MS, type OpenAttempt } from '../_shared/messengerAutoMatch.ts';
 import { handleCashOutMessage } from '../_shared/messengerCashOutHelp.ts';
 import { handleBookingMessage, handleKeepSpotReply, handleReminderNumber } from '../_shared/messengerBookingBot.ts';
+import { handleReminderChannelReply } from '../_shared/callReminderChannel.ts';
 import { logMessengerContact, rememberMessengerContact, saveFacebookName } from '../_shared/messengerContactLog.ts';
 import { handleIncomeDocMessage } from '../_shared/messengerIncomeDocReply.ts';
 import { handleProofKeyword, intakeMessengerPhotos, photoIntakeReason } from '../_shared/messengerPhotoIntake.ts';
@@ -362,6 +363,8 @@ serve(async (req) => {
          // "OK" to the day-before reminder's "Reply OK to keep your spot".
          if (typed && (await handleKeepSpotReply(svc, known!.userId, contactId, typed))) continue;
          if (typed && (await handleBookingMessage(svc, known!.userId, contactId, typed))) continue;
+         // "ok here in messenger only" to the text-reminder ask: the AI reads it, we confirm Messenger reminders.
+         if (typed && (await handleReminderChannelReply(svc, known!.userId, contactId, typed))) continue;
          // "When do I pay back?" / "I want to repay now" / "can I borrow again?": 31-day term, pay in the
          // last week before the due date, no fast borrow-repay loops (flags possible limit-gaming to the team).
          // Answers, then still falls through to the ticket below.
