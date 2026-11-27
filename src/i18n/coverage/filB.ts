@@ -841,6 +841,7 @@ export const filipinoCoverageB: Record<string, string> = {
    // Limit Spin (2026-11-27).
    'Keep your next loan 7+ days to earn a spin 🎡': 'Panatilihin ang susunod mong loan nang 7+ araw para may spin ka 🎡',
    'to earn a spin 🎡': 'para may spin ka 🎡',
+   'Play Shark Chomp 🦈': 'Laruin ang Shark Chomp 🦈',
    'First loan': 'Unang loan',
    'Pay back a full-limit loan in its best days to grow your limit.':
       'Bayaran ang full-limit loan sa pinakamagandang araw nito para tumaas ang limit mo.',

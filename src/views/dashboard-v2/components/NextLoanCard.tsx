@@ -57,7 +57,8 @@ const COPY = {
       eyebrow: 'Your next loan',
       upFrom: (from: number) => `↑ from $${from}`,
       spinChip: 'Spin: +$2 to +$5',
-      nowEarlySpin: (from: string) => `You can pay anytime. From ${from}, paying back earns a spin 🎡`,
+      nowEarlySpin: (from: string) => `You can pay back as early as ${from}, a week after you got it, and spin for +$2 to +$5 🎡`,
+      playWhileWaiting: 'Waiting? Play Shark Chomp 🦈',
       stays: 'Stays the same',
       payBetween: 'Pay between',
       amount: 'Amount',
@@ -82,7 +83,9 @@ const COPY = {
       eyebrow: 'Susunod mong loan',
       upFrom: (from: number) => `↑ mula $${from}`,
       spinChip: 'Spin: +$2 hanggang +$5',
-      nowEarlySpin: (from: string) => `Puwede kang magbayad anumang oras. Simula ${from}, may spin ka kapag nagbayad 🎡`,
+      nowEarlySpin: (from: string) =>
+         `Puwede kang magbayad simula ${from}, isang linggo matapos mong makuha, at mag-spin para sa +$2 hanggang +$5 🎡`,
+      playWhileWaiting: 'Naghihintay? Laruin ang Shark Chomp 🦈',
       stays: 'Pareho pa rin',
       payBetween: 'Magbayad sa',
       amount: 'Halaga',
@@ -267,6 +270,12 @@ export default function NextLoanCard({
                            ? t.nowEarly(dayLabel(payWindow.start, due.zone), limit)
                            : t.nowEarlyPlain(dayLabel(payWindow.start, due.zone))}
                </p>
+               {spinLoan && payWindow.status === 'early' ? (
+                  // The days before the spin unlocks: something fun to do instead of paying early (2026-11-28).
+                  <a href="/chomp" className="text-[14px] font-semibold text-[#6010D2] dark:text-[#C4B8FF]">
+                     {t.playWhileWaiting} ›
+                  </a>
+               ) : null}
                {!isFullLimit && canGrow ? (
                   <p className="text-[13px] leading-[18px] text-[#70617F] dark:text-[#A89BB8]">{t.notFull(limit, nextLimit)}</p>
                ) : null}

@@ -2136,6 +2136,11 @@ export default function Repay() {
                      {completion.trustPoints > 0 ? <DoneRow>+{completion.trustPoints} Pandesal points</DoneRow> : null}
                   </div>
                   {completion.limitSpin ? <LimitSpinPrompt className="w-full" /> : null}
+                  {completion.lowIncome ? (
+                     <a href="/chomp" className="text-[15px] font-semibold text-[#6010D2] dark:text-[#C4B8FF]">
+                        Play Shark Chomp 🦈
+                     </a>
+                  ) : null}
                   <RepayStreakCelebration isPreview={usePreviewLoans} />
                   <AffiliateUnlockedCard isPreview={usePreviewLoans} />
                   <div className="flex w-full flex-col gap-3">
