@@ -109,6 +109,8 @@ const COPY = {
       paid: '🎉 Loan paid back!',
       newLimit: 'New limit',
       top: 'You reached the top! 🏆',
+      play: 'Win +$1 for your next spin 🦈',
+      later: 'Later',
       done: 'Keep it up 💪'
    },
    fil: {
@@ -123,6 +125,8 @@ const COPY = {
       paid: '🎉 Bayad na ang loan!',
       newLimit: 'Bagong limit',
       top: 'Naabot mo ang tuktok! 🏆',
+      play: 'Manalo ng +$1 sa susunod mong spin 🦈',
+      later: 'Mamaya',
       done: 'Tuloy lang 💪'
    }
 };
@@ -144,7 +148,7 @@ export default function LimitSpinWheel({
    /** Shark Chomp's +$1 on top of the wheel (chomp_level_reward), shown after it lands. */
    bonus?: number;
    /** After they've seen the result (mark it seen, close a sheet…). */
-   onDone?: () => void;
+   onDone?: () => void | Promise<void>;
 }) {
    const { locale } = useLocalization();
    const t = COPY[locale === 'fil' ? 'fil' : 'en'];
@@ -458,14 +462,35 @@ export default function LimitSpinWheel({
             </div>
          ) : null}
          {phase === 'done' ? (
-            <button
-               type="button"
-               onClick={onDone}
-               className="h-[52px] w-full rounded-2xl bg-[linear-gradient(180deg,#7a2cf0,#5a0fc8)] text-[17px] font-extrabold text-white shadow-[0_5px_0_#3d0890,0_10px_20px_rgba(96,16,210,0.3)] transition-transform active:translate-y-[3px] active:shadow-[0_2px_0_#3d0890]"
-               style={{ animation: 'lswBadge 400ms ease-out 1.1s both' }}
-            >
-               {t.done}
-            </button>
+            // The end of every spin offers the Shark bonus: beat level 3 of Shark Chomp → +$1 on the next spin
+            // (chomp_level_reward saves it). At the top there's nothing left to win, so just one plain button.
+            <>
+               <button
+                  type="button"
+                  onClick={async () => {
+                     if (!upNext) {
+                        await onDone?.();
+                        return;
+                     }
+                     await onDone?.();
+                     window.location.href = '/game';
+                  }}
+                  className="h-[52px] w-full rounded-2xl bg-[linear-gradient(180deg,#7a2cf0,#5a0fc8)] text-[17px] font-extrabold text-white shadow-[0_5px_0_#3d0890,0_10px_20px_rgba(96,16,210,0.3)] transition-transform active:translate-y-[3px] active:shadow-[0_2px_0_#3d0890]"
+                  style={{ animation: 'lswBadge 400ms ease-out 1.1s both' }}
+               >
+                  {upNext ? t.play : t.done}
+               </button>
+               {upNext ? (
+                  <button
+                     type="button"
+                     onClick={() => void onDone?.()}
+                     className="text-[14px] font-semibold text-[#70617F] underline-offset-2 hover:underline dark:text-[#A89BB8]"
+                     style={{ animation: 'lswBadge 400ms ease-out 1.3s both' }}
+                  >
+                     {t.later}
+                  </button>
+               ) : null}
+            </>
          ) : null}
          {phase !== 'done' ? (
             <button

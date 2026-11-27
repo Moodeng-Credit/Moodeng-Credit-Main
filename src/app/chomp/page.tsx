@@ -1153,7 +1153,11 @@ function HouseRoom(props: {
                   {reward ? (
                      // Real rewards (chomp_level_reward): these land in their Moodeng account, not just the game.
                      <div className="flex flex-col items-center gap-1 rounded-[18px] border-2 border-[#3fb46a] bg-[#eefbf1] p-3 text-center text-[#2f7a3a] shadow-sm">
-                        {reward.bonus ? <span className="text-[17px] font-bold">🦈 Shark bonus! +$1 added to your spin</span> : null}
+                        {reward.bonus ? (
+                           <span className="text-[17px] font-bold">
+                              {reward.banked ? '🦈 Shark bonus saved! +$1 on your next spin' : '🦈 Shark bonus! +$1 added to your spin'}
+                           </span>
+                        ) : null}
                         {reward.points > 0 ? (
                            <span className="text-[15px] font-semibold">🍞 +{reward.points} Pandesal point in your Moodeng account</span>
                         ) : null}
