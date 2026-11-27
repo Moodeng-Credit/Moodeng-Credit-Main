@@ -292,7 +292,7 @@ export default function NextLoanCard({
                </p>
                {spinLoan && payWindow.status === 'early' ? (
                   // The days before the spin unlocks: something fun to do instead of paying early (2026-11-28).
-                  <a href="/chomp" className="text-[14px] font-semibold text-[#6010D2] dark:text-[#C4B8FF]">
+                  <a href="/game" className="text-[14px] font-semibold text-[#6010D2] dark:text-[#C4B8FF]">
                      {t.playWhileWaiting} ›
                   </a>
                ) : null}

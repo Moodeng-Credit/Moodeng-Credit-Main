@@ -239,14 +239,13 @@ export const sendConfirmedMessenger = (u: CallUser) => {
    });
 };
 
-// Shark Chomp, the wait game, with this call's start time and Zoom link for its countdown + Join.
+// Shark Chomp, the wait game: a short link (George 2026-11-28: "the link is super long"),
+// moodeng.app/game/CODE with CODE = the call's start time in seconds, base 36 (≈ moodeng.app/game/tm8x3k),
+// for the page's countdown. No Zoom link in it: the same message has one, and signed in the page reads theirs.
 export const buildWaitGameUrl = (u: Pick<CallUser, 'video_call_starts_at' | 'video_call_join_url'>) => {
    const site = (Deno.env.get('VITE_SITE_URL') ?? Deno.env.get('MOODENG_APP_URL') ?? Deno.env.get('SITE_URL') ?? 'https://moodeng.app').replace(/\/$/, '');
-   const q = new URLSearchParams();
-   if (u.video_call_starts_at) q.set('at', u.video_call_starts_at);
-   if (u.video_call_join_url) q.set('join', u.video_call_join_url);
-   const qs = q.toString();
-   return `${site}/chomp${qs ? `?${qs}` : ''}`;
+   const at = u.video_call_starts_at ? Date.parse(u.video_call_starts_at) : Number.NaN;
+   return Number.isFinite(at) ? `${site}/game/${Math.floor(at / 1000).toString(36)}` : `${site}/game`;
 };
 
 // The 30 / 15 / 5-minute countdown (video-call-reminders), each with a sorry for the nagging

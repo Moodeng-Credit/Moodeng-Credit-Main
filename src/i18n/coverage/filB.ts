@@ -842,6 +842,7 @@ export const filipinoCoverageB: Record<string, string> = {
    // Pay anytime, spin on day 3 (2026-11-28).
    'Your spin unlocks': 'Magbubukas ang spin mo sa',
    'Your spin is almost ready': 'Malapit nang ma-ready ang spin mo',
+   'Play Shark Chomp while you wait 🦈': 'Laruin ang Shark Chomp habang naghihintay 🦈',
    'Paying earns a spin.': 'May spin ka kapag nagbayad.',
    'It unlocks': 'Magbubukas sa',
    'to earn a spin 🎡': 'para may spin ka 🎡',
