@@ -1,3 +1,6 @@
+import { useState } from 'react';
+
+import { drawLimitSpin } from '@/config/creditTiers';
 import LimitSpinWheel from '@/views/dashboard-v2/components/LimitSpinWheel';
 import NextLoanCard from '@/views/dashboard-v2/components/NextLoanCard';
 import type { DashboardV2Due } from '@/views/dashboard-v2/types';
@@ -22,6 +25,48 @@ const sampleDue = (daysToDue: number, daysSinceFunded: number, principal = 15): 
    };
 };
 
+// The real odds (drawLimitSpin), a fresh draw each time, with or without the Shark Chomp +$1.
+function SpinPlayground() {
+   const [round, setRound] = useState(0);
+   const [bonus, setBonus] = useState(false);
+   const [limit, setLimit] = useState(15);
+   const [draw, setDraw] = useState(() => drawLimitSpin());
+   const raise = Math.max(0, Math.min(draw + (bonus ? 1 : 0), 35 - limit));
+   const shownBonus = Math.min(bonus ? 1 : 0, raise);
+   return (
+      <div className="flex flex-col items-center gap-3">
+         <LimitSpinWheel key={round} amount={raise - shownBonus} bonus={shownBonus} toLimit={limit + raise} onDone={() => setLimit(limit + raise)} />
+         {/* Test controls (dev page only), kept small. */}
+         <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[12px] text-[#8a7f99]">
+            <button
+               className="underline"
+               onClick={() => {
+                  setDraw(drawLimitSpin());
+                  setRound(round + 1);
+               }}
+               type="button"
+            >
+               ↻ next loan
+            </button>
+            <button
+               className="underline"
+               onClick={() => {
+                  setLimit(15);
+                  setDraw(drawLimitSpin());
+                  setRound(round + 1);
+               }}
+               type="button"
+            >
+               reset to $15
+            </button>
+            <label className="flex items-center gap-1">
+               <input checked={bonus} onChange={(e) => setBonus(e.target.checked)} type="checkbox" /> shark bonus
+            </label>
+         </div>
+      </div>
+   );
+}
+
 const STREAK = { current: 1, best: 1, nextStep: 3, toGo: 2, nextPhp: 50 };
 
 /** Dev only: the "Your next loan" card in each state. ?state=best|early|less|none|ceiling|spin shows one. */
@@ -33,7 +78,7 @@ export default function NextLoanPreview() {
       { key: 'less', label: 'Borrowed less than the limit', dues: [sampleDue(20, 10, 10)] },
       { key: 'none', label: 'No loan out', dues: [] },
       { key: 'ceiling', label: 'At their income ceiling ($35)', dues: [], ceiling: true },
-      { key: 'spin', label: 'Limit Spin (low income, after repaying)', dues: [], spin: true }
+      { key: 'spin', label: 'Limit Spin', dues: [], spin: true }
    ];
    return (
       <div className="min-h-screen bg-dv2-page">
@@ -42,10 +87,11 @@ export default function NextLoanPreview() {
                .filter((state) => !only || state.key === only)
                .map((state) => (
                   <section key={state.key} className="rounded-[8px] bg-dv2-card px-2.5 pb-3.5 pt-4">
-                     <p className="px-1 text-[13px] font-semibold text-[#45556c]">{state.label}</p>
+                     {/* The spin card has no label in the app, so none here either. */}
+                     {state.spin ? null : <p className="px-1 text-[13px] font-semibold text-[#45556c]">{state.label}</p>}
                      {state.spin ? (
                         <div className="pt-3">
-                           <LimitSpinWheel amount={3} toLimit={18} />
+                           <SpinPlayground />
                         </div>
                      ) : state.ceiling ? (
                         <NextLoanCard dues={state.dues} limit={35} nextLimit={35} atCeiling streak={STREAK} />
