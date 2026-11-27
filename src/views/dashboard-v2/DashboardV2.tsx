@@ -16,7 +16,7 @@ import { useLimitCeiling } from '@/hooks/useLimitCeiling';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useVerificationJourney } from '@/hooks/useVerificationJourney';
 
-import { getIncomeNextLimit, getNextCreditTier } from '@/config/creditTiers';
+import { getIncomeNextLimit, getNextCreditTier, isLowIncomeLadder } from '@/config/creditTiers';
 import { getEffectiveCreditLimit } from '@/lib/creditLeveling';
 import type { ClaimableVoucher } from '@/lib/friendReferrals';
 import { recordGuidedTourEvent } from '@/lib/guidedTourEvents';
@@ -185,6 +185,7 @@ export default function DashboardV2() {
    const payOnTimeNextLimit = payOnTimeLimit
       ? getIncomeNextLimit(payOnTimeLimit, ceiling, authUser?.createdAt, findOpenFullLimitLoan(myLoans, payOnTimeLimit)?.fundedAt ?? null)
       : 0;
+   const lowIncome = isLowIncomeLadder(ceiling, authUser?.createdAt);
    const atCeiling = Boolean(ceiling) && payOnTimeLimit > 0 && payOnTimeLimit >= (ceiling ?? 0) && rawNextLimit > payOnTimeLimit;
    const previewTrack = isPreviewHost() && (trackParam === 'A' || trackParam === 'B') ? trackParam : undefined;
    const showTour = searchParams.has('tour') && shouldShowGuidedTour(BORROWER_GUIDED_TOUR_ID, userId, false);
@@ -317,7 +318,7 @@ export default function DashboardV2() {
                   ) : null}
                   {/* Anything to repay sits near the top, with the streak and what paying on time earns. */}
                   {model.dues.length ? (
-                     <UpcomingDuesSection model={model} limit={payOnTimeLimit} nextLimit={payOnTimeNextLimit} atCeiling={atCeiling} />
+                     <UpcomingDuesSection model={model} limit={payOnTimeLimit} nextLimit={payOnTimeNextLimit} atCeiling={atCeiling} lowIncome={lowIncome} />
                   ) : null}
                   {voucherFollowUp ? (
                      <VoucherFollowUpCard
@@ -331,7 +332,7 @@ export default function DashboardV2() {
                   {milestonesAndVoucher}
                   <LoanSummarySection model={model} />
                   {!model.dues.length ? (
-                     <UpcomingDuesSection model={model} limit={payOnTimeLimit} nextLimit={payOnTimeNextLimit} atCeiling={atCeiling} />
+                     <UpcomingDuesSection model={model} limit={payOnTimeLimit} nextLimit={payOnTimeNextLimit} atCeiling={atCeiling} lowIncome={lowIncome} />
                   ) : null}
                </div>
             )}

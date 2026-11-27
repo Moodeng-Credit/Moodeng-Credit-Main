@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 
 import clsx from 'clsx';
 
+import { INCOME_LADDER_FROM, LOW_INCOME_COUNTS_AFTER_DAYS } from '@/config/creditTiers';
 import { useLocalization } from '@/i18n';
 import { SECOND_HALF_RULE_FROM } from '@/lib/creditLeveling';
 import type { RepayStreak } from '@/lib/friendReferrals';
@@ -23,15 +24,22 @@ export type PayWindowStatus = 'early' | 'best' | 'late';
  * 15th or 30th payday; a last-7-days window missed both for almost half of due dates.
  */
 export const getPayWindow = (
-   due: Pick<DashboardV2Due, 'deadline' | 'fundedAt' | 'rewardFrom'>,
-   now: number = Date.now()
+   due: Pick<DashboardV2Due, 'deadline' | 'fundedAt' | 'rewardFrom' | 'finalDeadline'>,
+   now: number = Date.now(),
+   opts: { lowIncome?: boolean } = {}
 ): { start: number; deadline: number; funded: number; status: PayWindowStatus } | null => {
-   const deadline = new Date(due.deadline).getTime();
+   // A two-payment loan's limit window runs to its FINAL due day, not the next part's (review 2026-11-27).
+   const deadline = new Date(due.finalDeadline ?? due.deadline).getTime();
    if (!Number.isFinite(deadline)) return null;
    const fundedRaw = due.fundedAt ? new Date(due.fundedAt).getTime() : Number.NaN;
    const rewardFrom = due.rewardFrom ? new Date(due.rewardFrom).getTime() : Number.NaN;
    const funded = Number.isFinite(fundedRaw) ? fundedRaw : deadline - 30 * DAY;
-   const start = Math.min(deadline - HOUR, Math.max(funded + 48 * HOUR, Number.isFinite(rewardFrom) ? rewardFrom : 0));
+   // Low income (income ceiling $35): their repayment counts from day 7 (creditTiers LOW_INCOME_COUNTS_AFTER_DAYS).
+   const lowIncomeStart =
+      opts.lowIncome && Number.isFinite(fundedRaw) && fundedRaw >= INCOME_LADDER_FROM
+         ? fundedRaw + LOW_INCOME_COUNTS_AFTER_DAYS * DAY
+         : null;
+   const start = Math.min(deadline - HOUR, lowIncomeStart ?? Math.max(funded + 48 * HOUR, Number.isFinite(rewardFrom) ? rewardFrom : 0));
    const status: PayWindowStatus = now >= deadline ? 'late' : now >= start ? 'best' : 'early';
    return { start, deadline, funded, status };
 };
@@ -51,7 +59,7 @@ const COPY = {
       stays: 'Stays the same',
       payBetween: 'Pay between',
       amount: 'Amount',
-      early: 'Too early',
+      early: 'Limit stays',
       best: 'Best days',
       late: 'Late',
       today: 'Today',
@@ -72,7 +80,7 @@ const COPY = {
       stays: 'Pareho pa rin',
       payBetween: 'Magbayad sa',
       amount: 'Halaga',
-      early: 'Masyadong maaga',
+      early: 'Pareho ang limit',
       best: 'Pinakamagandang araw',
       late: 'Late',
       today: 'Ngayon',
@@ -99,6 +107,7 @@ export default function NextLoanCard({
    limit,
    nextLimit,
    atCeiling = false,
+   lowIncome = false,
    streak,
    now
 }: {
@@ -107,6 +116,8 @@ export default function NextLoanCard({
    nextLimit: number;
    /** At their income ceiling: say why the limit stays, and invite proof of income. */
    atCeiling?: boolean;
+   /** On the low-income ladder: their repayment counts from day 7. */
+   lowIncome?: boolean;
    streak?: RepayStreak;
    /** Preview only: a fixed "today". */
    now?: number;
@@ -122,7 +133,7 @@ export default function NextLoanCard({
 
    const pesos = (usd: number) => `₱${Math.round(usd * phpRate.value).toLocaleString()}`;
    const money = (usd: number) => (inPhilippines ? `≈ ${pesos(usd)}` : `$${usd.toFixed(2)}`);
-   const payWindow = due ? getPayWindow(due, today) : null;
+   const payWindow = due ? getPayWindow(due, today, { lowIncome }) : null;
    const isFullLimit = due ? (due.principal ?? 0) >= limit - 0.01 : true;
    const canGrow = nextLimit > limit;
    const showNext = canGrow && isFullLimit;
@@ -256,9 +267,11 @@ export default function NextLoanCard({
             // Income ceiling (2026-11-27): fair wording, never a label like "low income"; proof is optional.
             <div className="flex flex-col gap-2 rounded-[14px] bg-white px-3.5 py-3 shadow-[0_1px_3px_rgba(76,45,140,0.08)] dark:bg-[#221A30] dark:shadow-none">
                <p className="text-[14px] leading-[20px] text-[#40344F] dark:text-[#D9CFEA]">{t.ceiling(limit)}</p>
-               <a href="/documents" className="text-[14px] font-semibold text-[#6010D2] dark:text-[#C4B8FF]">
-                  {t.ceilingLink} ›
-               </a>
+               {inPhilippines ? (
+                  <a href="/documents" className="text-[14px] font-semibold text-[#6010D2] dark:text-[#C4B8FF]">
+                     {t.ceilingLink} ›
+                  </a>
+               ) : null}
             </div>
          ) : null}
 

@@ -11,7 +11,7 @@
 // A cheap word check first, then Gemini says which one it is (no AI answer → a person handles it). Early repays
 // and quick re-borrows are flagged to the team (⚠️ may be gaming the limit). Every message still becomes
 // a support ticket; extension / can't-pay / problems aren't answered here at all.
-import { secondHalfStartAt } from './creditAndPoints.ts';
+import { countsFromAt, getCreditTrack, LOW_INCOME_CEILING, secondHalfStartAt } from './creditAndPoints.ts';
 import { GEMINI_MODEL } from './geminiPreScreen.ts';
 import { getAdminChatId } from './loanAccess.ts';
 import { sendMessengerMessage } from './sendpulse.ts';
@@ -42,21 +42,46 @@ export const guessIntent = (text: string): TimingIntent => {
    return 'other';
 };
 
-export type OpenLoan = { funded_at: string | null; due_date: string | null; due_timezone: string | null; owed: number };
+export type OpenLoan = {
+   funded_at: string | null;
+   due_date: string | null;
+   due_timezone: string | null;
+   owed: number;
+   /** Income ceiling $35 (Track B): repayment counts from day 7, not the 2nd half. */
+   low_income?: boolean;
+};
 
 export const fmtDate = (iso: string, tz: string | null, locale: Locale) =>
    new Intl.DateTimeFormat(locale === 'fil' ? 'fil-PH' : 'en-US', { month: 'short', day: 'numeric', timeZone: tz || 'Asia/Manila' }).format(new Date(iso));
 
-/** When the loan's 2nd half starts (the best days to pay), same as the app's "Your next loan" card. Pure. */
-export const payFromAt = (loan: Pick<OpenLoan, 'funded_at' | 'due_date' | 'due_timezone'> | null): Date | null => {
+/**
+ * The first of the best days to pay, same as the app's "Your next loan" card: the 2nd half of the loan, or
+ * day 7 for the low-income ladder. Pure.
+ */
+export const payFromAt = (loan: Pick<OpenLoan, 'funded_at' | 'due_date' | 'due_timezone' | 'low_income'> | null): Date | null => {
    if (!loan?.due_date) return null;
+   if (loan.low_income) {
+      const from = countsFromAt(loan.funded_at, loan.due_date, loan.due_timezone, { lowIncome: true });
+      if (from) return from;
+   }
    return secondHalfStartAt(loan.funded_at, loan.due_date, loan.due_timezone) ?? new Date(Date.parse(loan.due_date) - REPAY_WINDOW_DAYS * DAY);
 };
 
-/** Before the 2nd half starts (so "paying now" is early). Pure. */
+/**
+ * Paying now wouldn't grow the limit — the SAME rule the server uses (countsFromAt): loans funded before
+ * 2026-11-27 keep the 48-hour rule, low income counts from day 7, everyone else the 2nd half. Pure.
+ */
 export const isEarly = (loan: OpenLoan | null, now: number) => {
-   const from = payFromAt(loan);
+   if (!loan?.due_date) return false;
+   const from = countsFromAt(loan.funded_at, loan.due_date, loan.due_timezone, { lowIncome: Boolean(loan.low_income) });
    return from !== null && now < from.getTime();
+};
+
+/** Low-income ladder (income ceiling $35, Track B). Unknown (lookup failed) → the normal rule. */
+export const isLowIncomeBorrower = async (svc: Svc, userId: string, joinedAt: string | null): Promise<boolean> => {
+   const { data, error } = await svc.rpc('limit_ceiling_for', { p_user: userId });
+   const ceiling = Number((data as { ceiling?: number | string } | null)?.ceiling ?? 0);
+   return !error && ceiling > 0 && ceiling <= LOW_INCOME_CEILING && getCreditTrack(joinedAt) === 'B';
 };
 
 /** The reply text. Pure. */
@@ -71,9 +96,13 @@ export const timingReply = (intent: Exclude<TimingIntent, 'other'>, loan: OpenLo
       ? `Hindi kami loan shark 🙂 May takdang haba ang bawat Moodeng loan${termDays ? ` (ang sa iyo ay ${termDays} araw)` : ` (kadalasan mga isang buwan, hanggang ${LOAN_TERM_DAYS} araw)`}, at sumusunod kami sa patakaran para sa mga nagpapautang.`
       : `We're not a loan shark 🙂 Every Moodeng loan has a set term${termDays ? ` (yours is ${termDays} days)` : ` (usually about a month, up to ${LOAN_TERM_DAYS} days)`}, and we follow the rules for lenders.`;
    const window = due
-      ? fil
-         ? `Ang due date mo ay ${due}. Pinakamainam magbayad sa 2nd half ng loan mo: ${from} hanggang ${due}.`
-         : `Your due date is ${due}. The best time to pay is the 2nd half of your loan: ${from} to ${due}.`
+      ? loan?.low_income
+         ? fil
+            ? `Ang due date mo ay ${due}. Pinakamainam magbayad mula ${from} hanggang ${due}.`
+            : `Your due date is ${due}. The best time to pay is ${from} to ${due}.`
+         : fil
+           ? `Ang due date mo ay ${due}. Pinakamainam magbayad sa 2nd half ng loan mo: ${from} hanggang ${due}.`
+           : `Your due date is ${due}. The best time to pay is the 2nd half of your loan: ${from} to ${due}.`
       : fil
         ? 'Pinakamainam magbayad sa 2nd half ng loan mo, hanggang sa due date.'
         : 'The best time to pay is the 2nd half of your loan, by your due date.';
@@ -154,7 +183,7 @@ export const handleLoanTimingMessage = async (svc: Svc, userId: string, contactI
 
       const now = Date.now();
       const [{ data: user }, { data: contact }, { data: loans }] = await Promise.all([
-         svc.from('users').select('username, display_name, preferred_locale').eq('id', userId).maybeSingle(),
+         svc.from('users').select('username, display_name, preferred_locale, created_at').eq('id', userId).maybeSingle(),
          svc.from('messenger_contacts').select('locale').eq('contact_id', contactId).maybeSingle(),
          svc
             .from('loans')
@@ -174,7 +203,8 @@ export const handleLoanTimingMessage = async (svc: Svc, userId: string, contactI
               funded_at: openRow.funded_at,
               due_date: openRow.due_date,
               due_timezone: openRow.due_timezone,
-              owed: Math.max(0, Number(openRow.total_repayment_amount ?? 0) - Number(openRow.repaid_amount ?? 0))
+              owed: Math.max(0, Number(openRow.total_repayment_amount ?? 0) - Number(openRow.repaid_amount ?? 0)),
+              low_income: await isLowIncomeBorrower(svc, userId, (user as { created_at?: string | null } | null)?.created_at ?? null)
            }
          : null;
       // "early" with nothing open to pay: answer the timing rules instead.

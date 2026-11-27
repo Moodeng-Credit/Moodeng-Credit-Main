@@ -396,13 +396,16 @@ export function UpcomingDuesSection({
    model,
    limit = 0,
    nextLimit = 0,
-   atCeiling = false
+   atCeiling = false,
+   lowIncome = false
 }: {
    model: DashboardV2Model;
    limit?: number;
    nextLimit?: number;
    /** Their limit has reached their income ceiling (useLimitCeiling). */
    atCeiling?: boolean;
+   /** On the low-income ladder: repayments count from day 7. */
+   lowIncome?: boolean;
 }) {
    const nextDueId = [...model.dues].filter((due) => !due.isOverdue).sort((a, b) => a.daysRemaining - b.daysRemaining)[0]?.id;
    return (
@@ -425,7 +428,14 @@ export function UpcomingDuesSection({
          {/* "Your next loan": next limit + the pay window (one rule: pay in your last week). Shows the old
              "Pay on time" streak card only for someone without a limit yet. */}
          {limit > 0 ? (
-            <NextLoanCard dues={model.dues} limit={limit} nextLimit={nextLimit} atCeiling={atCeiling} streak={model.rewards.streak} />
+            <NextLoanCard
+               dues={model.dues}
+               limit={limit}
+               nextLimit={nextLimit}
+               atCeiling={atCeiling}
+               lowIncome={lowIncome}
+               streak={model.rewards.streak}
+            />
          ) : (
             <RepayStreakCard streak={model.rewards.streak} />
          )}

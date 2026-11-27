@@ -69,7 +69,9 @@ export const getNextCreditTier = (
 
 /**
  * Income ladders (George, 2026-11-27: "connect their income to the credit ladder"). Low or no income
- * (income ceiling $35, app_private.limit_ceiling) climbs in $5 steps: $15 → $20 → $25 → $30 → $35. Everyone
+ * (income ceiling $35, app_private.limit_ceiling) climbs in $3 steps: $15 → $18 → $21 … → $35, and their
+ * repayment counts from day 7 of the loan (LOW_INCOME_COUNTS_AFTER_DAYS) instead of the 2nd half, since
+ * they get paid weekly or irregularly ("they will probably repay after a week or so"). Everyone
  * else keeps the normal $10 steps. Every ladder stops at the borrower's ceiling ($60 by default, $140 with
  * team-approved proof of ₱23k+/month). Borrowers only ever see their own next number, never the tiers.
  * The $5 steps apply to Track B loans funded from INCOME_LADDER_FROM (and to "what's next" when no loan is
@@ -78,7 +80,8 @@ export const getNextCreditTier = (
  */
 export const INCOME_LADDER_FROM = Date.parse('2026-11-28T00:00:00+07:00');
 export const LOW_INCOME_CEILING = 35;
-export const LOW_INCOME_LADDER: readonly number[] = [15, 20, 25, 30, 35];
+export const LOW_INCOME_LADDER: readonly number[] = [15, 18, 21, 24, 27, 30, 33, 35];
+export const LOW_INCOME_COUNTS_AFTER_DAYS = 7;
 
 /** The next limit after a full-limit loan, on the borrower's income ladder and never past their ceiling. */
 export const getIncomeNextLimit = (
@@ -128,6 +131,8 @@ type CreditProgressionInput = {
    fundedAt?: string | null;
    /** When the borrower joined (users.created_at): before October 2026 = Track A, the old ladder. */
    joinedAt?: string | null;
+   /** Income ceiling $35 (Track B): their repayment counts from day 7 instead of the 2nd half. */
+   lowIncome?: boolean;
 };
 
 type CreditProgressionResult = {
@@ -152,16 +157,22 @@ export const isFastRepay = (fundedAt: string | null | undefined, paidAt: string 
 // before the switch keep the 48-hour rule they were shown. Kept in sync with src/lib/creditLeveling.ts.
 export const SECOND_HALF_RULE_FROM = Date.parse('2026-11-27T00:00:00+07:00');
 
-/** When paying this loan starts to grow the limit. Null when the loan has no funding time. */
+/**
+ * When paying this loan starts to grow the limit. Null when the loan has no funding time.
+ * Loans funded before SECOND_HALF_RULE_FROM: 48h. Low income (`lowIncome`, ceiling $35) loans funded from
+ * INCOME_LADDER_FROM: day 7. Everyone else: the 2nd half.
+ */
 export const countsFromAt = (
    fundedAt: string | null | undefined,
    dueDate?: string | Date | null,
-   dueTimezone?: string | null
+   dueTimezone?: string | null,
+   opts: { lowIncome?: boolean } = {}
 ): Date | null => {
    const funded = fundedAt ? Date.parse(fundedAt) : NaN;
    if (!Number.isFinite(funded)) return null;
    const fast = funded + FAST_REPAY_HOURS * 3_600_000;
    if (funded < SECOND_HALF_RULE_FROM) return new Date(fast);
+   if (opts.lowIncome && funded >= INCOME_LADDER_FROM) return new Date(funded + LOW_INCOME_COUNTS_AFTER_DAYS * 86_400_000);
    return secondHalfStartAt(fundedAt, dueDate, dueTimezone) ?? new Date(fast);
 };
 
@@ -191,9 +202,10 @@ export const isTooEarlyRepay = (
    fundedAt: string | null | undefined,
    paidAt: string | null | undefined,
    dueDate?: string | Date | null,
-   dueTimezone?: string | null
+   dueTimezone?: string | null,
+   opts: { lowIncome?: boolean } = {}
 ) => {
-   const from = countsFromAt(fundedAt, dueDate, dueTimezone);
+   const from = countsFromAt(fundedAt, dueDate, dueTimezone, opts);
    const paid = paidAt ? Date.parse(paidAt) : NaN;
    return from !== null && Number.isFinite(paid) && paid < from.getTime();
 };
@@ -208,7 +220,8 @@ export const evaluateCreditProgression = ({
    dueTimezone,
    paidAt,
    fundedAt,
-   joinedAt
+   joinedAt,
+   lowIncome = false
 }: CreditProgressionInput): CreditProgressionResult => {
    const normalizedLimit = getEffectiveCreditLimit(currentLimit, isVerified);
    const repaid = toNumber(repaidAmount ?? 0);
@@ -221,7 +234,7 @@ export const evaluateCreditProgression = ({
    // reaches the limit or several small loans add up to it. Lateness doesn't block it: most late
    // repayments are tech trouble (wallets, exchanges), not the borrower's fault.
    const isFullLimitLoan = principal >= normalizedLimit;
-   const tooFast = isTooEarlyRepay(fundedAt, paidAt, dueDate, dueTimezone);
+   const tooFast = isTooEarlyRepay(fundedAt, paidAt, dueDate, dueTimezone, { lowIncome });
    const canLevelUp = isVerified && isFullyRepaid && isFullLimitLoan && normalizedLimit < MAX_CREDIT_LIMIT && !tooFast;
 
    return {

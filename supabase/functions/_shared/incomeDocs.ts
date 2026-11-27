@@ -155,7 +155,8 @@ export const computeMetrics = (doc: Extracted): Metrics => {
    const months = new Set(tx.map((t) => monthKey(t.date)).filter(Boolean));
    const spanMonths = (() => {
       if (doc.period_start && doc.period_end) {
-         const days = (Date.parse(doc.period_end) - Date.parse(doc.period_start)) / 86_400_000;
+         // Inclusive: Nov 1–15 is 15 days (exclusive read ~8% high and could cross a ladder line).
+         const days = (Date.parse(doc.period_end) - Date.parse(doc.period_start)) / 86_400_000 + 1;
          if (Number.isFinite(days) && days > 0) return Math.max(0.25, days / 30.4);
       }
       return Math.max(1, months.size);
@@ -2126,6 +2127,7 @@ export const analyseIncomeDocument = async (supabase: SupabaseClient, id: string
             user?.monthly_income ?? null,
             docMonthlyPhp({
                currency: doc.currency,
+               doc_type: doc.doc_type,
                net_pay: metrics.net_pay,
                months_covered: metrics.months_covered,
                regular_deposits: metrics.regular_deposits,
