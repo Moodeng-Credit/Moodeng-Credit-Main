@@ -1,3 +1,6 @@
+import { useState } from 'react';
+
+import { drawLimitSpin } from '@/config/creditTiers';
 import LimitSpinWheel from '@/views/dashboard-v2/components/LimitSpinWheel';
 import NextLoanCard from '@/views/dashboard-v2/components/NextLoanCard';
 import type { DashboardV2Due } from '@/views/dashboard-v2/types';
@@ -22,6 +25,48 @@ const sampleDue = (daysToDue: number, daysSinceFunded: number, principal = 15): 
    };
 };
 
+// The real odds (drawLimitSpin), a fresh draw each time, with or without the Shark Chomp +$1.
+function SpinPlayground() {
+   const [round, setRound] = useState(0);
+   const [bonus, setBonus] = useState(false);
+   const [limit, setLimit] = useState(15);
+   const [draw, setDraw] = useState(() => drawLimitSpin());
+   const raise = Math.max(0, Math.min(draw + (bonus ? 1 : 0), 35 - limit));
+   const shownBonus = Math.min(bonus ? 1 : 0, raise);
+   return (
+      <div className="flex flex-col items-center gap-3">
+         <LimitSpinWheel key={round} amount={raise - shownBonus} bonus={shownBonus} toLimit={limit + raise} onDone={() => setLimit(limit + raise)} />
+         <label className="flex items-center gap-2 text-[14px] font-semibold text-[#45556c]">
+            <input checked={bonus} onChange={(e) => setBonus(e.target.checked)} type="checkbox" /> Beat level 3 of Shark Chomp (+$1)
+         </label>
+         <div className="flex gap-2">
+            <button
+               className="rounded-full bg-[#6010D2] px-4 py-2 text-[14px] font-bold text-white"
+               onClick={() => {
+                  setDraw(drawLimitSpin());
+                  setRound(round + 1);
+               }}
+               type="button"
+            >
+               Next loan: spin again
+            </button>
+            <button
+               className="rounded-full border border-[#6010D2] px-4 py-2 text-[14px] font-bold text-[#6010D2]"
+               onClick={() => {
+                  setLimit(15);
+                  setDraw(drawLimitSpin());
+                  setRound(round + 1);
+               }}
+               type="button"
+            >
+               Start over at $15
+            </button>
+         </div>
+         <p className="text-[13px] text-[#70617F]">Limit now: ${limit} · top is $35</p>
+      </div>
+   );
+}
+
 const STREAK = { current: 1, best: 1, nextStep: 3, toGo: 2, nextPhp: 50 };
 
 /** Dev only: the "Your next loan" card in each state. ?state=best|early|less|none|ceiling|spin shows one. */
@@ -45,7 +90,7 @@ export default function NextLoanPreview() {
                      <p className="px-1 text-[13px] font-semibold text-[#45556c]">{state.label}</p>
                      {state.spin ? (
                         <div className="pt-3">
-                           <LimitSpinWheel amount={3} toLimit={18} />
+                           <SpinPlayground />
                         </div>
                      ) : state.ceiling ? (
                         <NextLoanCard dues={state.dues} limit={35} nextLimit={35} atCeiling streak={STREAK} />
