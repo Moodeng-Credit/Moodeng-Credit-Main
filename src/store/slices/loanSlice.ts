@@ -20,7 +20,7 @@ export type LoanSideEffectError = {
 };
 
 /** Reported by confirm-loan-payment when a repayment raised the borrower's credit limit. */
-export type CreditLevelUp = { fromLimit: number; toLimit: number };
+export type CreditLevelUp = { fromLimit: number; toLimit: number; spin?: boolean };
 
 /** Thrown when the payment is confirmed-pending on-chain (HTTP 202) — caller should retry later, NOT treat as failure. */
 export class PaymentNotConfirmedError extends Error {

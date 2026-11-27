@@ -69,7 +69,7 @@ export const getNextCreditTier = (
 
 /**
  * Income ladders (George, 2026-11-27: "connect their income to the credit ladder"). Low or no income
- * (income ceiling $35, app_private.limit_ceiling) climbs in $3 steps: $15 → $18 → $21 … → $35, and their
+ * (income ceiling $35, app_private.limit_ceiling) climbs by a Limit Spin (+$2 to +$5, usually +$2), and their
  * repayment counts from day 7 of the loan (LOW_INCOME_COUNTS_AFTER_DAYS) instead of the 2nd half, since
  * they get paid weekly or irregularly ("they will probably repay after a week or so"). Everyone
  * else keeps the normal $10 steps. Every ladder stops at the borrower's ceiling ($60 by default, $140 with
@@ -83,6 +83,29 @@ export const LOW_INCOME_CEILING = 35;
 export const LOW_INCOME_LADDER: readonly number[] = [15, 18, 21, 24, 27, 30, 33, 35];
 export const LOW_INCOME_COUNTS_AFTER_DAYS = 7;
 
+/**
+ * Limit Spin (George, 2026-11-27): low-income borrowers repay after about a week anyway, so each repayment
+ * that counts (from day 7) earns a spin instead of a fixed step: usually +$2, sometimes more, never past
+ * their ceiling. The server draws it (_shared/repaymentFollowUps.ts) and saves it in limit_boost_spins; the
+ * app's wheel only lands on the result. The app shows the guaranteed minimum as "$17+".
+ */
+export const LOW_INCOME_MIN_STEP = 2;
+export const LIMIT_SPIN_ODDS: ReadonlyArray<{ amount: number; weight: number }> = [
+   { amount: 2, weight: 60 },
+   { amount: 3, weight: 25 },
+   { amount: 4, weight: 10 },
+   { amount: 5, weight: 5 }
+];
+export const drawLimitSpin = (rng: () => number = Math.random): number => {
+   const total = LIMIT_SPIN_ODDS.reduce((sum, odd) => sum + odd.weight, 0);
+   let roll = rng() * total;
+   for (const odd of LIMIT_SPIN_ODDS) {
+      if (roll < odd.weight) return odd.amount;
+      roll -= odd.weight;
+   }
+   return LOW_INCOME_MIN_STEP;
+};
+
 /** The next limit after a full-limit loan, on the borrower's income ladder and never past their ceiling. */
 export const getIncomeNextLimit = (
    currentAmount: number,
@@ -95,8 +118,25 @@ export const getIncomeNextLimit = (
    const funded = fundedAt == null ? Number.NaN : new Date(fundedAt).getTime();
    const smallSteps =
       ceiling <= LOW_INCOME_CEILING && getCreditTrack(joinedAt) === 'B' && (!Number.isFinite(funded) || funded >= INCOME_LADDER_FROM);
-   const next = smallSteps ? (LOW_INCOME_LADDER.find((tier) => tier > currentAmount) ?? currentAmount) : trackNext;
+   // Low income: the Limit Spin's guaranteed minimum (+$2); the spin can add up to $3 more.
+   const next = smallSteps ? currentAmount + LOW_INCOME_MIN_STEP : trackNext;
    return Math.max(currentAmount, Math.min(next, ceiling, MAX_CREDIT_LIMIT));
+};
+
+/** This loan's counted repayment earns a Limit Spin (low income, Track B, funded from INCOME_LADDER_FROM). */
+export const earnsLimitSpin = (
+   ceiling: number | null | undefined,
+   joinedAt?: string | number | Date | null,
+   fundedAt?: string | number | Date | null
+): boolean => {
+   const funded = fundedAt == null ? Number.NaN : new Date(fundedAt).getTime();
+   return (
+      Boolean(ceiling) &&
+      (ceiling as number) <= LOW_INCOME_CEILING &&
+      getCreditTrack(joinedAt) === 'B' &&
+      Number.isFinite(funded) &&
+      funded >= INCOME_LADDER_FROM
+   );
 };
 
 // Admin "one level up / down" (Directory card): the next step on the borrower's track above or below the

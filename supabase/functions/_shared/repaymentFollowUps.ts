@@ -9,11 +9,14 @@
 //
 // Never throws; side-effect failures come back in `errors` (the payment is recorded either way).
 import {
+   drawLimitSpin,
+   earnsLimitSpin,
    evaluateCreditProgression,
    getCreditTrack,
    getEffectiveCreditLimit,
    getIncomeNextLimit,
    LOW_INCOME_CEILING,
+   MAX_CREDIT_LIMIT,
    toNumber
 } from './creditAndPoints.ts';
 import { postDiscord } from './discord.ts';
@@ -24,7 +27,7 @@ import { postPartialRepaymentToTeam } from './teamLoanFeed.ts';
 type Admin = any;
 
 export type SideEffectError = { type: 'award_points' | 'loan_notification' | 'credit_progression'; message: string };
-export type CreditLevelUp = { fromLimit: number; toLimit: number };
+export type CreditLevelUp = { fromLimit: number; toLimit: number; spin?: boolean };
 
 // On a fully-repaid full-limit loan, level up the borrower's credit limit. (The limit the loan was
 // measured against is recorded by public.record_loan_payment in the same update that marks it Paid.)
@@ -85,12 +88,13 @@ export const applyCreditProgression = async (
    }
    // Their income ladder (getIncomeNextLimit): the step and the top both follow their income. Never lowers.
    const current = getEffectiveCreditLimit(borrower.cs, true);
-   const nextLimit = getIncomeNextLimit(
-      current,
-      ceiling,
-      borrower.created_at ?? null,
-      (loan.funded_at as string | null | undefined) ?? null
-   );
+   const fundedAt = (loan.funded_at as string | null | undefined) ?? null;
+   // Low income: a Limit Spin decides the raise (+$2 usually, up to +$5), never past their ceiling.
+   const spin = earnsLimitSpin(ceiling, borrower.created_at ?? null, fundedAt) ? drawLimitSpin() : null;
+   const nextLimit =
+      spin !== null
+         ? Math.max(current, Math.min(current + spin, ceiling, MAX_CREDIT_LIMIT))
+         : getIncomeNextLimit(current, ceiling, borrower.created_at ?? null, fundedAt);
    if (nextLimit <= current) return { errors, levelUp: null };
 
    // Compare-and-set on the limit we evaluated against: if two final repayments race, only the
@@ -117,7 +121,18 @@ export const applyCreditProgression = async (
       );
       return { errors, levelUp: null };
    }
-   return { errors, levelUp: { fromLimit: getEffectiveCreditLimit(borrower.cs, true), toLimit: nextLimit } };
+   if (spin !== null) {
+      // The app's wheel lands on this (paid screen, or a "You earned a spin" card on home if they missed it).
+      const { error: spinError } = await admin.from('limit_boost_spins').insert({
+         user_id: borrower.id,
+         loan_id: (loan.id as string | undefined) ?? null,
+         drawn: spin,
+         from_limit: current,
+         to_limit: nextLimit
+      });
+      if (spinError) errors.push({ type: 'credit_progression', message: `limit spin not saved: ${spinError.message}` });
+   }
+   return { errors, levelUp: { fromLimit: current, toLimit: nextLimit, spin: spin !== null } };
 };
 
 // Posts one repayment line to a Discord channel via DISCORD_REPAY_WEBHOOK_URL; no-ops when unset.

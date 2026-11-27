@@ -58,6 +58,8 @@ export const getFastRepayNotice = ({
 }): FastRepayNotice | null => {
    const open = loans.filter(isOpen);
    const lowIncome = isLowIncomeLadder(ceiling, joinedAt);
+   // Low-income ladder (2026-11-27): no early-pay lesson. They pay when they can; from day 7 it earns a spin.
+   if (lowIncome) return null;
    // Something due soon or overdue: paying is the right move, whatever the 48-hour rule says.
    if (open.some((loan) => getDaysUntilDueDay(currentDueDate(loan), getLoanTimezone(loan), now) <= DUE_SOON_DAYS)) return null;
 

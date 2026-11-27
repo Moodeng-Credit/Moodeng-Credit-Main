@@ -62,6 +62,7 @@ import type { AppDispatch, RootState } from '@/store/store';
 import { ERROR_CODES } from '@/types/errorCodes';
 import { getToastKeyFromErrorCode } from '@/types/errorToastMapping';
 import type { Loan } from '@/types/loanTypes';
+import LimitSpinPrompt from '@/views/dashboard-v2/components/LimitSpinPrompt';
 import { FastRepayCarousel, useFastRepayNotice } from '@/views/dashboard-v2/components/FastRepayNotice';
 import { RepayStreakCelebration } from '@/views/dashboard-v2/components/RepayStreak';
 import { getRewardRuleCopy, getRewardWindow } from '@/views/dashboard-v2/dashboardV2Model';
@@ -639,6 +640,10 @@ export default function Repay() {
       fastRepayLimit?: number | null;
       /** The loan is on the second-half rule (funded since SECOND_HALF_RULE_FROM), not the 48-hour one. */
       fastRepaySecondHalf?: boolean;
+      /** The raise came from a Limit Spin (low income): show the wheel. */
+      limitSpin?: boolean;
+      /** On the low-income ladder: no early-pay lesson. */
+      lowIncome?: boolean;
    } | null>(() =>
       // Preview: ?paid=1 shows the "you're paid" screen (screenshots / design review).
       usePreviewLoans && new URLSearchParams(location.search).get('paid') === '1'
@@ -1395,7 +1400,9 @@ export default function Repay() {
                   })
                      ? user.cs || STARTING_CREDIT_LIMIT
                      : null,
-               fastRepaySecondHalf: Boolean(selectedLoan.fundedAt) && Date.parse(selectedLoan.fundedAt as string) >= SECOND_HALF_RULE_FROM
+               fastRepaySecondHalf: Boolean(selectedLoan.fundedAt) && Date.parse(selectedLoan.fundedAt as string) >= SECOND_HALF_RULE_FROM,
+               limitSpin: Boolean((serverLevelUp as { spin?: boolean } | null)?.spin),
+               lowIncome: isLowIncomeLadder(limitCeiling, user.createdAt)
             });
          } else {
             // Partial payment: the loan stays active, so acknowledge it inline instead of
@@ -2109,8 +2116,13 @@ export default function Repay() {
                      ) : null}
                   </div>
                   <div className="flex w-full flex-col gap-2 text-left">
-                     {completion.creditLevelUp ? <DoneRow>New limit: ${completion.creditLevelUp.newLimit}</DoneRow> : null}
-                     {completion.fastRepayLimit ? (
+                     {completion.creditLevelUp && !completion.limitSpin ? <DoneRow>New limit: ${completion.creditLevelUp.newLimit}</DoneRow> : null}
+                     {completion.fastRepayLimit && completion.lowIncome ? (
+                        // Low-income ladder: no lesson, just what earns the spin next time (2026-11-27).
+                        <p className="rounded-[14px] bg-[#f3eefb] px-4 py-3 text-[14px] leading-[20px] text-[#4a3a6b] dark:bg-[#2a2138] dark:text-[#d9cfea]">
+                           Keep your next loan 7+ days to earn a spin 🎡
+                        </p>
+                     ) : completion.fastRepayLimit ? (
                         <p
                            className="rounded-[14px] bg-[#fff6dc] px-4 py-3 text-[14px] leading-[20px] text-[#6b4a00] dark:bg-[#3a2e10] dark:text-[#ffe27a]"
                            data-testid="repay-fast-note"
@@ -2123,6 +2135,7 @@ export default function Repay() {
                      ) : null}
                      {completion.trustPoints > 0 ? <DoneRow>+{completion.trustPoints} Pandesal points</DoneRow> : null}
                   </div>
+                  {completion.limitSpin ? <LimitSpinPrompt className="w-full" /> : null}
                   <RepayStreakCelebration isPreview={usePreviewLoans} />
                   <AffiliateUnlockedCard isPreview={usePreviewLoans} />
                   <div className="flex w-full flex-col gap-3">
@@ -2373,7 +2386,11 @@ export default function Repay() {
                ...(fastSecondHalf ? {} : { hour: 'numeric', minute: '2-digit' }),
                timeZone: getLoanTimezone(selectedLoan)
             })}{' '}
-            {fastSecondHalf ? 'to raise your limit: the 2nd half of your loan.' : 'to raise your limit — keep loans at least 2 days.'}
+            {isLowIncomeLadder(limitCeiling, user.createdAt)
+               ? 'to earn a spin 🎡'
+               : fastSecondHalf
+                 ? 'to raise your limit: the 2nd half of your loan.'
+                 : 'to raise your limit — keep loans at least 2 days.'}
          </span>
       ) : null;
       const goTo = (next: WizardStep) => {

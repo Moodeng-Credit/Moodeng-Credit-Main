@@ -838,6 +838,9 @@ export const filipinoCoverageB: Record<string, string> = {
    'Pay in the 2nd half of your loan': 'Magbayad sa 2nd half ng loan mo',
    // Home header without level numbers (2026-11-27).
    'Next loan': 'Susunod na loan',
+   // Limit Spin (2026-11-27).
+   'Keep your next loan 7+ days to earn a spin 🎡': 'Panatilihin ang susunod mong loan nang 7+ araw para may spin ka 🎡',
+   'to earn a spin 🎡': 'para may spin ka 🎡',
    'First loan': 'Unang loan',
    'Pay back a full-limit loan in its best days to grow your limit.':
       'Bayaran ang full-limit loan sa pinakamagandang araw nito para tumaas ang limit mo.',
