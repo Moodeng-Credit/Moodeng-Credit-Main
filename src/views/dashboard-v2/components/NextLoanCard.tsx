@@ -57,7 +57,8 @@ const COPY = {
       eyebrow: 'Your next loan',
       upFrom: (from: number) => `↑ from $${from}`,
       spinChip: 'Spin: +$2 to +$5',
-      nowEarlySpin: (from: string) => `You can pay anytime. From ${from}, paying back earns a spin 🎡`,
+      nowEarlySpin: (from: string) => `You can pay back as early as ${from}, a week after you got it, and spin for +$2 to +$5 🎡`,
+      playWhileWaiting: 'Waiting? Play Shark Chomp 🦈',
       stays: 'Stays the same',
       payBetween: 'Pay between',
       amount: 'Amount',
@@ -82,7 +83,9 @@ const COPY = {
       eyebrow: 'Susunod mong loan',
       upFrom: (from: number) => `↑ mula $${from}`,
       spinChip: 'Spin: +$2 hanggang +$5',
-      nowEarlySpin: (from: string) => `Puwede kang magbayad anumang oras. Simula ${from}, may spin ka kapag nagbayad 🎡`,
+      nowEarlySpin: (from: string) =>
+         `Puwede kang magbayad simula ${from}, isang linggo matapos mong makuha, at mag-spin para sa +$2 hanggang +$5 🎡`,
+      playWhileWaiting: 'Naghihintay? Laruin ang Shark Chomp 🦈',
       stays: 'Pareho pa rin',
       payBetween: 'Magbayad sa',
       amount: 'Halaga',
@@ -145,6 +148,10 @@ export default function NextLoanCard({
    const pesos = (usd: number) => `₱${Math.round(usd * phpRate.value).toLocaleString()}`;
    const money = (usd: number) => (inPhilippines ? `≈ ${pesos(usd)}` : `$${usd.toFixed(2)}`);
    const payWindow = due ? getPayWindow(due, today, { lowIncome }) : null;
+   // The spin is earned by a loan funded from INCOME_LADDER_FROM (or the next loan, when none is out). A loan
+   // funded earlier keeps its old rule: normal step capped at the ceiling, counted from the 2nd half.
+   const dueFunded = due?.fundedAt ? Date.parse(due.fundedAt) : Number.NaN;
+   const spinLoan = lowIncome && (!due || (Number.isFinite(dueFunded) && dueFunded >= INCOME_LADDER_FROM));
    const isFullLimit = due ? (due.principal ?? 0) >= limit - 0.01 : true;
    const canGrow = nextLimit > limit;
    const showNext = canGrow && isFullLimit;
@@ -168,7 +175,7 @@ export default function NextLoanCard({
                <p className="mt-0.5 flex items-baseline gap-2">
                   <span className="text-[34px] font-bold leading-none tracking-[-0.04em] text-[#040033] tabular-nums dark:text-[#F0EAFF]">
                      ${bigLimit}
-                     {lowIncome && showNext ? '+' : null}
+                     {spinLoan && showNext ? '+' : null}
                   </span>
                   {inPhilippines ? (
                      <span className="text-[14px] font-medium text-[#70617F] dark:text-[#A89BB8]">≈ {pesos(bigLimit)}</span>
@@ -182,7 +189,7 @@ export default function NextLoanCard({
                         : 'bg-[#F3EEFB] text-[#70617F] dark:bg-[#2A2138] dark:text-[#A89BB8]'
                   )}
                >
-                  {showNext ? (lowIncome ? t.spinChip : t.upFrom(limit)) : t.stays}
+                  {showNext ? (spinLoan ? t.spinChip : t.upFrom(limit)) : t.stays}
                </span>
             </div>
             <img src="/icons/hippo-repaid-coin-3d.png" alt="" aria-hidden="true" className="h-[72px] w-[72px] shrink-0 object-contain" />
@@ -257,12 +264,18 @@ export default function NextLoanCard({
                      ? t.nowBest
                      : payWindow.status === 'late'
                        ? t.nowLate
-                       : lowIncome && isFullLimit && canGrow
+                       : spinLoan && isFullLimit && canGrow
                          ? t.nowEarlySpin(dayLabel(payWindow.start, due.zone))
                          : isFullLimit && canGrow && payWindow.funded >= SECOND_HALF_RULE_FROM
                            ? t.nowEarly(dayLabel(payWindow.start, due.zone), limit)
                            : t.nowEarlyPlain(dayLabel(payWindow.start, due.zone))}
                </p>
+               {spinLoan && payWindow.status === 'early' ? (
+                  // The days before the spin unlocks: something fun to do instead of paying early (2026-11-28).
+                  <a href="/chomp" className="text-[14px] font-semibold text-[#6010D2] dark:text-[#C4B8FF]">
+                     {t.playWhileWaiting} ›
+                  </a>
+               ) : null}
                {!isFullLimit && canGrow ? (
                   <p className="text-[13px] leading-[18px] text-[#70617F] dark:text-[#A89BB8]">{t.notFull(limit, nextLimit)}</p>
                ) : null}
