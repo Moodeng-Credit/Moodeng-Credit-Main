@@ -3,7 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { bookCall, HOSTS, listCallSlots, moveCallToHost } from '../_shared/callBooking.ts';
 import { CRON_TOKEN_HEADER } from '../_shared/cronAuth.ts';
-import { setHostDateOverrides, syncAllCalendlyHours } from './calendlySync.ts';
+import { setHostDateOverrides, setHostWeeklyHours, syncAllCalendlyHours } from './calendlySync.ts';
 import { readCallTime, writePrepNote } from '../_shared/bookingAi.ts';
 
 // Free round-robin booking for the no-referral video call — the paid Cal.com Teams feature, built
@@ -41,7 +41,7 @@ serve(async (req) => {
       return json({ error: 'not_configured' }, 500);
    }
 
-   let payload: { action?: string; start?: string; timeZone?: string; host?: string; dryRun?: boolean; user_id?: string; overrides?: Array<{ date: string; startTime: string; endTime: string }> };
+   let payload: { action?: string; start?: string; timeZone?: string; host?: string; dryRun?: boolean; user_id?: string; overrides?: Array<{ date: string; startTime: string; endTime: string }>; availability?: Array<{ days: string[]; startTime: string; endTime: string }> };
    try {
       payload = await req.json();
    } catch {
@@ -83,7 +83,7 @@ serve(async (req) => {
       return json({ times, prep });
    }
 
-   if (payload.action === 'sync_calendly_hours' || payload.action === 'preview_slots' || payload.action === 'cal_overrides' || payload.action === 'move_host') {
+   if (payload.action === 'sync_calendly_hours' || payload.action === 'preview_slots' || payload.action === 'cal_overrides' || payload.action === 'cal_weekly' || payload.action === 'move_host') {
       // Fails closed (unlike checkCronAuth): no configured token, no sync.
       const expected = (Deno.env.get('ADMIN_API_TOKEN') ?? '').trim();
       if (!expected || (req.headers.get(CRON_TOKEN_HEADER) ?? '').trim() !== expected) return json({ error: 'unauthorized' }, 401);
@@ -93,6 +93,10 @@ serve(async (req) => {
       if (payload.action === 'cal_overrides') {
          if (payload.host !== 'george' && payload.host !== 'emma') return json({ error: 'host must be george or emma' }, 400);
          return json(await setHostDateOverrides(payload.host, Array.isArray(payload.overrides) ? payload.overrides : [], payload.dryRun === true));
+      }
+      if (payload.action === 'cal_weekly') {
+         if (payload.host !== 'george') return json({ error: 'george only (Emma is synced from Calendly)' }, 400);
+         return json(await setHostWeeklyHours(payload.host, Array.isArray(payload.availability) ? payload.availability : [], payload.dryRun === true));
       }
       if (payload.action === 'move_host') {
          if (typeof payload.user_id !== 'string' || typeof payload.host !== 'string') return json({ error: 'user_id and host required' }, 400);
