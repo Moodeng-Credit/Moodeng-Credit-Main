@@ -6,7 +6,7 @@ import { CAL_BASE, hostApiKey, resolveEventTypeId } from '../_shared/calcomSlots
 import { readCallSecret } from '../_shared/callSecrets.ts';
 import { postDiscord } from '../_shared/discord.ts';
 import { loadCallBlocks } from '../_shared/callBooking.ts';
-import { blockedDays, calendlyToCalSchedule, type CalendlyRule } from './lib.ts';
+import { blockedDays, calendlyToCalSchedule, clipToCallDay, type CalendlyRule } from './lib.ts';
 
 const CALENDLY_BASE = 'https://api.calendly.com';
 
@@ -135,4 +135,45 @@ export const setHostDateOverrides = async (host: SyncHost, overrides: Array<{ da
    if (!res.ok) return { ok: false, error: `cal_patch_${res.status}: ${(await res.text()).slice(0, 200)}` };
    const after = (await getJson(`${CAL_BASE}/schedules/${scheduleId}`, cal('2024-06-11'))).body?.data;
    return { ok: true, scheduleId, timeZone: after?.timeZone, overrides: after?.overrides };
+};
+
+
+const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+/**
+ * George's WEEKLY hours on his Cal.com schedule (admin: { action: 'cal_weekly', host: 'george',
+ * availability: [{days:['Monday',…], startTime:'HH:MM', endTime:'HH:MM'}], dryRun }). Replaces the whole
+ * weekly list, keeps date overrides. Times are clipped to the 11 AM–11 PM call day. Not for Emma: her
+ * schedule is rewritten nightly from Calendly.
+ */
+export const setHostWeeklyHours = async (host: SyncHost, availability: Array<{ days: string[]; startTime: string; endTime: string }>, dryRun = false) => {
+   if (host !== 'george') return { ok: false, error: 'george_only' };
+   const clean: Array<{ days: string[]; startTime: string; endTime: string }> = [];
+   for (const a of availability) {
+      const days = (Array.isArray(a?.days) ? a.days : []).filter((d) => WEEKDAYS.includes(d));
+      const ok = /^\d\d:\d\d$/.test(String(a?.startTime)) && /^\d\d:\d\d$/.test(String(a?.endTime));
+      const window = ok ? clipToCallDay(a.startTime, a.endTime) : null;
+      if (!days.length || !window) return { ok: false, error: `bad_window ${JSON.stringify(a)}` };
+      clean.push({ days, ...window });
+   }
+   if (!clean.length) return { ok: false, error: 'empty' };
+   const calKey = hostApiKey(host);
+   if (!calKey) return { ok: false, error: 'not_configured' };
+   const eventTypeId = await resolveEventTypeId(calKey);
+   if (!eventTypeId) return { ok: false, error: 'cal_event_type' };
+   const cal = (version: string) => ({ Authorization: `Bearer ${calKey}`, 'cal-api-version': version });
+   const eventType = await getJson(`${CAL_BASE}/event-types/${eventTypeId}`, cal('2024-06-14'));
+   let scheduleId = eventType.body?.data?.scheduleId as number | null | undefined;
+   if (!scheduleId) scheduleId = (await getJson(`${CAL_BASE}/schedules/default`, cal('2024-06-11'))).body?.data?.id;
+   if (!scheduleId) return { ok: false, error: 'cal_schedule' };
+   const current = (await getJson(`${CAL_BASE}/schedules/${scheduleId}`, cal('2024-06-11'))).body?.data;
+   if (dryRun) return { ok: true, scheduleId, timeZone: current?.timeZone, current: current?.availability, next: clean };
+   const res = await fetch(`${CAL_BASE}/schedules/${scheduleId}`, {
+      method: 'PATCH',
+      headers: { ...cal('2024-06-11'), 'Content-Type': 'application/json' },
+      body: JSON.stringify({ availability: clean })
+   });
+   if (!res.ok) return { ok: false, error: `cal_patch_${res.status}: ${(await res.text()).slice(0, 200)}` };
+   const after = (await getJson(`${CAL_BASE}/schedules/${scheduleId}`, cal('2024-06-11'))).body?.data;
+   return { ok: true, scheduleId, timeZone: after?.timeZone, availability: after?.availability, overrides: after?.overrides };
 };
