@@ -12,7 +12,8 @@
 //   { invoiceId }                                 an affiliate sent their monthly invoice (affiliate_invoices insert)
 //                                                 → who, which month, how much, which wallet, each friend line.
 //   { creatorApp: { event, id, code? } }           moodeng.app/creator applications: code / confirmation /
-//                                                 approved / rejected emails + the team card (_shared/creatorApplications)
+//                                                 approved / rejected emails; after 'submitted' (and on 'grade')
+//                                                 the AI read (_shared/creatorGrade) + the team card
 //   { payday: 'YYYY-MM-DD', test? }               15th / 30th (affiliate-payday cron): one card per code owner with
 //                                                 every unpaid "funded friend" payout (referral_codes.pay_on_funded_from),
 //                                                 or one "nothing owed" line. Chat: affiliate_payday_chat_id (else
@@ -29,6 +30,7 @@ import {
    creatorSubmittedEmail,
    creatorTeamCard
 } from '../_shared/creatorApplications.ts';
+import { type CreatorAi, gradeCreator } from '../_shared/creatorGrade.ts';
 import { sendEmail } from '../_shared/email.ts';
 import { buildPayoutCallback, buildPayoutCard, type PayoutRow, payoutSelect, payoutStampHeader } from '../_shared/referralPayouts.ts';
 import { sendTelegramMessage, type TelegramInlineKeyboard } from '../_shared/telegram.ts';
@@ -324,12 +326,61 @@ const postPaydayCards = async (supabase: SupabaseClient, payday: string, test = 
    return json({ ok: true, cards: byOwner.size });
 };
 
+// AI read (Gemini + TikTok reach), saved on the row. Never throws: a failure is saved as ai_error.
+const gradeCreatorApp = async (supabase: SupabaseClient, app: CreatorApp): Promise<{ ai: CreatorAi | null; error: string | null }> => {
+   try {
+      const [{ data: geminiKey }, { data: apifyToken }] = await Promise.all([supabase.rpc('gemini_api_key'), supabase.rpc('apify_token')]);
+      if (!geminiKey) throw new Error('GEMINI_API_KEY missing from vault');
+      let video: { bytes: Uint8Array; mime: string } | null = null;
+      if (app.video_path) {
+         const { data: blob, error } = await supabase.storage.from('creator-videos').download(app.video_path);
+         if (error || !blob) throw new Error(`video download: ${error?.message ?? 'empty'}`);
+         video = { bytes: new Uint8Array(await blob.arrayBuffer()), mime: blob.type || 'video/mp4' };
+      }
+      const ai = await gradeCreator({ app, geminiKey: String(geminiKey), apifyToken: apifyToken ? String(apifyToken) : null, video });
+      await supabase
+         .from('creator_applications')
+         .update({ ai, ai_score: ai.score, ai_verdict: ai.verdict, graded_at: new Date().toISOString() })
+         .eq('id', app.id);
+      return { ai, error: null };
+   } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error('creator grade failed', message);
+      await supabase
+         .from('creator_applications')
+         .update({ ai: { error: message.slice(0, 300) }, graded_at: new Date().toISOString() })
+         .eq('id', app.id);
+      return { ai: null, error: message };
+   }
+};
+
+const postCreatorCard = async (supabase: SupabaseClient, app: CreatorApp) => {
+   const { ai, error } = await gradeCreatorApp(supabase, app);
+   const chatId = await getSetting(supabase, 'kyc_alert_chat_id');
+   if (!chatId) return;
+   await sendTelegramMessage(chatId, creatorTeamCard(app, ai, error), {
+      inlineKeyboard: [[{ text: 'Open in Admin', url: 'https://moodeng.app/admin/affiliates' }]]
+   });
+};
+
+declare const EdgeRuntime: { waitUntil(promise: Promise<unknown>): void } | undefined;
+
+// Keep the worker alive after replying (grading takes up to ~2 minutes; pg_net doesn't wait that long).
+const inBackground = (work: Promise<unknown>) => {
+   const safe = work.catch((err) => console.error('creator background job failed', err instanceof Error ? err.message : err));
+   if (typeof EdgeRuntime !== 'undefined') EdgeRuntime.waitUntil(safe);
+};
+
 const handleCreatorApp = async (supabase: SupabaseClient, msg: { event?: string; id?: string; code?: string }) => {
    if (!msg.id) return json({ error: 'creatorApp.id is required' }, 400);
    const { data, error } = await supabase.from('creator_applications').select('*').eq('id', msg.id).maybeSingle();
    if (error) throw new Error(error.message);
    if (!data) return json({ error: 'Application not found' }, 404);
    const app = data as unknown as CreatorApp;
+   if (msg.event === 'grade') {
+      inBackground(gradeCreatorApp(supabase, app));
+      return json({ ok: true, grading: true });
+   }
    const mail =
       msg.event === 'code' && msg.code && /^\d{6}$/.test(msg.code)
          ? creatorCodeEmail(app, msg.code)
@@ -342,14 +393,7 @@ const handleCreatorApp = async (supabase: SupabaseClient, msg: { event?: string;
                : null;
    if (!mail) return json({ error: 'Unknown creatorApp event' }, 400);
    await sendEmail(app.email, mail.subject, mail.text, mail.html);
-   if (msg.event === 'submitted') {
-      const chatId = await getSetting(supabase, 'kyc_alert_chat_id');
-      if (chatId) {
-         await sendTelegramMessage(chatId, creatorTeamCard(app), {
-            inlineKeyboard: [[{ text: 'Open in Admin', url: 'https://moodeng.app/admin/affiliates' }]]
-         });
-      }
-   }
+   if (msg.event === 'submitted') inBackground(postCreatorCard(supabase, app));
    return json({ ok: true });
 };
 

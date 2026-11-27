@@ -4,8 +4,11 @@ import { useCallback, useEffect, useState } from 'react';
 
 import {
    type AdminCreatorApplication,
+   type CreatorAi,
+   creatorVideoUrl,
    decideCreatorApplication,
    fetchAdminCreatorApplications,
+   regradeCreatorApplication,
    safeHttpUrl,
    suggestCreatorCode
 } from '@/lib/creatorApplication';
@@ -16,6 +19,7 @@ export default function CreatorApplicationsSection() {
    const [loading, setLoading] = useState(true);
    const [error, setError] = useState<string | null>(null);
    const [showDone, setShowDone] = useState(false);
+   const [showNo, setShowNo] = useState(false);
 
    const load = useCallback(async () => {
       try {
@@ -33,6 +37,9 @@ export default function CreatorApplicationsSection() {
    }, [load]);
 
    const pending = rows.filter((r) => r.status === 'pending');
+   // The AI filter: 🔴 "no" reads are folded away (still one tap to see), the rest sorted best first.
+   const aiNo = pending.filter((r) => r.ai_verdict === 'no');
+   const toReview = pending.filter((r) => r.ai_verdict !== 'no');
    const decided = rows.filter((r) => r.status !== 'pending');
 
    return (
@@ -44,18 +51,32 @@ export default function CreatorApplicationsSection() {
                <a href="https://moodeng.app/creator" target="_blank" rel="noreferrer" className="underline">
                   moodeng.app/creator
                </a>
-               . Approve gives them a code and emails a one-time partner sign-up link ($5 per friend; change it in Referral codes). Reject
-               sends a polite no.
+               . AI reads each one (video, TikTok reach, answers) and sorts the best first; 🔴 ones are folded away. Approve gives them a
+               code and emails a one-time partner sign-up link ($5 per friend; change it in Referral codes). Reject sends a polite no.
             </p>
          </div>
          {loading ? <p className="text-[#a89bb8]">Loading…</p> : null}
          {error ? <p className="text-red-300">{error}</p> : null}
-         {!loading && !error && !pending.length ? <p className="text-lg font-bold text-white">No new applications ✓</p> : null}
+         {!loading && !error && !toReview.length ? <p className="text-lg font-bold text-white">No new applications ✓</p> : null}
          <div className="grid gap-4 lg:grid-cols-2">
-            {pending.map((r) => (
+            {toReview.map((r) => (
                <ApplicationCard key={r.id} app={r} onDone={load} />
             ))}
          </div>
+         {aiNo.length ? (
+            <div className="space-y-3">
+               <button type="button" onClick={() => setShowNo((v) => !v)} className="text-sm text-[#b99cff] underline">
+                  {showNo ? 'Hide' : 'Show'} 🔴 AI says no ({aiNo.length})
+               </button>
+               {showNo ? (
+                  <div className="grid gap-4 lg:grid-cols-2">
+                     {aiNo.map((r) => (
+                        <ApplicationCard key={r.id} app={r} onDone={load} />
+                     ))}
+                  </div>
+               ) : null}
+            </div>
+         ) : null}
          {decided.length ? (
             <div>
                <button type="button" onClick={() => setShowDone((v) => !v)} className="text-sm text-[#b99cff] underline">
@@ -127,6 +148,8 @@ function ApplicationCard({ app, onDone }: { app: AdminCreatorApplication; onDone
                   : ''}
             </span>
          </div>
+         <AiBlock app={app} onRegraded={onDone} />
+         {app.video_path ? <VideoBlock path={app.video_path} /> : <p className="text-sm text-[#a89bb8]">🎥 No video</p>}
          <p className="text-sm text-[#d9cfe6]">
             {app.phone} · {app.email}
             <br />
@@ -190,5 +213,88 @@ function ApplicationCard({ app, onDone }: { app: AdminCreatorApplication; onDone
          </div>
          {msg ? <p className="text-sm text-red-300">{msg}</p> : null}
       </div>
+   );
+}
+
+const VERDICT_STYLE: Record<CreatorAi['verdict'], string> = {
+   yes: 'bg-emerald-500/20 text-emerald-300',
+   maybe: 'bg-amber-400/20 text-amber-300',
+   no: 'bg-red-500/20 text-red-300'
+};
+
+const short = (v: number | null) =>
+   v === null ? '?' : v >= 1_000_000 ? `${(v / 1_000_000).toFixed(1)}M` : v >= 1000 ? `${(v / 1000).toFixed(1)}k` : String(v);
+
+function AiBlock({ app, onRegraded }: { app: AdminCreatorApplication; onRegraded: () => void }) {
+   const [busy, setBusy] = useState(false);
+   const ai = app.ai && 'score' in app.ai ? app.ai : null;
+   const failed = app.ai && !('score' in app.ai) ? app.ai.error : null;
+   const regrade = async () => {
+      setBusy(true);
+      try {
+         await regradeCreatorApplication(app.id);
+         // The read takes ~1 minute; refresh after a bit.
+         window.setTimeout(onRegraded, 60_000);
+      } finally {
+         setBusy(false);
+      }
+   };
+   const again = (
+      <button type="button" disabled={busy} onClick={regrade} className="text-xs text-[#b99cff] underline disabled:opacity-50">
+         {busy ? 'Asking…' : 'Grade again'}
+      </button>
+   );
+   if (!ai) {
+      return (
+         <p className="text-sm text-[#a89bb8]">
+            🤖 {app.graded_at ? `AI couldn't read it${failed ? ` (${failed})` : ''}.` : 'AI is reading it…'} {again}
+         </p>
+      );
+   }
+   return (
+      <div className="space-y-1.5 rounded-xl bg-black/20 p-3 text-sm">
+         <div className="flex flex-wrap items-center gap-2">
+            <span className={`rounded-full px-2 py-0.5 font-black ${VERDICT_STYLE[ai.verdict]}`}>AI {ai.score}/100</span>
+            <span className="text-[#d9cfe6]">{ai.summary}</span>
+         </div>
+         {ai.strengths.map((x) => (
+            <p key={`s-${x}`} className="text-emerald-200">
+               👍 {x}
+            </p>
+         ))}
+         {ai.flags.map((x) => (
+            <p key={`f-${x}`} className="text-amber-200">
+               ⚠️ {x}
+            </p>
+         ))}
+         {ai.reach ? (
+            <p className="text-[#d9cfe6]">
+               🎵 @{ai.reach.handle}: {short(ai.reach.followers)} followers · ~{short(ai.reach.avg_views)} views/video
+               {ai.reach.last_post_days !== null ? ` · last post ${ai.reach.last_post_days}d ago` : ''}
+            </p>
+         ) : null}
+         {ai.video?.said ? <p className="text-[#d9cfe6]">🎥 “{ai.video.said}”</p> : null}
+         {ai.error ? <p className="text-xs text-[#a89bb8]">Note: {ai.error}</p> : null}
+         <div>{again}</div>
+      </div>
+   );
+}
+
+function VideoBlock({ path }: { path: string }) {
+   const [url, setUrl] = useState<string | null>(null);
+   const [failed, setFailed] = useState(false);
+   if (url) return <video src={url} controls playsInline className="max-h-[320px] w-full rounded-xl bg-black" />;
+   return (
+      <button
+         type="button"
+         onClick={async () => {
+            const u = await creatorVideoUrl(path);
+            if (u) setUrl(u);
+            else setFailed(true);
+         }}
+         className="rounded-xl bg-white/10 px-3 py-2 text-sm font-bold text-white"
+      >
+         {failed ? 'Could not load the video' : '▶ Watch their video'}
+      </button>
    );
 }

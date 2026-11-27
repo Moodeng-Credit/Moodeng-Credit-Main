@@ -60,6 +60,7 @@ export function creatorErrorMessage(message: string | undefined): string {
    if (message?.includes('creator_wait')) return 'Wait a minute before asking for a new code.';
    if (message?.includes('creator_code_expired')) return 'That code is too old. Tap “Send a new code”.';
    if (message?.includes('creator_bad_email')) return 'Type a real email. We send your code there.';
+   if (message?.includes('creator_video_missing')) return 'Your video didn’t send. You can still apply without it.';
    if (message?.includes('creator_not_found')) return 'We can’t find this application. Please fill in the form again.';
    return 'Something went wrong. Please try again.';
 }
@@ -68,6 +69,62 @@ export async function startCreatorApplication(f: CreatorApplicationForm): Promis
    const { data, error } = await getSupabaseBrowserClient().rpc('creator_apply_start', { p: { ...f, email: f.email.trim() } });
    if (error) throw error;
    return data as string;
+}
+
+// ── Why-video (optional, Emma 2026-11-27) ──────────────────────────────────────────────────────────────
+export const CREATOR_VIDEO_MAX_BYTES = 45 * 1024 * 1024; // = the creator-videos bucket limit
+export const CREATOR_VIDEO_MAX_SECONDS = 90;
+
+const VIDEO_EXT: Record<string, string> = {
+   'video/mp4': 'mp4',
+   'video/quicktime': 'mov',
+   'video/webm': 'webm',
+   'video/3gpp': '3gp',
+   'video/x-m4v': 'm4v',
+   'video/mpeg': 'mpeg'
+};
+
+/** Problem with a picked clip, or null. Duration null = the browser couldn't tell (allowed). */
+export function creatorVideoProblem(file: { type: string; size: number }, seconds: number | null): string | null {
+   if (file.type && !VIDEO_EXT[file.type]) return 'Pick a video file (MP4 or MOV).';
+   if (file.size > CREATOR_VIDEO_MAX_BYTES) return 'This video is too big. Record a shorter one (under 1 minute).';
+   if (seconds !== null && seconds > CREATOR_VIDEO_MAX_SECONDS) return 'Keep it under 1 minute, please.';
+   return null;
+}
+
+/** Length in seconds, or null if the browser can't read it. */
+export function readVideoSeconds(file: File): Promise<number | null> {
+   return new Promise((resolve) => {
+      const url = URL.createObjectURL(file);
+      const v = document.createElement('video');
+      const done = (s: number | null) => {
+         URL.revokeObjectURL(url);
+         resolve(s);
+      };
+      const timer = window.setTimeout(() => done(null), 8000);
+      v.preload = 'metadata';
+      v.onloadedmetadata = () => {
+         window.clearTimeout(timer);
+         done(Number.isFinite(v.duration) ? v.duration : null);
+      };
+      v.onerror = () => {
+         window.clearTimeout(timer);
+         done(null);
+      };
+      v.src = url;
+   });
+}
+
+/** Uploads into creator-videos/<id>/ and attaches it. One retry. */
+export async function uploadCreatorVideo(id: string, file: File): Promise<void> {
+   const type = VIDEO_EXT[file.type] ? file.type : 'video/mp4';
+   const path = `${id}/why-${crypto.randomUUID()}.${VIDEO_EXT[type]}`;
+   const storage = getSupabaseBrowserClient().storage.from('creator-videos');
+   let { error } = await storage.upload(path, file, { contentType: type, upsert: false });
+   if (error) ({ error } = await storage.upload(path, file, { contentType: type, upsert: false }));
+   if (error) throw error;
+   const { error: attachError } = await getSupabaseBrowserClient().rpc('creator_apply_attach_video', { p_id: id, p_path: path });
+   if (attachError) throw attachError;
 }
 
 export async function resendCreatorCode(id: string): Promise<void> {
@@ -131,6 +188,39 @@ export interface AdminCreatorApplication {
    invite_token: string | null;
    verified_at: string | null;
    decided_at: string | null;
+   video_path: string | null;
+   ai_score: number | null;
+   ai_verdict: 'yes' | 'maybe' | 'no' | null;
+   graded_at: string | null;
+   ai: CreatorAi | { error: string } | null;
+}
+
+export interface CreatorAi {
+   score: number;
+   verdict: 'yes' | 'maybe' | 'no';
+   summary: string;
+   strengths: string[];
+   flags: string[];
+   video: { watched: boolean; on_camera: boolean | null; said: string | null } | null;
+   reach: {
+      handle: string;
+      followers: number | null;
+      avg_views: number | null;
+      last_post_days: number | null;
+      verified: boolean;
+   } | null;
+   error?: string;
+}
+
+export async function regradeCreatorApplication(id: string): Promise<void> {
+   const { error } = await getSupabaseBrowserClient().rpc('admin_regrade_creator_application', { p_id: id });
+   if (error) throw error;
+}
+
+/** Admin playback link for the why-video (10 minutes). */
+export async function creatorVideoUrl(path: string): Promise<string | null> {
+   const { data } = await getSupabaseBrowserClient().storage.from('creator-videos').createSignedUrl(path, 600);
+   return data?.signedUrl ?? null;
 }
 
 export async function fetchAdminCreatorApplications(): Promise<AdminCreatorApplication[]> {

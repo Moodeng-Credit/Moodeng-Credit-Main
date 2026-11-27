@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
-import { Loader2 } from 'lucide-react';
+import { Loader2, Video } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 
 import {
@@ -8,96 +8,76 @@ import {
    creatorErrorMessage,
    type CreatorFormErrors,
    type CreatorStatus,
+   creatorVideoProblem,
    EMPTY_CREATOR_FORM,
    fetchCreatorStatus,
+   readVideoSeconds,
    resendCreatorCode,
    startCreatorApplication,
+   uploadCreatorVideo,
    validateCreatorForm,
    verifyCreatorCode
 } from '@/lib/creatorApplication';
+import { DASHBOARD_V2_ASSETS } from '@/views/dashboard-v2/assets';
 
 /*
- * moodeng.app/creator — "Become a Moodeng Affiliate Partner". Public: apply (form → emailed code →
- * application number) or check status (number + email). The team approves in Admin → Affiliates, which
- * emails a one-time moodeng.app/partner/TOKEN link. Own look (cream, ink borders, hard shadows,
- * 4-colour stripe) scoped to this page.
+ * moodeng.app/creator — creators apply to be Moodeng partners. Same steps as our first creator page, in the
+ * affiliate look (purple hippo banner, white cards, one gold button) + an optional "why Moodeng" video
+ * (Emma 2026-11-27). Form → video upload → emailed code → application number. The AI reads it after the
+ * code; the team approves in Admin → Affiliates, which emails a one-time moodeng.app/partner/TOKEN link.
  */
 
-const C = {
-   bg: '#F7F5F0',
-   ink: '#121316',
-   cobalt: '#2541B2',
-   terracotta: '#E85D3F',
-   lime: '#C5F046',
-   amber: '#F5B82E'
-};
+const HERO_GRADIENT = 'linear-gradient(180deg, #7f86f6 0%, #8c94f7 100%)';
+const GOLD = 'linear-gradient(180deg, #ffe27a 0%, #ffbe1a 100%)';
+const PURPLE = '#6b55f7';
+const RED = '#e5484d';
 
-const FONT_HREF = 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@600;700&display=swap';
-const display = { fontFamily: "'Space Grotesk', Inter, sans-serif" };
+const inputCls =
+   'w-full rounded-2xl border border-[#e4e0f5] bg-[#f7f6fc] px-4 py-3.5 text-base text-[#1d1636] placeholder:text-[#a59fbd] focus:border-[#6b55f7] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#6b55f7]/25';
 
-function useDisplayFont() {
-   useEffect(() => {
-      if (document.querySelector(`link[href="${FONT_HREF}"]`)) return;
-      const link = document.createElement('link');
-      link.rel = 'stylesheet';
-      link.href = FONT_HREF;
-      document.head.appendChild(link);
-   }, []);
-}
-
-const STRIPE = [C.cobalt, C.terracotta, C.amber, C.lime];
-const STRIPE_REVERSED = [C.lime, C.amber, C.terracotta, C.cobalt];
-
-function Stripe({ order = STRIPE }: { order?: string[] }) {
+function GoldButton({ children, busy, className = '', ...rest }: React.ButtonHTMLAttributes<HTMLButtonElement> & { busy?: boolean }) {
    return (
-      <div className="grid h-3 grid-cols-4 border-b-2 border-[#121316]">
-         {order.map((c) => (
-            <div key={c} style={{ background: c }} />
-         ))}
-      </div>
+      <button
+         {...rest}
+         disabled={busy || rest.disabled}
+         className={`flex w-full items-center justify-center gap-2 rounded-full px-6 py-4 text-lg font-extrabold text-[#4a2a00] shadow-[0_4px_0_#d99a00] transition active:translate-y-[2px] active:shadow-[0_2px_0_#d99a00] disabled:opacity-60 ${className}`}
+         style={{ backgroundImage: GOLD }}
+      >
+         {busy ? <Loader2 className="h-5 w-5 animate-spin" /> : null}
+         {children}
+      </button>
    );
 }
 
-function Card({ children, stripe }: { children: React.ReactNode; stripe?: string[] }) {
+function Card({ step, title, note, children }: { step?: string; title: string; note?: string; children: React.ReactNode }) {
    return (
-      <section className="overflow-hidden rounded-3xl border-2 border-[#121316] bg-white shadow-[8px_8px_0_#121316]">
-         <Stripe order={stripe} />
-         <div className="p-5 sm:p-9">{children}</div>
+      <section className="rounded-[24px] bg-white p-5 shadow-[0_6px_24px_rgba(91,68,230,0.08)] sm:p-6">
+         <div className="mb-4 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2.5">
+               {step ? (
+                  <span
+                     className="flex h-7 w-7 items-center justify-center rounded-full text-sm font-black text-white"
+                     style={{ background: PURPLE }}
+                  >
+                     {step}
+                  </span>
+               ) : null}
+               <h2 className="text-[20px] font-extrabold italic text-[#1d1636]">{title}</h2>
+            </div>
+            {note ? <span className="rounded-full bg-[#efecff] px-2.5 py-1 text-xs font-bold text-[#6b55f7]">{note}</span> : null}
+         </div>
+         {children}
       </section>
    );
 }
 
-function SectionHead({ n, title, note, color, shape }: { n: string; title: string; note?: string; color: string; shape: string }) {
-   return (
-      <div className="mb-5 flex flex-wrap items-center justify-between gap-2 border-b-2 border-neutral-200 pb-3">
-         <div className="flex items-center gap-3">
-            <span
-               className={`flex h-8 w-8 items-center justify-center border-2 border-[#121316] text-sm font-bold ${shape}`}
-               style={{ ...display, background: color, color: color === C.amber ? C.ink : '#fff' }}
-            >
-               {n}
-            </span>
-            <h2 className="text-xl font-bold tracking-tight" style={display}>
-               {title}
-            </h2>
-         </div>
-         {note ? <span className="text-xs font-semibold uppercase tracking-wider text-neutral-500">{note}</span> : null}
-      </div>
-   );
-}
-
-const inputCls =
-   'w-full rounded-xl border-2 border-[#121316] bg-[#F7F5F0] px-4 py-3.5 text-base font-medium text-[#121316] placeholder:text-neutral-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#2541B2]';
-
-function Field({ label, required, error, children }: { label: string; required?: boolean; error?: string; children: React.ReactNode }) {
+function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
    return (
       <label className="block">
-         <span className="mb-2 block text-xs font-bold uppercase tracking-wider">
-            {label} {required ? <span style={{ color: C.terracotta }}>*</span> : null}
-         </span>
+         <span className="mb-1.5 block text-sm font-bold text-[#4b4468]">{label}</span>
          {children}
          {error ? (
-            <span className="mt-1.5 block text-xs font-semibold" style={{ color: C.terracotta }}>
+            <span className="mt-1.5 block text-sm font-semibold" style={{ color: RED }}>
                {error}
             </span>
          ) : null}
@@ -105,57 +85,142 @@ function Field({ label, required, error, children }: { label: string; required?:
    );
 }
 
-function YesNo({ value, onChange, yesColor }: { value: boolean; onChange: (v: boolean) => void; yesColor: string }) {
+function YesNo({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
    return (
-      <div className="mb-3 flex gap-3">
+      <div className="grid grid-cols-2 gap-2 rounded-full bg-[#f1effa] p-1">
          {[true, false].map((v) => (
             <button
                key={String(v)}
                type="button"
-               onClick={() => onChange(v)}
                aria-pressed={value === v}
-               className={`rounded-xl border-2 border-[#121316] px-5 py-2.5 text-sm font-bold transition-all ${value === v ? 'shadow-[3px_3px_0_#121316]' : 'bg-white'}`}
-               style={value === v ? { background: v ? yesColor : C.lime } : undefined}
+               onClick={() => onChange(v)}
+               className={`rounded-full py-2.5 text-sm font-extrabold transition ${value === v ? 'bg-white text-[#6b55f7] shadow' : 'text-[#8a83a6]'}`}
             >
-               {v ? 'YES' : 'NO'}
+               {v ? 'Yes' : 'No'}
             </button>
          ))}
       </div>
    );
 }
 
-function PrimaryBtn({ children, busy, ...rest }: React.ButtonHTMLAttributes<HTMLButtonElement> & { busy?: boolean }) {
+function Hero({ tab, setTab }: { tab: 'apply' | 'track'; setTab: (t: 'apply' | 'track') => void }) {
    return (
-      <button
-         {...rest}
-         disabled={busy || rest.disabled}
-         className={`inline-flex items-center justify-center gap-2 rounded-xl border-2 border-[#121316] bg-[#2541B2] px-7 py-3.5 text-base font-bold text-white shadow-[3px_3px_0_#121316] transition-colors hover:bg-[#121316] disabled:opacity-60 ${rest.className ?? ''}`}
-         style={display}
+      <section
+         className="relative overflow-hidden"
+         style={{
+            backgroundImage: HERO_GRADIENT,
+            maskImage: 'linear-gradient(180deg, #000 78%, transparent 100%)',
+            WebkitMaskImage: 'linear-gradient(180deg, #000 78%, transparent 100%)'
+         }}
       >
-         {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-         {children}
-      </button>
+         <div className="mx-auto max-w-[560px] px-5 pt-6">
+            <div className="flex items-center justify-between">
+               <a href="https://moodeng.app" className="text-base font-black italic tracking-tight text-white">
+                  MOODENG
+               </a>
+               <div className="flex rounded-full bg-white/20 p-1 backdrop-blur">
+                  {(
+                     [
+                        ['apply', 'Apply'],
+                        ['track', 'My status']
+                     ] as const
+                  ).map(([t, label]) => (
+                     <button
+                        key={t}
+                        type="button"
+                        onClick={() => setTab(t)}
+                        className={`rounded-full px-4 py-1.5 text-sm font-extrabold transition ${tab === t ? 'bg-white text-[#6b55f7]' : 'text-white'}`}
+                     >
+                        {label}
+                     </button>
+                  ))}
+               </div>
+            </div>
+            <div className="pt-8 text-center">
+               <h1
+                  className="text-[40px] font-black italic leading-none tracking-[-1px] text-white sm:text-[48px]"
+                  style={{ textShadow: '0 3px 0 rgba(91,68,230,0.35)' }}
+               >
+                  BE A MOODENG CREATOR
+               </h1>
+               <p className="mt-2 text-[18px] font-extrabold italic text-white">Share Moodeng. Earn for every friend we fund.</p>
+            </div>
+         </div>
+         <img
+            src={DASHBOARD_V2_ASSETS.affiliateHero}
+            alt="Two Moodeng hippos high-fiving"
+            className="mx-auto -mt-2 block w-full max-w-[560px] [mask-image:linear-gradient(180deg,transparent_0%,#000_16%)] sm:mt-0 sm:[mask-image:radial-gradient(ellipse_50%_58%_at_50%_52%,#000_45%,transparent_100%)]"
+         />
+      </section>
    );
 }
 
-function BackgroundArt() {
+// ── Video step ───────────────────────────────────────────────────────────────────────────────────────
+function VideoPicker({ file, onFile }: { file: File | null; onFile: (f: File | null) => void }) {
+   const input = useRef<HTMLInputElement>(null);
+   const [preview, setPreview] = useState<string | null>(null);
+   const [problem, setProblem] = useState<string | null>(null);
+   const [checking, setChecking] = useState(false);
+
+   useEffect(() => {
+      if (!file) {
+         setPreview(null);
+         return;
+      }
+      const url = URL.createObjectURL(file);
+      setPreview(url);
+      return () => URL.revokeObjectURL(url);
+   }, [file]);
+
+   const pick = async (f: File | undefined) => {
+      if (!f) return;
+      setChecking(true);
+      const why = creatorVideoProblem(f, await readVideoSeconds(f));
+      setChecking(false);
+      setProblem(why);
+      onFile(why ? null : f);
+   };
+
    return (
-      <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden="true">
-         <svg className="absolute -left-20 -top-20 h-40 w-40 sm:-left-16 sm:-top-16 sm:h-80 sm:w-80" viewBox="0 0 200 200">
-            <circle cx="0" cy="0" r="180" fill={C.cobalt} />
-            <circle cx="0" cy="0" r="110" fill="none" stroke={C.bg} strokeWidth="3" strokeDasharray="8 8" />
-         </svg>
-         <svg className="absolute -right-10 top-12 hidden h-56 w-56 sm:block sm:h-72 sm:w-72" viewBox="0 0 220 220">
-            <polygon points="110,15 205,180 15,180" fill={C.amber} stroke={C.ink} strokeWidth="3" />
-            <circle cx="155" cy="75" r="34" fill={C.terracotta} stroke={C.ink} strokeWidth="3" />
-            <rect x="45" y="135" width="44" height="44" fill={C.lime} stroke={C.ink} strokeWidth="3" />
-         </svg>
-         <svg className="absolute -bottom-16 -right-12 h-56 w-56 sm:h-80 sm:w-80" viewBox="0 0 200 200">
-            <path d="M 200 40 A 160 160 0 0 0 40 200 L 200 200 Z" fill={C.terracotta} />
-            <line x1="80" y1="200" x2="200" y2="80" stroke={C.ink} strokeWidth="3" />
-            <line x1="115" y1="200" x2="200" y2="115" stroke={C.ink} strokeWidth="3" />
-            <line x1="150" y1="200" x2="200" y2="150" stroke={C.ink} strokeWidth="3" />
-         </svg>
+      <div>
+         <input
+            ref={input}
+            type="file"
+            accept="video/*"
+            className="hidden"
+            onChange={(e) => {
+               void pick(e.target.files?.[0]);
+               e.target.value = '';
+            }}
+         />
+         {preview ? (
+            <div className="space-y-2">
+               <video src={preview} controls playsInline className="max-h-[360px] w-full rounded-2xl bg-black" />
+               <button type="button" onClick={() => input.current?.click()} className="text-sm font-bold text-[#6b55f7] underline">
+                  Use another video
+               </button>
+            </div>
+         ) : (
+            <button
+               type="button"
+               onClick={() => input.current?.click()}
+               className="flex w-full items-center gap-4 rounded-2xl border-2 border-dashed border-[#cfc7f7] bg-[#f7f6fc] p-3 text-left"
+            >
+               <img src="/hippos/prescreen/ready-to-record.webp" alt="" className="h-20 w-20 shrink-0 rounded-xl object-cover" />
+               <span>
+                  <span className="flex items-center gap-1.5 text-base font-extrabold text-[#1d1636]">
+                     {checking ? <Loader2 className="h-4 w-4 animate-spin" /> : <Video className="h-4 w-4 text-[#6b55f7]" />}
+                     Record or pick a video
+                  </span>
+                  <span className="mt-0.5 block text-sm text-[#7a7396]">Why do you want to work with Moodeng? Under 1 minute.</span>
+               </span>
+            </button>
+         )}
+         {problem ? (
+            <p className="mt-2 text-sm font-semibold" style={{ color: RED }}>
+               {problem}
+            </p>
+         ) : null}
       </div>
    );
 }
@@ -163,10 +228,12 @@ function BackgroundArt() {
 // ── Apply ────────────────────────────────────────────────────────────────────────────────────────────
 function ApplyForm({ onDone }: { onDone: (appNumber: string, email: string) => void }) {
    const [f, setF] = useState<CreatorApplicationForm>(EMPTY_CREATOR_FORM);
+   const [video, setVideo] = useState<File | null>(null);
    const [errors, setErrors] = useState<CreatorFormErrors>({});
-   const [busy, setBusy] = useState(false);
+   const [busy, setBusy] = useState<null | 'saving' | 'video'>(null);
    const [formError, setFormError] = useState<string | null>(null);
    const [appId, setAppId] = useState<string | null>(null);
+   const [videoFailed, setVideoFailed] = useState(false);
 
    const set = <K extends keyof CreatorApplicationForm>(k: K, v: CreatorApplicationForm[K]) => setF((prev) => ({ ...prev, [k]: v }));
 
@@ -175,167 +242,179 @@ function ApplyForm({ onDone }: { onDone: (appNumber: string, email: string) => v
       const errs = validateCreatorForm(f);
       setErrors(errs);
       if (Object.keys(errs).length) {
-         setFormError('Please fix the boxes in red.');
+         setFormError('Please fix the red boxes.');
          return;
       }
-      setBusy(true);
+      setBusy('saving');
       setFormError(null);
       try {
-         setAppId(await startCreatorApplication(f));
+         const id = await startCreatorApplication(f);
+         if (video) {
+            setBusy('video');
+            try {
+               await uploadCreatorVideo(id, video);
+               setVideoFailed(false);
+            } catch {
+               setVideoFailed(true);
+            }
+         }
+         setAppId(id);
       } catch (err) {
          setFormError(creatorErrorMessage((err as Error)?.message));
       } finally {
-         setBusy(false);
+         setBusy(null);
       }
    };
 
    return (
       <>
-         <Card>
-            <form onSubmit={submit} noValidate className="space-y-9">
-               <div>
-                  <SectionHead n="01" title="About you" note="* Must fill in" color={C.cobalt} shape="rounded-lg" />
-                  <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                     <div className="md:col-span-2">
-                        <Field label="Full name" required error={errors.full_name}>
-                           <input
-                              className={inputCls}
-                              value={f.full_name}
-                              onChange={(e) => set('full_name', e.target.value)}
-                              autoComplete="name"
-                           />
-                        </Field>
-                     </div>
-                     <div className="md:col-span-2">
-                        <Field label="Full address" required error={errors.address}>
-                           <input
-                              className={inputCls}
-                              value={f.address}
-                              onChange={(e) => set('address', e.target.value)}
-                              placeholder="House no., street, barangay, city, province"
-                              autoComplete="street-address"
-                           />
-                        </Field>
-                     </div>
-                     <Field label="Phone number" required error={errors.phone}>
+         <form onSubmit={submit} noValidate className="space-y-4">
+            <Card step="1" title="About you">
+               <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="sm:col-span-2">
+                     <Field label="Full name" error={errors.full_name}>
                         <input
                            className={inputCls}
-                           type="tel"
-                           value={f.phone}
-                           onChange={(e) => set('phone', e.target.value)}
-                           placeholder="+63 917 123 4567"
-                           autoComplete="tel"
-                        />
-                     </Field>
-                     <Field label="Email" required error={errors.email}>
-                        <input
-                           className={inputCls}
-                           type="email"
-                           value={f.email}
-                           onChange={(e) => set('email', e.target.value)}
-                           placeholder="you@email.com"
-                           autoComplete="email"
+                           value={f.full_name}
+                           onChange={(e) => set('full_name', e.target.value)}
+                           autoComplete="name"
                         />
                      </Field>
                   </div>
+                  <div className="sm:col-span-2">
+                     <Field label="Address" error={errors.address}>
+                        <input
+                           className={inputCls}
+                           value={f.address}
+                           onChange={(e) => set('address', e.target.value)}
+                           placeholder="Street, barangay, city"
+                           autoComplete="street-address"
+                        />
+                     </Field>
+                  </div>
+                  <Field label="Phone" error={errors.phone}>
+                     <input
+                        className={inputCls}
+                        type="tel"
+                        value={f.phone}
+                        onChange={(e) => set('phone', e.target.value)}
+                        placeholder="+63 917 123 4567"
+                        autoComplete="tel"
+                     />
+                  </Field>
+                  <Field label="Email" error={errors.email}>
+                     <input
+                        className={inputCls}
+                        type="email"
+                        value={f.email}
+                        onChange={(e) => set('email', e.target.value)}
+                        placeholder="you@email.com"
+                        autoComplete="email"
+                     />
+                  </Field>
                </div>
+            </Card>
 
-               <div>
-                  <SectionHead n="02" title="Your channels" note="At least one" color={C.terracotta} shape="rounded-full" />
-                  <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-                     {(
-                        [
-                           ['facebook_url', 'Facebook link', 'https://facebook.com/yourpage'],
-                           ['tiktok_url', 'TikTok link', 'https://tiktok.com/@you'],
-                           ['youtube_url', 'YouTube link', 'https://youtube.com/@you'],
-                           ['instagram_url', 'Instagram link', 'https://instagram.com/you']
-                        ] as const
-                     ).map(([k, label, ph]) => (
-                        <Field key={k} label={label}>
-                           <input className={inputCls} type="url" value={f[k]} onChange={(e) => set(k, e.target.value)} placeholder={ph} />
-                        </Field>
-                     ))}
+            <Card step="2" title="Your pages" note="1 or more">
+               <div className="grid gap-4 sm:grid-cols-2">
+                  {(
+                     [
+                        ['tiktok_url', 'TikTok', 'tiktok.com/@you'],
+                        ['facebook_url', 'Facebook', 'facebook.com/you'],
+                        ['instagram_url', 'Instagram', 'instagram.com/you'],
+                        ['youtube_url', 'YouTube', 'youtube.com/@you']
+                     ] as const
+                  ).map(([k, label, ph]) => (
+                     <Field key={k} label={label}>
+                        <input
+                           className={inputCls}
+                           type="url"
+                           inputMode="url"
+                           value={f[k]}
+                           onChange={(e) => set(k, e.target.value)}
+                           placeholder={ph}
+                        />
+                     </Field>
+                  ))}
+               </div>
+               {errors.socials ? (
+                  <p className="mt-2 text-sm font-semibold" style={{ color: RED }}>
+                     {errors.socials}
+                  </p>
+               ) : null}
+            </Card>
+
+            <Card step="3" title="Your video" note="Gets picked first">
+               <VideoPicker file={video} onFile={setVideo} />
+            </Card>
+
+            <Card step="4" title="A few questions">
+               <div className="space-y-5">
+                  <div>
+                     <p className="mb-2 text-sm font-bold text-[#4b4468]">Worked with a money app before?</p>
+                     <YesNo value={f.prior_fintech} onChange={(v) => set('prior_fintech', v)} />
+                     {f.prior_fintech ? (
+                        <input
+                           className={`${inputCls} mt-2`}
+                           value={f.prior_fintech_details}
+                           onChange={(e) => set('prior_fintech_details', e.target.value)}
+                           placeholder="Which one?"
+                        />
+                     ) : null}
                   </div>
-                  {errors.socials ? (
-                     <p className="mt-2 text-xs font-semibold" style={{ color: C.terracotta }}>
-                        {errors.socials}
+                  <div>
+                     <p className="mb-2 text-sm font-bold text-[#4b4468]">Working with another loan app now?</p>
+                     <YesNo value={f.conflict} onChange={(v) => set('conflict', v)} />
+                     {f.conflict ? (
+                        <input
+                           className={`${inputCls} mt-2`}
+                           value={f.conflict_details}
+                           onChange={(e) => set('conflict_details', e.target.value)}
+                           placeholder="Which one?"
+                        />
+                     ) : null}
+                  </div>
+                  <Field label="Why you? (optional)">
+                     <textarea
+                        className={`${inputCls} resize-y`}
+                        rows={3}
+                        maxLength={2000}
+                        value={f.pitch}
+                        onChange={(e) => set('pitch', e.target.value)}
+                        placeholder="Who follows you and what you post"
+                     />
+                  </Field>
+                  <label className="flex cursor-pointer items-start gap-3 rounded-2xl bg-[#f7f6fc] p-4">
+                     <input
+                        type="checkbox"
+                        checked={f.consent}
+                        onChange={(e) => set('consent', e.target.checked)}
+                        className="mt-0.5 h-5 w-5 shrink-0 accent-[#6b55f7]"
+                     />
+                     <span className="text-sm leading-relaxed text-[#4b4468]">
+                        Moodeng can keep and use my details to review my application and contact me, as allowed by privacy law.
+                     </span>
+                  </label>
+                  {errors.consent ? (
+                     <p className="-mt-3 text-sm font-semibold" style={{ color: RED }}>
+                        {errors.consent}
                      </p>
                   ) : null}
                </div>
+            </Card>
 
-               <div>
-                  <SectionHead n="03" title="Why you" color={C.amber} shape="rounded-xl" />
-                  <div className="space-y-5">
-                     <div className="rounded-2xl border-2 border-[#121316] bg-[#F7F5F0] p-5">
-                        <p className="mb-3 text-sm font-bold uppercase tracking-wide">Have you worked with a fintech app before?</p>
-                        <YesNo value={f.prior_fintech} onChange={(v) => set('prior_fintech', v)} yesColor={C.lime} />
-                        {f.prior_fintech ? (
-                           <input
-                              className={`${inputCls} bg-white py-2.5`}
-                              value={f.prior_fintech_details}
-                              onChange={(e) => set('prior_fintech_details', e.target.value)}
-                              placeholder="Which app? (optional)"
-                           />
-                        ) : null}
-                     </div>
-                     <div className="rounded-2xl border-2 border-[#121316] bg-[#F7F5F0] p-5">
-                        <p className="mb-3 text-sm font-bold uppercase tracking-wide">
-                           Do you work with another loan or money app right now that could clash with us?
-                        </p>
-                        <YesNo value={f.conflict} onChange={(v) => set('conflict', v)} yesColor={C.amber} />
-                        {f.conflict ? (
-                           <input
-                              className={`${inputCls} bg-white py-2.5`}
-                              value={f.conflict_details}
-                              onChange={(e) => set('conflict_details', e.target.value)}
-                              placeholder="Which brand? (optional)"
-                           />
-                        ) : null}
-                     </div>
-                     <Field label="Why should we pick you?">
-                        <textarea
-                           className={`${inputCls} resize-y`}
-                           rows={4}
-                           value={f.pitch}
-                           maxLength={2000}
-                           onChange={(e) => set('pitch', e.target.value)}
-                           placeholder="Who watches you, what you post, and why Moodeng fits your followers."
-                        />
-                     </Field>
-                     <div className="rounded-2xl border-2 border-[#121316] bg-[#F7F5F0] p-5">
-                        <label className="flex cursor-pointer items-start gap-3.5">
-                           <input
-                              type="checkbox"
-                              checked={f.consent}
-                              onChange={(e) => set('consent', e.target.checked)}
-                              className="mt-1 h-5 w-5 shrink-0 accent-[#2541B2]"
-                           />
-                           <span className="text-sm font-medium leading-relaxed">
-                              I let <strong>Moodeng</strong> keep and use these details to review my application, set me up as a partner,
-                              and contact me about the program, as allowed by data privacy law.{' '}
-                              <span style={{ color: C.terracotta }}>*</span>
-                           </span>
-                        </label>
-                        {errors.consent ? (
-                           <p className="mt-2 text-xs font-semibold" style={{ color: C.terracotta }}>
-                              {errors.consent}
-                           </p>
-                        ) : null}
-                     </div>
-                  </div>
-               </div>
-
-               <div className="flex flex-col items-stretch justify-between gap-4 border-t-2 border-neutral-200 pt-5 sm:flex-row sm:items-center">
-                  <p className="text-sm font-semibold" style={{ color: formError ? C.terracotta : '#666' }}>
-                     {formError ?? 'We email you a 6-digit code to check it’s you.'}
-                  </p>
-                  <PrimaryBtn type="submit" busy={busy}>
-                     Send application →
-                  </PrimaryBtn>
-               </div>
-            </form>
-         </Card>
-         {appId ? <CodeModal appId={appId} email={f.email.trim()} onClose={() => setAppId(null)} onDone={onDone} /> : null}
+            {formError ? (
+               <p className="text-center text-sm font-bold" style={{ color: RED }}>
+                  {formError}
+               </p>
+            ) : null}
+            <GoldButton type="submit" busy={Boolean(busy)}>
+               {busy === 'video' ? 'Sending your video…' : 'Send application'}
+            </GoldButton>
+         </form>
+         {appId ? (
+            <CodeModal appId={appId} email={f.email.trim()} videoFailed={videoFailed} onClose={() => setAppId(null)} onDone={onDone} />
+         ) : null}
       </>
    );
 }
@@ -343,22 +422,24 @@ function ApplyForm({ onDone }: { onDone: (appNumber: string, email: string) => v
 function CodeModal({
    appId,
    email,
+   videoFailed,
    onClose,
    onDone
 }: {
    appId: string;
    email: string;
+   videoFailed: boolean;
    onClose: () => void;
    onDone: (appNumber: string, email: string) => void;
 }) {
    const [code, setCode] = useState('');
    const [busy, setBusy] = useState(false);
-   const [msg, setMsg] = useState<string | null>(null);
+   const [msg, setMsg] = useState<{ text: string; ok?: boolean } | null>(null);
 
    const verify = async (e: React.FormEvent) => {
       e.preventDefault();
       if (!/^\d{6}$/.test(code)) {
-         setMsg('Type the 6 numbers from the email.');
+         setMsg({ text: 'Type the 6 numbers from the email.' });
          return;
       }
       setBusy(true);
@@ -366,9 +447,9 @@ function CodeModal({
       try {
          const number = await verifyCreatorCode(appId, code);
          if (number) onDone(number, email);
-         else setMsg('That code is wrong. Check the email and try again.');
+         else setMsg({ text: 'Wrong code. Check the email again.' });
       } catch (err) {
-         setMsg(creatorErrorMessage((err as Error)?.message));
+         setMsg({ text: creatorErrorMessage((err as Error)?.message) });
       } finally {
          setBusy(false);
       }
@@ -378,154 +459,114 @@ function CodeModal({
       setMsg(null);
       try {
          await resendCreatorCode(appId);
-         setMsg('New code sent. Check your inbox (and spam).');
+         setMsg({ text: 'New code sent. Check spam too.', ok: true });
       } catch (err) {
-         setMsg(creatorErrorMessage((err as Error)?.message));
+         setMsg({ text: creatorErrorMessage((err as Error)?.message) });
       }
    };
 
    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#121316]/75 p-4">
-         <div className="w-full max-w-md overflow-hidden rounded-3xl border-2 border-[#121316] bg-white shadow-[10px_10px_0_#121316]">
-            <Stripe />
-            <div className="p-6 sm:p-8">
-               <div className="mb-3 flex items-center justify-between">
-                  <span
-                     className="rounded-full border border-[#121316] px-3 py-1 text-xs font-bold uppercase tracking-wider"
-                     style={{ background: C.lime }}
-                  >
-                     Email check
-                  </span>
-                  <button type="button" onClick={onClose} className="rounded-lg p-1.5 font-bold hover:bg-neutral-100" aria-label="Close">
-                     ✕
-                  </button>
-               </div>
-               <h3 className="mb-2 text-2xl font-bold tracking-tight" style={display}>
-                  Check your inbox
-               </h3>
-               <p className="mb-5 text-sm text-neutral-600">
-                  We sent a 6-digit code to <strong className="break-all text-[#121316]">{email}</strong>.
+      <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#1d1636]/60 p-3 sm:items-center">
+         <div className="relative w-full max-w-[420px] rounded-[28px] bg-white p-6 text-center shadow-2xl">
+            <button type="button" onClick={onClose} className="absolute right-4 top-3 text-xl font-bold text-[#a59fbd]" aria-label="Close">
+               ✕
+            </button>
+            <img src="/hippos/hippo-purple-envelope-email.png" alt="" className="mx-auto h-28 w-auto" />
+            <h3 className="mt-2 text-2xl font-black italic text-[#1d1636]">Check your email</h3>
+            <p className="mt-1 text-sm text-[#7a7396]">
+               Code sent to <strong className="break-all text-[#1d1636]">{email}</strong>
+            </p>
+            {videoFailed ? (
+               <p className="mt-2 rounded-xl bg-[#fff4d6] px-3 py-2 text-sm font-semibold text-[#7a5300]">
+                  Your video didn’t send. You can still apply without it.
                </p>
-               <form onSubmit={verify} className="space-y-4">
-                  <input
-                     value={code}
-                     onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                     inputMode="numeric"
-                     autoComplete="one-time-code"
-                     placeholder="000000"
-                     aria-label="6-digit code"
-                     className={`${inputCls} text-center text-2xl font-bold tracking-[0.35em]`}
-                     style={display}
-                     autoFocus
-                  />
-                  {msg ? (
-                     <p className="text-sm font-semibold" style={{ color: msg.startsWith('New code') ? '#2f7a1f' : C.terracotta }}>
-                        {msg}
-                     </p>
-                  ) : null}
-                  <div className="flex items-center justify-between gap-3 pt-1">
-                     <button type="button" onClick={resend} className="text-sm font-bold underline" style={{ color: C.cobalt }}>
-                        Send a new code
-                     </button>
-                     <PrimaryBtn type="submit" busy={busy}>
-                        Check & send →
-                     </PrimaryBtn>
-                  </div>
-               </form>
-            </div>
+            ) : null}
+            <form onSubmit={verify} className="mt-4 space-y-3">
+               <input
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  placeholder="000000"
+                  aria-label="6-digit code"
+                  className={`${inputCls} text-center text-3xl font-black tracking-[0.4em]`}
+                  autoFocus
+               />
+               {msg ? (
+                  <p className="text-sm font-semibold" style={{ color: msg.ok ? '#1f8a4c' : RED }}>
+                     {msg.text}
+                  </p>
+               ) : null}
+               <GoldButton type="submit" busy={busy}>
+                  Send
+               </GoldButton>
+               <button type="button" onClick={resend} className="text-sm font-bold text-[#6b55f7] underline">
+                  Send a new code
+               </button>
+            </form>
          </div>
       </div>
    );
 }
 
 // ── Done + status ────────────────────────────────────────────────────────────────────────────────────
-function Done({ appNumber, onTrack, onAgain }: { appNumber: string; onTrack: () => void; onAgain: () => void }) {
+function NumberPill({ value }: { value: string }) {
    return (
-      <Card stripe={STRIPE_REVERSED}>
-         <span
-            className="rounded-full border border-[#121316] px-3 py-1 text-xs font-bold uppercase tracking-wider"
-            style={{ background: C.lime }}
-         >
-            Sent
-         </span>
-         <h2 className="mb-2 mt-4 text-3xl font-bold tracking-tight" style={display}>
-            Application sent! 🎉
-         </h2>
-         <p className="mb-5 text-neutral-700">We emailed you a copy. Our team will look at your profile and email you.</p>
-         <div className="mb-6 rounded-2xl border-2 border-[#121316] bg-[#F7F5F0] p-5">
-            <p className="text-xs font-bold uppercase tracking-wider text-neutral-500">Your application number</p>
-            <p className="mt-1 text-3xl font-bold tracking-widest" style={{ ...display, color: C.cobalt }}>
-               {appNumber}
-            </p>
-         </div>
-         <div className="flex flex-col gap-3 sm:flex-row">
-            <PrimaryBtn type="button" onClick={onTrack}>
-               Check my status
-            </PrimaryBtn>
-            <button
-               type="button"
-               onClick={onAgain}
-               className="rounded-xl border-2 border-[#121316] bg-white px-6 py-3.5 font-bold"
-               style={display}
-            >
-               Send another profile
-            </button>
-         </div>
-      </Card>
+      <div className="mx-auto inline-block rounded-2xl bg-gradient-to-b from-white to-[#ece8ff] px-5 py-3 shadow-[inset_0_0_0_1px_#e4e0f5]">
+         <p className="text-xs font-bold uppercase tracking-wider text-[#8a83a6]">Your number</p>
+         <p className="text-2xl font-black tracking-wider text-[#6b55f7]">{value}</p>
+      </div>
+   );
+}
+
+function Done({ appNumber, onTrack }: { appNumber: string; onTrack: () => void }) {
+   return (
+      <section className="rounded-[24px] bg-white p-6 text-center shadow-[0_6px_24px_rgba(91,68,230,0.08)]">
+         <img src="/hippos/party.png" alt="" className="mx-auto h-[130px] w-auto" />
+         <h2 className="mt-2 text-[26px] font-black italic text-[#1d1636]">Application sent!</h2>
+         <p className="mb-4 mt-1 text-[#7a7396]">We’ll email you soon.</p>
+         <NumberPill value={appNumber} />
+         <GoldButton type="button" onClick={onTrack} className="mt-6">
+            Check my status
+         </GoldButton>
+      </section>
    );
 }
 
 function StatusResult({ s }: { s: CreatorStatus }) {
    const badge =
       s.status === 'approved'
-         ? { text: 'Approved', bg: C.lime, fg: C.ink }
+         ? { text: 'Approved 🎉', cls: 'bg-[#dcf7e6] text-[#1f8a4c]' }
          : s.status === 'rejected'
-           ? { text: 'Not approved', bg: C.terracotta, fg: '#fff' }
-           : { text: 'We’re looking at it', bg: C.amber, fg: C.ink };
-   const when = s.submittedAt
-      ? new Date(s.submittedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', timeZone: 'Asia/Manila' })
-      : null;
+           ? { text: 'Not this time', cls: 'bg-[#fde4e4] text-[#c0392b]' }
+           : { text: 'We’re checking', cls: 'bg-[#efecff] text-[#6b55f7]' };
    return (
-      <div className="mt-6 rounded-2xl border-2 border-[#121316] bg-[#F7F5F0] p-5">
-         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#121316]/20 pb-3">
-            <div>
-               <p className="text-xs font-semibold text-neutral-500">Application {s.appNumber}</p>
-               <h3 className="text-xl font-bold" style={display}>
-                  Hi {s.firstName}
-               </h3>
-            </div>
-            <span
-               className="rounded-full border border-[#121316] px-3 py-1 text-xs font-bold uppercase"
-               style={{ background: badge.bg, color: badge.fg }}
-            >
-               {badge.text}
-            </span>
+      <div className="mt-5 rounded-2xl bg-[#f7f6fc] p-4 text-left">
+         <div className="flex items-center justify-between gap-2">
+            <p className="text-lg font-extrabold text-[#1d1636]">Hi {s.firstName}!</p>
+            <span className={`rounded-full px-3 py-1 text-sm font-bold ${badge.cls}`}>{badge.text}</span>
          </div>
-         {when ? <p className="mt-2 text-xs text-neutral-500">Sent {when}</p> : null}
-         {s.status === 'pending' ? <p className="mt-3 text-sm text-neutral-700">Our team will email you when we decide.</p> : null}
+         <p className="mt-0.5 text-xs text-[#8a83a6]">{s.appNumber}</p>
+         {s.status === 'pending' ? <p className="mt-3 text-sm text-[#4b4468]">We’ll email you when we decide.</p> : null}
          {s.status === 'rejected' ? (
-            <p className="mt-3 text-sm text-neutral-700">Thank you for applying. We can’t approve your application this time.</p>
+            <p className="mt-3 text-sm text-[#4b4468]">Thank you for applying. We can’t approve it this time.</p>
          ) : null}
          {s.status === 'approved' ? (
-            <div className="mt-4 rounded-xl border-2 border-[#121316] bg-white p-4">
+            <div className="mt-3 space-y-3">
                {s.code ? (
-                  <>
-                     <p className="text-xs font-bold uppercase tracking-wider text-neutral-500">Your code</p>
-                     <p className="mb-3 text-2xl font-bold tracking-widest" style={{ ...display, color: C.cobalt }}>
-                        {s.code}
-                     </p>
-                  </>
+                  <p className="text-sm text-[#4b4468]">
+                     Your code: <strong className="text-lg tracking-wider text-[#6b55f7]">{s.code}</strong>
+                  </p>
                ) : null}
                {s.partnerLink ? (
                   <a
                      href={s.partnerLink}
-                     className="inline-flex rounded-xl border-2 border-[#121316] bg-[#2541B2] px-5 py-3 font-bold text-white shadow-[3px_3px_0_#121316]"
-                     style={display}
+                     className="flex w-full items-center justify-center rounded-full px-6 py-3.5 text-base font-extrabold text-[#4a2a00] shadow-[0_4px_0_#d99a00]"
+                     style={{ backgroundImage: GOLD }}
                   >
-                     Set up my partner account →
+                     Set up my partner account
                   </a>
                ) : null}
-               <p className="mt-3 text-xs text-neutral-600">Already set up? Sign in and open your dashboard at moodeng.app/affiliate.</p>
             </div>
          ) : null}
       </div>
@@ -542,7 +583,7 @@ function TrackCard({ initialNumber, initialEmail }: { initialNumber: string; ini
    const check = async (e?: React.FormEvent) => {
       e?.preventDefault();
       if (!num.trim() || !email.trim()) {
-         setMsg('Type your application number and your email.');
+         setMsg('Type your number and email.');
          return;
       }
       setBusy(true);
@@ -551,7 +592,7 @@ function TrackCard({ initialNumber, initialEmail }: { initialNumber: string; ini
       try {
          const s = await fetchCreatorStatus(num, email);
          if (s) setResult(s);
-         else setMsg('We can’t find that. Check the number and use the same email you applied with.');
+         else setMsg('Not found. Use the email you applied with.');
       } catch {
          setMsg('Something went wrong. Please try again.');
       } finally {
@@ -565,118 +606,59 @@ function TrackCard({ initialNumber, initialEmail }: { initialNumber: string; ini
    }, []);
 
    return (
-      <Card stripe={STRIPE_REVERSED}>
-         <h2 className="mb-2 text-2xl font-bold tracking-tight" style={display}>
-            Check your status
-         </h2>
-         <p className="mb-5 text-sm text-neutral-600">
-            Use the application number from your email (like <strong>MDG-2026-1234</strong>) and the email you applied with.
-         </p>
-         <form onSubmit={check} className="grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
-            <input
-               className={`${inputCls} font-bold uppercase tracking-wider`}
-               value={num}
-               onChange={(e) => setNum(e.target.value)}
-               placeholder="MDG-2026-1234"
-               aria-label="Application number"
-               style={display}
-            />
-            <input
-               className={inputCls}
-               type="email"
-               value={email}
-               onChange={(e) => setEmail(e.target.value)}
-               placeholder="you@email.com"
-               aria-label="Email"
-            />
-            <PrimaryBtn type="submit" busy={busy}>
+      <Card title="My status">
+         <form onSubmit={check} className="space-y-3">
+            <Field label="Application number">
+               <input
+                  className={`${inputCls} font-bold uppercase tracking-wider`}
+                  value={num}
+                  onChange={(e) => setNum(e.target.value)}
+                  placeholder="MDG-2026-1234"
+               />
+            </Field>
+            <Field label="Email">
+               <input
+                  className={inputCls}
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@email.com"
+               />
+            </Field>
+            {msg ? (
+               <p className="text-sm font-semibold" style={{ color: RED }}>
+                  {msg}
+               </p>
+            ) : null}
+            <GoldButton type="submit" busy={busy}>
                Check
-            </PrimaryBtn>
+            </GoldButton>
          </form>
-         {msg ? (
-            <p className="mt-4 text-sm font-semibold" style={{ color: C.terracotta }}>
-               {msg}
-            </p>
-         ) : null}
          {result ? <StatusResult s={result} /> : null}
       </Card>
    );
 }
 
 export default function CreatorApplyPage() {
-   useDisplayFont();
    const [params] = useSearchParams();
    const trackParam = params.get('track') ?? '';
    const [tab, setTab] = useState<'apply' | 'track'>(trackParam ? 'track' : 'apply');
    const [done, setDone] = useState<{ number: string; email: string } | null>(null);
    const [trackSeed, setTrackSeed] = useState({ number: trackParam, email: '' });
-   const [formKey, setFormKey] = useState(0);
 
    useEffect(() => {
-      document.title = 'Become a Moodeng Creator Partner';
+      document.title = 'Be a Moodeng Creator';
    }, []);
 
-   const tabBtn = (t: 'apply' | 'track', label: string) => (
-      <button
-         type="button"
-         onClick={() => {
-            setTab(t);
-            setDone(null);
-         }}
-         className={`rounded-xl px-4 py-2 text-sm font-bold transition-colors ${tab === t ? 'bg-[#121316] text-white' : 'text-[#121316] hover:bg-[#F7F5F0]'}`}
-         style={display}
-      >
-         {label}
-      </button>
-   );
+   const switchTab = (t: 'apply' | 'track') => {
+      setTab(t);
+      setDone(null);
+   };
 
    return (
-      <div
-         className="relative min-h-screen overflow-x-hidden text-[#121316]"
-         style={{
-            backgroundColor: C.bg,
-            backgroundImage: 'radial-gradient(#12131622 1.25px, transparent 1.25px)',
-            backgroundSize: '24px 24px',
-            colorScheme: 'light'
-         }}
-      >
-         <BackgroundArt />
-         <div className="relative z-10 mx-auto max-w-4xl px-4 py-8 sm:px-6 sm:py-14">
-            <nav className="mb-10 flex flex-wrap items-center justify-between gap-3">
-               <a href="https://moodeng.app" className="flex items-center gap-2">
-                  <span
-                     className="flex h-10 w-10 items-center justify-center rounded-xl border-2 border-[#121316] text-lg font-bold text-white shadow-[3px_3px_0_#121316]"
-                     style={{ ...display, background: C.cobalt }}
-                  >
-                     M
-                  </span>
-                  <span className="text-lg font-bold tracking-tight" style={display}>
-                     MOODENG <span className="font-semibold text-neutral-500">Creators</span>
-                  </span>
-               </a>
-               <div className="flex gap-1 rounded-2xl border-2 border-[#121316] bg-white p-1 shadow-[3px_3px_0_#121316]">
-                  {tabBtn('apply', 'Apply')}
-                  {tabBtn('track', 'Check status')}
-               </div>
-            </nav>
-
-            <header className="mb-10 grid items-end gap-6 lg:grid-cols-12">
-               <h1 className="text-4xl font-bold leading-[1.05] tracking-tight sm:text-5xl lg:col-span-8 lg:text-6xl" style={display}>
-                  Become a{' '}
-                  <span className="relative inline-block">
-                     <span className="relative z-10">Moodeng</span>
-                     <span className="absolute bottom-1 left-0 h-3.5 w-full" style={{ background: C.lime }} />
-                  </span>{' '}
-                  Creator Partner.
-               </h1>
-               <p
-                  className="border-l-4 pl-4 text-base leading-relaxed text-neutral-700 lg:col-span-4"
-                  style={{ borderColor: C.terracotta }}
-               >
-                  Share Moodeng with your followers and earn for the friends you bring. Fill in your profile to apply.
-               </p>
-            </header>
-
+      <div className="min-h-screen bg-[#f6f5fb] text-[#1d1636]" style={{ colorScheme: 'light' }}>
+         <Hero tab={tab} setTab={switchTab} />
+         <main className="relative z-10 mx-auto -mt-10 max-w-[560px] space-y-4 px-4 pb-12">
             {tab === 'track' ? (
                <TrackCard key={`${trackSeed.number}|${trackSeed.email}`} initialNumber={trackSeed.number} initialEmail={trackSeed.email} />
             ) : done ? (
@@ -684,28 +666,19 @@ export default function CreatorApplyPage() {
                   appNumber={done.number}
                   onTrack={() => {
                      setTrackSeed({ number: done.number, email: done.email });
-                     setTab('track');
-                     setDone(null);
-                  }}
-                  onAgain={() => {
-                     setDone(null);
-                     setFormKey((k) => k + 1);
+                     switchTab('track');
                   }}
                />
             ) : (
-               <ApplyForm key={formKey} onDone={(number, email) => setDone({ number, email })} />
+               <ApplyForm onDone={(number, email) => setDone({ number, email })} />
             )}
-
-            <footer className="mt-12 flex flex-col items-center justify-between gap-2 border-t-2 border-[#121316]/10 pt-6 text-xs font-semibold text-neutral-500 sm:flex-row">
-               <span>© {new Date().getFullYear()} Moodeng Credit</span>
-               <span>
-                  Questions?{' '}
-                  <a href="mailto:support@moodeng.app" className="underline" style={{ color: C.cobalt }}>
-                     support@moodeng.app
-                  </a>
-               </span>
-            </footer>
-         </div>
+            <p className="pt-4 text-center text-sm text-[#8a83a6]">
+               Questions?{' '}
+               <a href="mailto:support@moodeng.app" className="font-bold text-[#6b55f7] underline">
+                  support@moodeng.app
+               </a>
+            </p>
+         </main>
       </div>
    );
 }
