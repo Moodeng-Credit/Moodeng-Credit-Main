@@ -585,7 +585,10 @@ export default function App() {
                   </ProtectedRoute>
                }
             />
-            {/* Public: Shark Chomp, the game the call reminders link to while they wait (?at=&join=). */}
+            {/* Public: Shark Chomp. /game/CODE is the short link the call reminders send (CODE = the call's
+                start time); /chomp?at=&join= is the old long one, still working. */}
+            <Route path="/game" element={<SharkChompPage />} />
+            <Route path="/game/:code" element={<SharkChompPage />} />
             <Route path="/chomp" element={<SharkChompPage />} />
             {/* Moo-Spin prize wheel; /spin/CODE is a Facebook post or video from Admin → Spin wheel. */}
             <Route

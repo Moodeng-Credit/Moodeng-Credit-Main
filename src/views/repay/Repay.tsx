@@ -2142,7 +2142,7 @@ export default function Repay() {
                   </div>
                   {completion.limitSpin ? <LimitSpinPrompt className="w-full" /> : null}
                   {completion.lowIncome ? (
-                     <a href="/chomp" className="text-[15px] font-semibold text-[#6010D2] dark:text-[#C4B8FF]">
+                     <a href="/game" className="text-[15px] font-semibold text-[#6010D2] dark:text-[#C4B8FF]">
                         Play Shark Chomp 🦈
                      </a>
                   ) : null}

@@ -59,15 +59,21 @@ export default function LimitSpinPrompt({ enabled = true, className = '' }: { en
             <span className="text-[30px] leading-none" aria-hidden="true">
                🎡
             </span>
-            <p className="text-left text-[15px] font-semibold leading-5 text-[#040033] dark:text-[#F0EAFF]">
-               {ready ? (
-                  <span>Your spin is almost ready</span>
-               ) : (
-                  <>
-                     <span>Your spin unlocks</span> <span className="text-[#6010D2] dark:text-[#C4B8FF]">{unlockLabel(next.unlocks_at)}</span>
-                  </>
-               )}
-            </p>
+            <div className="flex flex-col items-start gap-1 text-left">
+               <p className="text-[15px] font-semibold leading-5 text-[#040033] dark:text-[#F0EAFF]">
+                  {ready ? (
+                     <span>Your spin is almost ready</span>
+                  ) : (
+                     <>
+                        <span>Your spin unlocks</span> <span className="text-[#6010D2] dark:text-[#C4B8FF]">{unlockLabel(next.unlocks_at)}</span>
+                     </>
+                  )}
+               </p>
+               {/* The days they wait: something fun to do (2026-11-28). */}
+               <a href="/game" className="text-[14px] font-semibold text-[#6010D2] dark:text-[#C4B8FF]">
+                  Play Shark Chomp while you wait 🦈
+               </a>
+            </div>
          </section>
       );
    }
