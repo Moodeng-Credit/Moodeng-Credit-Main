@@ -35,6 +35,8 @@ const BULBS = 20;
 const CONFETTI = ['#6b55f7', '#ffce1b', '#2f8a4a', '#ff5c8a', '#4492f1'];
 const EASE = 'cubic-bezier(0.12, 0.72, 0.12, 1)';
 const HIPPO = '/hippos/body/hippo-body.webp';
+// Hand-painted twilight over rice terraces (made with Gemini, 2026-11-28): the stage behind the wheel.
+const STAGE_BG = '/limit-spin/stage-bg.webp';
 
 const STYLES = `
 @keyframes lswRays { to { transform: rotate(360deg); } }
@@ -229,19 +231,26 @@ export default function LimitSpinWheel({
             </>
          )}
 
-         {/* The stage: dark purple with slowly turning light rays behind the wheel. */}
-         <div className="relative w-full overflow-hidden rounded-[24px] bg-[radial-gradient(circle_at_50%_45%,#4b1fa3_0%,#24095e_55%,#12042f_100%)] px-4 py-6">
+         {/* The stage: a hand-painted twilight landscape, with soft light rays turning behind the wheel. */}
+         <div
+            className="relative w-full overflow-hidden rounded-[24px] bg-[#6b4fb8] bg-cover bg-center px-4 py-6"
+            style={{ backgroundImage: `url(${STAGE_BG})` }}
+         >
             <div
                aria-hidden="true"
                className="pointer-events-none absolute left-1/2 top-1/2 h-[160%] w-[160%] -translate-x-1/2 -translate-y-1/2"
                style={{
-                  background: 'repeating-conic-gradient(rgba(255,255,255,0.09) 0deg 9deg, transparent 9deg 18deg)',
+                  background: 'repeating-conic-gradient(rgba(255,244,214,0.12) 0deg 9deg, transparent 9deg 18deg)',
                   maskImage: 'radial-gradient(circle, black 30%, transparent 68%)',
                   WebkitMaskImage: 'radial-gradient(circle, black 30%, transparent 68%)',
                   animation: `lswRays ${spinning ? 6 : 28}s linear infinite`
                }}
             />
-            <div className="relative mx-auto aspect-square w-full max-w-[280px]">
+            {/* On the win the wheel steps back (soft + blurred) so the result stands alone over the painting. */}
+            <div
+               className="relative mx-auto aspect-square w-full max-w-[280px] transition-[opacity,filter] duration-700"
+               style={done ? { opacity: 0.28, filter: 'blur(2px)' } : undefined}
+            >
                {/* Gold rim + chasing bulbs (still). */}
                <svg viewBox="0 0 240 240" className="absolute inset-0 h-full w-full drop-shadow-[0_12px_28px_rgba(0,0,0,0.45)]" aria-hidden="true">
                   <defs>
@@ -372,7 +381,7 @@ export default function LimitSpinWheel({
 
             {done ? (
                // The achievement moment, over the stage: the raise and the new limit counting up.
-               <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-1 bg-[radial-gradient(circle,rgba(18,4,47,0.78)_0%,rgba(18,4,47,0.92)_70%)] px-4 text-white" style={{ animation: 'lswFade 350ms ease-out both' }}>
+               <div className="absolute inset-0 z-20 flex flex-col items-center justify-center gap-1 bg-[radial-gradient(circle,rgba(30,10,70,0.55)_0%,rgba(30,10,70,0.3)_50%,rgba(30,10,70,0)_80%)] px-4 text-white" style={{ animation: 'lswFade 350ms ease-out both' }}>
                   {Array.from({ length: 16 }, (_, index) => (
                      <span
                         key={index}
@@ -402,9 +411,9 @@ export default function LimitSpinWheel({
          </div>
 
          {done ? (
-            // Achievement badge: proof of what they did, not a prize, and the next one to aim for.
+            // Achievement badge: one compact row (medal · name · bar to the next badge), same corners as the stage.
             <div
-               className="relative w-full overflow-hidden rounded-[22px] border-2 border-[#ffd84d] bg-[linear-gradient(140deg,#fff6d1_0%,#ffffff_55%,#fff1c2_100%)] p-4 text-left shadow-[0_10px_26px_rgba(245,183,0,0.28)] dark:bg-[linear-gradient(140deg,#3a2e10,#1d1530_60%,#2c2210)]"
+               className="relative flex w-full items-center gap-3 overflow-hidden rounded-[24px] border-[1.5px] border-[#ffd84d] bg-[linear-gradient(140deg,#fff6d1_0%,#ffffff_60%,#fff1c2_100%)] px-3.5 py-3 text-left shadow-[0_6px_16px_rgba(245,183,0,0.2)] dark:bg-[linear-gradient(140deg,#3a2e10,#1d1530_60%,#2c2210)]"
                style={{ animation: 'lswBadge 500ms ease-out 700ms both' }}
             >
                <span
@@ -412,59 +421,42 @@ export default function LimitSpinWheel({
                   className="pointer-events-none absolute inset-y-[-20%] left-0 w-1/4 bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.85),transparent)]"
                   style={{ animation: 'lswShine 1.3s ease-in-out 1.3s both' }}
                />
-               <div className="flex items-center gap-4">
-                  {/* The medal: gold disc on a ribbon, pops in and twinkles. */}
-                  <span className="relative flex h-[76px] w-[64px] shrink-0 justify-center" style={{ animation: 'lswMedal 600ms cubic-bezier(0.2, 0.9, 0.3, 1.3) 900ms both' }}>
-                     <span aria-hidden="true" className="absolute bottom-0 left-[10px] h-[34px] w-[16px] skew-x-[12deg] rounded-b-[3px] bg-[#6010d2]" />
-                     <span aria-hidden="true" className="absolute bottom-0 right-[10px] h-[34px] w-[16px] -skew-x-[12deg] rounded-b-[3px] bg-[#8a3ffc]" />
-                     <span className="relative z-10 flex h-[60px] w-[60px] items-center justify-center rounded-full border-[3px] border-[#fff3b0] bg-[radial-gradient(circle_at_35%_30%,#fff6c2,#f5b700_58%,#a86b00)] text-[30px] shadow-[0_0_18px_rgba(255,214,77,0.8),inset_0_-4px_8px_rgba(0,0,0,0.2)]">
-                        {badge.icon}
-                     </span>
-                     {[
-                        { top: '-4px', left: '-2px', delay: '1.4s' },
-                        { top: '6px', left: '58px', delay: '1.7s' },
-                        { top: '44px', left: '-6px', delay: '2s' }
-                     ].map((sparkle) => (
-                        <span
-                           key={sparkle.delay}
-                           aria-hidden="true"
-                           className="absolute z-20 text-[13px]"
-                           style={{ top: sparkle.top, left: sparkle.left, animation: `lswTwinkle 1.6s ease-in-out ${sparkle.delay} infinite` }}
-                        >
-                           ✨
-                        </span>
-                     ))}
+               {/* The medal: gold disc on a short ribbon. */}
+               <span className="relative flex h-[54px] w-[46px] shrink-0 justify-center" style={{ animation: 'lswMedal 600ms cubic-bezier(0.2, 0.9, 0.3, 1.3) 900ms both' }}>
+                  <span aria-hidden="true" className="absolute bottom-0 left-[8px] h-[22px] w-[11px] skew-x-[12deg] rounded-b-[2px] bg-[#6010d2]" />
+                  <span aria-hidden="true" className="absolute bottom-0 right-[8px] h-[22px] w-[11px] -skew-x-[12deg] rounded-b-[2px] bg-[#8a3ffc]" />
+                  <span className="relative z-10 flex h-[42px] w-[42px] items-center justify-center rounded-full border-2 border-[#fff3b0] bg-[radial-gradient(circle_at_35%_30%,#fff6c2,#f5b700_58%,#a86b00)] text-[20px] shadow-[0_0_12px_rgba(255,214,77,0.7)]">
+                     {badge.icon}
                   </span>
-                  <span className="flex min-w-0 flex-col">
-                     <span className="text-[22px] font-black leading-tight text-[#040033] dark:text-[#F0EAFF]">{locale === 'fil' ? badge.fil : badge.en}</span>
+                  <span aria-hidden="true" className="absolute right-[-6px] top-[-4px] z-20 text-[11px]" style={{ animation: 'lswTwinkle 1.6s ease-in-out 1.4s infinite' }}>
+                     ✨
                   </span>
-               </div>
-               {/* What's next: always one more badge to earn (until the top). */}
-               <div className="mt-3 rounded-[14px] bg-white/80 px-3 py-2.5 dark:bg-white/10">
+               </span>
+               <span className="flex min-w-0 flex-1 flex-col gap-1.5">
+                  <span className="text-[17px] font-black leading-tight text-[#040033] dark:text-[#F0EAFF]">{locale === 'fil' ? badge.fil : badge.en}</span>
                   {upNext ? (
                      <>
-                        <div className="flex items-center justify-between text-[13px] font-bold text-[#40344F] dark:text-[#D9CFEA]">
+                        <span className="h-2 overflow-hidden rounded-full bg-[#ece4fb] dark:bg-[#3A2F55]">
+                           <span
+                              className="block h-full rounded-full bg-[linear-gradient(90deg,#8a3ffc,#6010d2)]"
+                              style={{ width: `${upNext.progress * 100}%`, animation: 'lswBar 900ms ease-out 1.4s both' }}
+                           />
+                        </span>
+                        <span className="flex justify-between text-[12px] font-semibold text-[#70617F] dark:text-[#A89BB8]">
                            <span>
                               {upNext.icon} {locale === 'fil' ? upNext.fil : upNext.en}
                            </span>
-                           <span className="tabular-nums text-[#6010D2] dark:text-[#C4B8FF]">
+                           <span className="tabular-nums">
                               ${toLimit} / ${upNext.at}
                            </span>
-                        </div>
-                        <div className="mt-1.5 h-2.5 overflow-hidden rounded-full bg-[#ece4fb] dark:bg-[#3A2F55]">
-                           <div
-                              className="h-full rounded-full bg-[linear-gradient(90deg,#8a3ffc,#6010d2)]"
-                              style={{ width: `${upNext.progress * 100}%`, animation: 'lswBar 900ms ease-out 1.4s both' }}
-                           />
-                        </div>
+                        </span>
                      </>
                   ) : (
-                     <span className="text-[14px] font-bold text-[#2f7a3a] dark:text-[#8FDB9C]">{t.top}</span>
+                     <span className="text-[13px] font-bold text-[#2f7a3a] dark:text-[#8FDB9C]">{t.top}</span>
                   )}
-               </div>
+               </span>
             </div>
          ) : null}
-
          {phase === 'done' ? (
             <button
                type="button"
