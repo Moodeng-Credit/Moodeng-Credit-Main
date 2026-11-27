@@ -22,6 +22,7 @@ const COPY = {
       spin: 'Spin',
       won: (amount: number) => `+$${amount}!`,
       now: (limit: number) => `Your limit is now $${limit}.`,
+      bonus: (amount: number) => `🦈 + Shark bonus $${amount}`,
       done: 'Nice'
    },
    fil: {
@@ -30,6 +31,7 @@ const COPY = {
       spin: 'I-spin',
       won: (amount: number) => `+$${amount}!`,
       now: (limit: number) => `$${limit} na ang limit mo.`,
+      bonus: (amount: number) => `🦈 + Shark bonus na $${amount}`,
       done: 'Ayos'
    }
 };
@@ -37,11 +39,14 @@ const COPY = {
 export default function LimitSpinWheel({
    amount,
    toLimit,
+   bonus = 0,
    onDone
 }: {
    /** The raise the server drew (to_limit − from_limit). */
    amount: number;
    toLimit: number;
+   /** Shark Chomp's +$1 on top of the wheel (chomp_level_reward), shown after it lands. */
+   bonus?: number;
    /** After they've seen the result (mark it seen, close a sheet…). */
    onDone?: () => void;
 }) {
@@ -79,6 +84,7 @@ export default function LimitSpinWheel({
    return (
       <div className="relative flex flex-col items-center gap-3 text-center" data-testid="limit-spin">
          <p className="text-[20px] font-bold text-[#040033] dark:text-[#F0EAFF]">{phase === 'done' ? t.won(amount) : t.title}</p>
+         {phase === 'done' && bonus > 0 ? <p className="text-[16px] font-bold text-[#2f7a3a] dark:text-[#8FDB9C]">{t.bonus(bonus)}</p> : null}
          <p className="text-[14px] leading-[20px] text-[#70617F] dark:text-[#A89BB8]">{phase === 'done' ? t.now(toLimit) : t.body}</p>
          <div className="relative aspect-square w-full max-w-[240px]">
             <div

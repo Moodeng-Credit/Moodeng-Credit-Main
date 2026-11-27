@@ -4,6 +4,7 @@ import { Video } from 'lucide-react';
 import { useParams, useSearchParams } from 'react-router-dom';
 
 import { clarityEvent } from '@/lib/analytics/clarity';
+import { claimLevelReward, type LevelReward } from '@/lib/chompRewards';
 import { earnGameSpin, GAME_SPIN_TEXT } from '@/lib/spinWheel';
 import { getSupabaseBrowserClient, isSupabaseBrowserConfigured } from '@/lib/supabase/client';
 import {
@@ -217,6 +218,8 @@ export default function SharkChompPage() {
    // Moodeng's House: power-ups bought (or won) for the next level, and the wheel.
    const [pending, setPending] = useState<Food[]>([]);
    const [wheel, setWheel] = useState<{ due: boolean; spun: number | null; angle: number }>({ due: false, spun: null, angle: 0 });
+   // Real rewards for the level just cleared (Pandesal point, Shark bonus on a waiting spin), shown in the house.
+   const [levelReward, setLevelReward] = useState<LevelReward | null>(null);
    const [hud, setHud] = useState({ score: 0, hearts: 3, wave: 1, reach: 2 });
    const [best, setBest] = useState(0);
    const [now, setNow] = useState(() => Date.now());
@@ -328,6 +331,11 @@ export default function SharkChompPage() {
          if (!before.inHouse && next.inHouse) {
             heldDir.current = null;
             finger.current = null;
+            setLevelReward(null);
+            void claimLevelReward(before.wave).then((r) => {
+               setLevelReward(r);
+               if (r?.bonus) clarityEvent('chomp_shark_bonus');
+            });
             window.setTimeout(() => {
                setWheel({ due: wheelDueAfter(stateRef.current.wave), spun: null, angle: 0 });
                setPending([]);
@@ -976,6 +984,7 @@ export default function SharkChompPage() {
                   }, 4200);
                }}
                pending={pending}
+               reward={levelReward}
                wave={hud.wave}
                wheel={wheel}
             />
@@ -1062,8 +1071,9 @@ function HouseRoom(props: {
    onBuy: (f: Food) => void;
    onSpin: () => void;
    onExit: () => void;
+   reward?: LevelReward | null;
 }) {
-   const { wave, coins, pending, wheel, callLabel, joinUrl, onBuy, onSpin, onExit } = props;
+   const { wave, coins, pending, wheel, callLabel, joinUrl, onBuy, onSpin, onExit, reward } = props;
    const rule = lessonFor(wave);
    const said = `${rule.text}`;
    const [typed, setTyped] = useState(0);
@@ -1140,6 +1150,15 @@ function HouseRoom(props: {
 
             {done ? (
                <>
+                  {reward ? (
+                     // Real rewards (chomp_level_reward): these land in their Moodeng account, not just the game.
+                     <div className="flex flex-col items-center gap-1 rounded-[18px] border-2 border-[#3fb46a] bg-[#eefbf1] p-3 text-center text-[#2f7a3a] shadow-sm">
+                        {reward.bonus ? <span className="text-[17px] font-bold">🦈 Shark bonus! +$1 added to your spin</span> : null}
+                        {reward.points > 0 ? (
+                           <span className="text-[15px] font-semibold">🍞 +{reward.points} Pandesal point in your Moodeng account</span>
+                        ) : null}
+                     </div>
+                  ) : null}
                   {wave >= SPIN_LEVEL ? <MooSpinCard /> : null}
                   {wheel.due ? <PrizeWheel angle={wheel.angle} onSpin={onSpin} spun={wheel.spun} /> : null}
 
