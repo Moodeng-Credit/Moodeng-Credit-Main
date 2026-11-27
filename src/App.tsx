@@ -634,7 +634,9 @@ export default function App() {
                            photo: (new URLSearchParams(window.location.search).get('photo') as PhotoPreview | null) ?? undefined,
                            coach: new URLSearchParams(window.location.search).get('coach') === '1',
                            med: new URLSearchParams(window.location.search).get('med') === '1',
-                           send: new URLSearchParams(window.location.search).get('send') === '1'
+                           send: new URLSearchParams(window.location.search).get('send') === '1',
+                           // fix=1: the "one thing to fix" note after a stopped send.
+                           fix: new URLSearchParams(window.location.search).get('fix') === '1'
                         }}
                      />
                   }

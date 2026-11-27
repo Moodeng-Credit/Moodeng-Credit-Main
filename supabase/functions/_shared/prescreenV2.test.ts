@@ -10,6 +10,7 @@ import {
    jobRedFlags,
    MONEY_QUESTIONS,
    moneyInput,
+   sendHelpFallback,
    moneyQuestions,
    noIncomeLine
 } from './prescreenV2.ts';
@@ -270,4 +271,15 @@ Deno.test('auto ✅ red flags: borrowing to repay and allowance-only are known f
       toRedFlags({ red_flags: [{ code: 'debt_cycle', why: 'loan to pay a friend' }, { code: 'allowance_only' }, { code: 'made_up' }] }),
       ['borrowing to repay other loans (loan to pay a friend)', 'money is only allowance / family support']
    );
+});
+
+Deno.test('sendHelpFallback: plain words per problem, never a code', () => {
+   const photo = sendHelpFallback('missing_answer', 'photo');
+   assertEquals(photo.includes('photo'), true);
+   assertEquals(sendHelpFallback('bad_docs', null).includes('proof of income'), true);
+   assertEquals(sendHelpFallback('file_not_found', 'proof').includes('proof of income'), true);
+   assertEquals(sendHelpFallback('other', 'text').includes('not your phone'), true);
+   for (const t of [photo, sendHelpFallback('missing_answer', 'text'), sendHelpFallback('file_not_found', 'video')]) {
+      assertEquals(/missing_answer|file_not_found|error|server/i.test(t), false);
+   }
 });

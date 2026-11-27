@@ -118,6 +118,51 @@ export const clipHint = async (token: string, q: string, path: string, locale: s
    }
 };
 
+export type SendProblem = 'missing_answer' | 'file_not_found' | 'bad_docs' | 'network' | 'other';
+
+/**
+ * Why pre_screening_submit stopped: the server's message is the code and its DETAIL ('q:<id>' or 'proof')
+ * says which answer. No code at all = the request never got there (a real connection problem).
+ */
+export const sendProblemOf = (err: { message?: string; details?: string | null; code?: string } | null): { problem: SendProblem; q: string | null } => {
+   const msg = err?.message ?? '';
+   const details = err?.details ?? '';
+   const q = details === 'proof' ? 'proof' : /^q:/.test(details) ? details.slice(2) : null;
+   for (const code of ['missing_answer', 'file_not_found', 'bad_docs'] as const) if (msg.includes(code)) return { problem: code, q };
+   if (!err?.code || /fetch|network|load failed|timed? ?out|abort/i.test(msg)) return { problem: 'network', q: null };
+   return { problem: 'other', q: null };
+};
+
+/**
+ * After a stopped send: the row's latest questions + one plain sentence (AI, else ours) on what happened
+ * and what to do. Null = slow or failed: the page uses its own words.
+ */
+export const sendHelp = async (
+   token: string,
+   problem: SendProblem,
+   q: string | null,
+   locale: string
+): Promise<{ message: string; q: string | null; questions: PlannedQuestion[] | null } | null> => {
+   try {
+      const call = getSupabaseBrowserClient().functions.invoke('check-loan-input', {
+         body: { kind: 'prescreen_send_help', token, problem, q, locale: ['fil', 'id'].includes(locale) ? locale : 'en' }
+      });
+      const timeout = new Promise<null>((resolve) => window.setTimeout(() => resolve(null), 10000));
+      const result = (await Promise.race([call, timeout])) as {
+         data?: { ok?: boolean; message?: string; q?: string | null; questions?: PlannedQuestion[] } | null;
+      } | null;
+      const res = result?.data;
+      if (!res?.ok || typeof res.message !== 'string' || !res.message.trim()) return null;
+      return {
+         message: res.message.trim().slice(0, 240),
+         q: typeof res.q === 'string' ? res.q : null,
+         questions: Array.isArray(res.questions) && res.questions.length ? res.questions : null
+      };
+   } catch {
+      return null;
+   }
+};
+
 /** A photo, made small enough for the AI and Telegram (longest side 1280 px, JPEG). */
 export const shrinkImage = async (
    source: CanvasImageSource & { width?: number; height?: number },
