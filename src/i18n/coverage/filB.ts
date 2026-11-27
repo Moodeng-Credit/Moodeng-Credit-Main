@@ -836,6 +836,12 @@ export const filipinoCoverageB: Record<string, string> = {
       'Ang bayad lang sa 2nd half ng loan ang nagpapalaki nito. Sa susunod, hiramin ang buong limit mo at magbayad sa 2nd half.',
    'to raise your limit: the 2nd half of your loan.': 'para tumaas ang limit mo: ang 2nd half ng loan mo.',
    'Pay in the 2nd half of your loan': 'Magbayad sa 2nd half ng loan mo',
+   // Home header without level numbers (2026-11-27).
+   'Next loan': 'Susunod na loan',
+   'First loan': 'Unang loan',
+   'Pay back a full-limit loan in its best days to grow your limit.':
+      'Bayaran ang full-limit loan sa pinakamagandang araw nito para tumaas ang limit mo.',
+   'Get verified to unlock your first $15 loan.': 'Magpa-verify para ma-unlock ang una mong $15 loan.',
    'When should you pay to grow your limit?': 'Kailan ka dapat magbayad para tumaas ang limit mo?',
    'Right after you borrow': 'Agad pagkatapos manghiram',
    'In the 2nd half of your loan': 'Sa 2nd half ng loan mo',

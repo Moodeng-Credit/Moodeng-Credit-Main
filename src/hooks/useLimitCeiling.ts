@@ -8,7 +8,14 @@ import { getSupabaseBrowserClient } from '@/lib/supabase/client';
  * answer. Anything unexpected (not deployed, network error, loading) reads as null = no ceiling shown, so
  * this can never hide a real level-up (the server applies the ceiling either way).
  */
-export type LimitCeiling = { ceiling: number; source: 'team' | 'income_proof' | 'sign_up' };
+export type LimitCeiling = {
+   ceiling: number;
+   source: 'team' | 'income_proof' | 'sign_up';
+   /** Approved income proof stops counting after this date (YYYY-MM-DD). */
+   proofUntil: string | null;
+   /** Sign-up: did they ever answer the monthly income question? */
+   answered: boolean;
+};
 
 export const useLimitCeiling = (enabled: boolean): LimitCeiling | null => {
    const { data } = useQuery({
@@ -16,11 +23,16 @@ export const useLimitCeiling = (enabled: boolean): LimitCeiling | null => {
       queryFn: async (): Promise<LimitCeiling | null> => {
          const { data: res, error } = await getSupabaseBrowserClient().rpc('my_limit_ceiling');
          if (error || !res || typeof res !== 'object') return null;
-         const value = res as { ceiling?: unknown; source?: unknown };
+         const value = res as { ceiling?: unknown; source?: unknown; proof_until?: unknown; answered?: unknown };
          const ceiling = Number(value.ceiling);
          if (!Number.isFinite(ceiling) || ceiling <= 0) return null;
          const source = value.source === 'team' || value.source === 'income_proof' ? value.source : 'sign_up';
-         return { ceiling, source };
+         return {
+            ceiling,
+            source,
+            proofUntil: typeof value.proof_until === 'string' ? value.proof_until : null,
+            answered: value.answered !== false
+         };
       },
       enabled,
       staleTime: 5 * 60_000

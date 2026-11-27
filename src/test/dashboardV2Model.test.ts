@@ -92,7 +92,7 @@ describe('dashboard v2 credit level progress', () => {
       expect(getCreditLevelProgress({ creditLimit: 15, isVerified: false, loans: [] })).toEqual({
          level: 0,
          progress: 0,
-         hint: { highlight: 'Verify', rest: ' to unlock LV.1' }
+         hint: { highlight: 'Verify', rest: ' to unlock your $15 loan' }
       });
    });
 
@@ -168,8 +168,8 @@ describe('dashboard v2 sample states render', () => {
 
    it('renders the hero for each design state', () => {
       const unverifiedHero = render(createElement(DashboardV2Hero, { model: SAMPLE_STATES.unverified, showRealAvatar: false }));
-      expect(unverifiedHero).toContain('LV0');
-      expect(unverifiedHero).toContain(' to unlock LV.1');
+      expect(unverifiedHero).toContain('First loan');
+      expect(unverifiedHero).toContain(' to unlock your $15 loan');
       // Verified: the top-right shows borrowing room ($15 limit − $6.68 in use).
       const verifiedHero = render(createElement(DashboardV2Hero, { model: SAMPLE_STATES.verified, showRealAvatar: false }));
       expect(verifiedHero).toContain('$8.32');

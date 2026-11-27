@@ -332,8 +332,8 @@ export const thaiCoverageG: Record<string, string> = {
    'Repay your $80 loan on time': 'ชำระคืนเงินกู้ $80 ของคุณตรงเวลา',
    'Repay your $100 loan on time': 'ชำระคืนเงินกู้ $100 ของคุณตรงเวลา',
    'Repay your $120 loan on time': 'ชำระคืนเงินกู้ $120 ของคุณตรงเวลา',
-   'You start at $15. Each full-limit loan you repay adds $10.':
-      'คุณเริ่มที่ $15 เงินกู้เต็มวงเงินแต่ละครั้งที่คุณชำระคืนจะเพิ่มวงเงิน $10',
+   'You start at $15. Each full-limit loan you repay on time raises your limit, and your Dashboard shows your next one.':
+      'คุณเริ่มที่ $15 ทุกครั้งที่คุณชำระคืนเงินกู้เต็มวงเงินตรงเวลา วงเงินของคุณจะเพิ่มขึ้น และแดชบอร์ดจะแสดงวงเงินถัดไปของคุณ',
    'you need a smaller amount, or want to build trust first.': 'คุณต้องการเงินจำนวนน้อยกว่า หรืออยากสร้างความน่าเชื่อถือก่อน',
    'also called a Credit Growth Loan': 'หรือที่เรียกว่า Credit Growth Loan',
    'you’re ready to grow your limit and sure you can repay on time.': 'คุณพร้อมจะเพิ่มวงเงินและมั่นใจว่าชำระคืนได้ตรงเวลา',

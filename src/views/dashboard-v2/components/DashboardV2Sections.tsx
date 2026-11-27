@@ -397,7 +397,8 @@ export function UpcomingDuesSection({
    limit = 0,
    nextLimit = 0,
    atCeiling = false,
-   lowIncome = false
+   lowIncome = false,
+   proofUntil = null
 }: {
    model: DashboardV2Model;
    limit?: number;
@@ -406,6 +407,8 @@ export function UpcomingDuesSection({
    atCeiling?: boolean;
    /** On the low-income ladder: repayments count from day 7. */
    lowIncome?: boolean;
+   /** Their approved income proof stops counting after this date. */
+   proofUntil?: string | null;
 }) {
    const nextDueId = [...model.dues].filter((due) => !due.isOverdue).sort((a, b) => a.daysRemaining - b.daysRemaining)[0]?.id;
    return (
@@ -434,6 +437,7 @@ export function UpcomingDuesSection({
                nextLimit={nextLimit}
                atCeiling={atCeiling}
                lowIncome={lowIncome}
+               proofUntil={proofUntil}
                streak={model.rewards.streak}
             />
          ) : (
