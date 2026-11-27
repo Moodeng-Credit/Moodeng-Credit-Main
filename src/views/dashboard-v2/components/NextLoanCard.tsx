@@ -24,7 +24,7 @@ export type PayWindowStatus = 'early' | 'best' | 'late';
  * 15th or 30th payday; a last-7-days window missed both for almost half of due dates.
  */
 export const getPayWindow = (
-   due: Pick<DashboardV2Due, 'deadline' | 'fundedAt' | 'rewardFrom' | 'finalDeadline'>,
+   due: Pick<DashboardV2Due, 'deadline' | 'fundedAt' | 'rewardFrom' | 'finalDeadline'> & { isOverdue?: boolean },
    now: number = Date.now(),
    opts: { lowIncome?: boolean } = {}
 ): { start: number; deadline: number; funded: number; status: PayWindowStatus } | null => {
@@ -40,7 +40,7 @@ export const getPayWindow = (
          ? fundedRaw + LOW_INCOME_COUNTS_AFTER_DAYS * DAY
          : null;
    const start = Math.min(deadline - HOUR, lowIncomeStart ?? Math.max(funded + 48 * HOUR, Number.isFinite(rewardFrom) ? rewardFrom : 0));
-   const status: PayWindowStatus = now >= deadline ? 'late' : now >= start ? 'best' : 'early';
+   const status: PayWindowStatus = due.isOverdue || now >= deadline ? 'late' : now >= start ? 'best' : 'early';
    return { start, deadline, funded, status };
 };
 
@@ -56,6 +56,8 @@ const COPY = {
    en: {
       eyebrow: 'Your next loan',
       upFrom: (from: number) => `↑ from $${from}`,
+      spinChip: 'Spin: +$2 to +$5',
+      nowEarlySpin: (from: string) => `You can pay anytime. From ${from}, paying back earns a spin 🎡`,
       stays: 'Stays the same',
       payBetween: 'Pay between',
       amount: 'Amount',
@@ -79,6 +81,8 @@ const COPY = {
    fil: {
       eyebrow: 'Susunod mong loan',
       upFrom: (from: number) => `↑ mula $${from}`,
+      spinChip: 'Spin: +$2 hanggang +$5',
+      nowEarlySpin: (from: string) => `Puwede kang magbayad anumang oras. Simula ${from}, may spin ka kapag nagbayad 🎡`,
       stays: 'Pareho pa rin',
       payBetween: 'Magbayad sa',
       amount: 'Halaga',
@@ -164,6 +168,7 @@ export default function NextLoanCard({
                <p className="mt-0.5 flex items-baseline gap-2">
                   <span className="text-[34px] font-bold leading-none tracking-[-0.04em] text-[#040033] tabular-nums dark:text-[#F0EAFF]">
                      ${bigLimit}
+                     {lowIncome && showNext ? '+' : null}
                   </span>
                   {inPhilippines ? (
                      <span className="text-[14px] font-medium text-[#70617F] dark:text-[#A89BB8]">≈ {pesos(bigLimit)}</span>
@@ -177,7 +182,7 @@ export default function NextLoanCard({
                         : 'bg-[#F3EEFB] text-[#70617F] dark:bg-[#2A2138] dark:text-[#A89BB8]'
                   )}
                >
-                  {showNext ? t.upFrom(limit) : t.stays}
+                  {showNext ? (lowIncome ? t.spinChip : t.upFrom(limit)) : t.stays}
                </span>
             </div>
             <img src="/icons/hippo-repaid-coin-3d.png" alt="" aria-hidden="true" className="h-[72px] w-[72px] shrink-0 object-contain" />
@@ -225,7 +230,13 @@ export default function NextLoanCard({
                      </p>
                   </div>
                   <div className="text-right">
-                     <p className="text-[12px] font-medium text-[#70617F] dark:text-[#A89BB8]">{t.amount}</p>
+                     <p className="text-[12px] font-medium text-[#70617F] dark:text-[#A89BB8]">
+                        {t.amount}
+                        {/* Two-payment loan: this amount is the next part, due on its own day. */}
+                        {due.finalDeadline && due.finalDeadline !== due.deadline
+                           ? ` · ${dayLabel(new Date(due.deadline).getTime() - 1, due.zone)}`
+                           : ''}
+                     </p>
                      <p className="text-[16px] font-bold tracking-[-0.02em] text-[#B07A00] tabular-nums dark:text-[#F5C451]">
                         {money(due.amount)}
                      </p>
@@ -246,9 +257,11 @@ export default function NextLoanCard({
                      ? t.nowBest
                      : payWindow.status === 'late'
                        ? t.nowLate
-                       : isFullLimit && canGrow && payWindow.funded >= SECOND_HALF_RULE_FROM
-                         ? t.nowEarly(dayLabel(payWindow.start, due.zone), limit)
-                         : t.nowEarlyPlain(dayLabel(payWindow.start, due.zone))}
+                       : lowIncome && isFullLimit && canGrow
+                         ? t.nowEarlySpin(dayLabel(payWindow.start, due.zone))
+                         : isFullLimit && canGrow && payWindow.funded >= SECOND_HALF_RULE_FROM
+                           ? t.nowEarly(dayLabel(payWindow.start, due.zone), limit)
+                           : t.nowEarlyPlain(dayLabel(payWindow.start, due.zone))}
                </p>
                {!isFullLimit && canGrow ? (
                   <p className="text-[13px] leading-[18px] text-[#70617F] dark:text-[#A89BB8]">{t.notFull(limit, nextLimit)}</p>

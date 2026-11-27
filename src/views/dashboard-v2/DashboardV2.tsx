@@ -27,6 +27,7 @@ import { getVerificationUiState } from '@/lib/verificationUiState';
 import type { RootState } from '@/store/store';
 import WalletBalanceCard from '@/views/account/WalletBalanceCard';
 import AddIncomeCard from '@/views/dashboard-v2/components/AddIncomeCard';
+import LimitSpinPrompt from '@/views/dashboard-v2/components/LimitSpinPrompt';
 import {
    ConnectFacebookBanner,
    ConnectWalletBanner,
@@ -189,7 +190,12 @@ export default function DashboardV2() {
    // Header = the card: a loan out that's below their limit can't grow it, so show their limit, not a next one.
    const heroNextLimit =
       model.dues.length && !model.dues.some((due) => (due.principal ?? 0) >= payOnTimeLimit - 0.01) ? payOnTimeLimit : payOnTimeNextLimit;
-   const atCeiling = Boolean(ceiling) && payOnTimeLimit > 0 && payOnTimeLimit >= (ceiling ?? 0) && rawNextLimit > payOnTimeLimit;
+   const atCeiling =
+      Boolean(ceiling) &&
+      liveCeiling?.source !== 'team' &&
+      payOnTimeLimit > 0 &&
+      payOnTimeLimit >= (ceiling ?? 0) &&
+      rawNextLimit > payOnTimeLimit;
    const previewTrack = isPreviewHost() && (trackParam === 'A' || trackParam === 'B') ? trackParam : undefined;
    const showTour = searchParams.has('tour') && shouldShowGuidedTour(BORROWER_GUIDED_TOUR_ID, userId, false);
    // "Before you repay" carousel for a loan funded under 48 hours ago. Preview: ?fast=1.
@@ -271,6 +277,8 @@ export default function DashboardV2() {
                <DashboardV2Skeleton />
             ) : (
                <div className="dv2-stack mt-[30px] flex flex-col gap-[30px]">
+                  {/* A Limit Spin they haven't watched yet (low income, repaid from day 7). */}
+                  {isReal ? <LimitSpinPrompt className="mx-5" /> : null}
                   {/* Instant-wallet borrowers' balance + Cash out (renders nothing otherwise), as on /dashboard. */}
                   {isReal ? (
                      <div className="px-5 empty:hidden">

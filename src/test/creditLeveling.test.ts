@@ -766,9 +766,10 @@ describe('the second-half rule (loans funded from 2026-11-27 Bangkok): only paym
 describe('income ladders (2026-11-27): the income ceiling picks the steps', () => {
    const newB = '2026-11-20T00:00:00Z'; // Track B
    const after = '2026-11-29T00:00:00Z'; // funded after INCOME_LADDER_FROM
-   it('low income ($35): +$3 steps to $35', async () => {
+   it('low income ($35): shows at least +$2 (the Limit Spin minimum), top $35', async () => {
       const { getIncomeNextLimit } = await import('@/config/creditTiers');
-      expect([15, 18, 21, 24, 27, 30, 33, 35].map((l) => getIncomeNextLimit(l, 35, newB, after))).toEqual([18, 21, 24, 27, 30, 33, 35, 35]);
+      // The Limit Spin's guaranteed minimum (+$2), never past $35.
+      expect([15, 17, 25, 33, 34, 35].map((l) => getIncomeNextLimit(l, 35, newB, after))).toEqual([17, 19, 27, 35, 35, 35]);
    });
    it('default ($60): the normal +$10 steps, top $60', async () => {
       const { getIncomeNextLimit } = await import('@/config/creditTiers');
@@ -838,5 +839,29 @@ describe('low income: repayment counts from day 7 (2026-11-27 review)', () => {
             );
          }
       }
+   });
+});
+
+describe('Limit Spin (2026-11-27): usually +$2, never less, up to +$5', () => {
+   it('draws by the odds', async () => {
+      const { drawLimitSpin } = await import('@/config/creditTiers');
+      expect(drawLimitSpin(() => 0)).toBe(2);
+      expect(drawLimitSpin(() => 0.59)).toBe(2);
+      expect(drawLimitSpin(() => 0.6)).toBe(3);
+      expect(drawLimitSpin(() => 0.86)).toBe(4);
+      expect(drawLimitSpin(() => 0.99)).toBe(5);
+   });
+   it('only low income, Track B, loans funded from 11-28 earn it', async () => {
+      const { earnsLimitSpin } = await import('@/config/creditTiers');
+      expect(earnsLimitSpin(35, '2026-11-20T00:00:00Z', '2026-11-29T00:00:00Z')).toBe(true);
+      expect(earnsLimitSpin(60, '2026-11-20T00:00:00Z', '2026-11-29T00:00:00Z')).toBe(false);
+      expect(earnsLimitSpin(35, '2026-09-01T00:00:00Z', '2026-11-29T00:00:00Z')).toBe(false);
+      expect(earnsLimitSpin(35, '2026-11-20T00:00:00Z', '2026-11-26T00:00:00Z')).toBe(false);
+   });
+   it('server and app agree', async () => {
+      const client = await import('@/config/creditTiers');
+      const server = await import('../../supabase/functions/_shared/creditAndPoints.ts');
+      for (const r of [0, 0.3, 0.61, 0.9, 0.97]) expect(server.drawLimitSpin(() => r)).toBe(client.drawLimitSpin(() => r));
+      expect(server.earnsLimitSpin(35, '2026-11-20T00:00:00Z', '2026-11-29T00:00:00Z')).toBe(true);
    });
 });

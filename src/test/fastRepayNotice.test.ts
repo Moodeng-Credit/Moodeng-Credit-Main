@@ -90,8 +90,11 @@ describe('fast-repay notice: 24-hour snooze', () => {
 
 describe('fast-repay notice: income ceiling (2026-11-27)', () => {
    it('never shows a level-up past the ceiling', () => {
-      const result = notice([loan({ loanAmount: 25, totalRepaymentAmount: 27.5 })], { currentLimit: 25, ceiling: 30 });
-      expect(result?.levelUp).toEqual({ from: 25, to: 30 });
+      const result = notice([loan({ loanAmount: 45, totalRepaymentAmount: 49.5 })], { currentLimit: 45, ceiling: 50 });
+      expect(result?.levelUp).toEqual({ from: 45, to: 50 });
+   });
+   it('low-income ladder: no "before you repay" lesson at all', () => {
+      expect(notice([loan()], { ceiling: 35 })).toBeNull();
    });
    it('at the ceiling: no level-up line at all', () => {
       const result = notice([loan({ loanAmount: 35, totalRepaymentAmount: 38.5 })], { currentLimit: 35, ceiling: 35 });
