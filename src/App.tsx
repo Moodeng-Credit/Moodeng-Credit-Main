@@ -81,6 +81,7 @@ import OnboardingWelcome from '@/app/onboarding/welcome/page';
 // Import pages
 import Home from '@/app/page';
 import PartnerInvitePage from '@/app/partner/page';
+import CreatorApplyPage from '@/app/creator/page';
 import PrivacyPolicyPage from '@/app/privacy-policy/page';
 import PrivacyPage from '@/app/privacy/page';
 import Profile from '@/app/profile/page';
@@ -616,6 +617,8 @@ export default function App() {
             {/* Public: the optional pre-screening link affiliates send (moodeng.app/screen/CODE). */}
             {/* Public: the affiliate-only sign-up link the team makes on /admin (moodeng.app/partner/TOKEN). */}
             <Route path="/partner/:token" element={<PartnerInvitePage />} />
+            {/* Public: creators apply to be affiliates (moodeng.app/creator); approved ones get a /partner link. */}
+            <Route path="/creator" element={<CreatorApplyPage />} />
             <Route path="/screen" element={<PreScreeningPage />} />
             <Route path="/screen/:code" element={<PreScreeningPage />} />
             {import.meta.env.DEV ? (

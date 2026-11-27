@@ -11,6 +11,8 @@
 //   { interestRefundId, event: 'sent', decidedBy? } marked Sent in the admin panel → stamp the card.
 //   { invoiceId }                                 an affiliate sent their monthly invoice (affiliate_invoices insert)
 //                                                 → who, which month, how much, which wallet, each friend line.
+//   { creatorApp: { event, id, code? } }           moodeng.app/creator applications: code / confirmation /
+//                                                 approved / rejected emails + the team card (_shared/creatorApplications)
 //   { payday: 'YYYY-MM-DD', test? }               15th / 30th (affiliate-payday cron): one card per code owner with
 //                                                 every unpaid "funded friend" payout (referral_codes.pay_on_funded_from),
 //                                                 or one "nothing owed" line. Chat: affiliate_payday_chat_id (else
@@ -19,6 +21,15 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { formatDecidedAt, openInAdminButton, sendAdminCard, stampDecisionCards } from '../_shared/adminCards.ts';
+import {
+   type CreatorApp,
+   creatorApprovedEmail,
+   creatorCodeEmail,
+   creatorRejectedEmail,
+   creatorSubmittedEmail,
+   creatorTeamCard
+} from '../_shared/creatorApplications.ts';
+import { sendEmail } from '../_shared/email.ts';
 import { buildPayoutCallback, buildPayoutCard, type PayoutRow, payoutSelect, payoutStampHeader } from '../_shared/referralPayouts.ts';
 import { sendTelegramMessage, type TelegramInlineKeyboard } from '../_shared/telegram.ts';
 
@@ -313,6 +324,35 @@ const postPaydayCards = async (supabase: SupabaseClient, payday: string, test = 
    return json({ ok: true, cards: byOwner.size });
 };
 
+const handleCreatorApp = async (supabase: SupabaseClient, msg: { event?: string; id?: string; code?: string }) => {
+   if (!msg.id) return json({ error: 'creatorApp.id is required' }, 400);
+   const { data, error } = await supabase.from('creator_applications').select('*').eq('id', msg.id).maybeSingle();
+   if (error) throw new Error(error.message);
+   if (!data) return json({ error: 'Application not found' }, 404);
+   const app = data as unknown as CreatorApp;
+   const mail =
+      msg.event === 'code' && msg.code && /^\d{6}$/.test(msg.code)
+         ? creatorCodeEmail(app, msg.code)
+         : msg.event === 'submitted'
+           ? creatorSubmittedEmail(app)
+           : msg.event === 'approved'
+             ? creatorApprovedEmail(app)
+             : msg.event === 'rejected'
+               ? creatorRejectedEmail(app)
+               : null;
+   if (!mail) return json({ error: 'Unknown creatorApp event' }, 400);
+   await sendEmail(app.email, mail.subject, mail.text, mail.html);
+   if (msg.event === 'submitted') {
+      const chatId = await getSetting(supabase, 'kyc_alert_chat_id');
+      if (chatId) {
+         await sendTelegramMessage(chatId, creatorTeamCard(app), {
+            inlineKeyboard: [[{ text: 'Open in Admin', url: 'https://moodeng.app/admin/affiliates' }]]
+         });
+      }
+   }
+   return json({ ok: true });
+};
+
 serve(async (req) => {
    if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
@@ -320,7 +360,10 @@ serve(async (req) => {
    if (!(await isAuthorized(supabase, req))) return json({ error: 'Unauthorized' }, 401);
 
    try {
-      const { payoutId, event, decidedBy, claimId, interestRefundId, invoiceId, payday, test } = (await req.json().catch(() => ({}))) as {
+      const { payoutId, event, decidedBy, claimId, interestRefundId, invoiceId, payday, test, creatorApp } = (await req
+         .json()
+         .catch(() => ({}))) as {
+         creatorApp?: { event?: string; id?: string; code?: string };
          payday?: string;
          test?: boolean;
          invoiceId?: string;
@@ -330,6 +373,7 @@ serve(async (req) => {
          claimId?: string;
          interestRefundId?: string;
       };
+      if (creatorApp) return await handleCreatorApp(supabase, creatorApp);
       if (payday) return await postPaydayCards(supabase, payday, test === true);
       if (invoiceId) return await postInvoiceCard(supabase, invoiceId);
       if (claimId) return await postClaimCard(supabase, claimId);

@@ -85,6 +85,7 @@ import UnsentLoanRequestsSection from './UnsentLoanRequestsSection';
 import ProgressSection from './ProgressSection';
 import ProofRequestsSection from './ProofRequestsSection';
 import AffiliatePayoutsSection from './AffiliatePayoutsSection';
+import CreatorApplicationsSection from './CreatorApplicationsSection';
 import InterestRefundsSection from './InterestRefundsSection';
 import RemoveLoanRequestDialog from '@/app/admin/RemoveLoanRequestDialog';
 import ReferralCodesSection from './ReferralCodesSection';
@@ -1829,7 +1830,12 @@ function AdminPanel() {
             </section>
          ) : null}
 
-         {activeTab === 'affiliates' ? <AffiliatePayoutsSection /> : null}
+         {activeTab === 'affiliates' ? (
+            <div className="space-y-10">
+               <CreatorApplicationsSection />
+               <AffiliatePayoutsSection />
+            </div>
+         ) : null}
 
          {activeTab === 'grab-vouchers' ? <GrabVouchersSection /> : null}
          {activeTab === 'spin-wheel' ? <SpinWheelSection /> : null}
