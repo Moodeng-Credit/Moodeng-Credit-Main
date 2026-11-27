@@ -8,8 +8,9 @@
 // George's login on the Moodeng Messaging app, 2026-10-14) — read-only use. Metrics Meta still returns
 // for a Page token: Page views / engagements / Page visits / new follows (period=week), and per post
 // views, unique viewers, clicks, reactions. Comments, shares and live stats need extra app review.
-// TikTok (@moodeng.credit): Apify's clockworks/tiktok-profile-scraper (~$0.003 per video, free plan);
-// the token is in the DB vault (APIFY_TOKEN) and the cron passes it in the body as apifyToken.
+// TikTok (@moodeng.credit): Apify's clockworks/tiktok-profile-scraper via _shared/tiktokApify (free plan);
+// the token is in the DB vault (APIFY_TOKEN) and the cron passes it in the body as apifyToken. Since Nov
+// 2026 Apify often returns the profile only (followers/likes) and no per-video rows.
 // Site visits: PostHog page views referred from Facebook / TikTok (POSTHOG_PERSONAL_API_KEY).
 //
 // pg_cron social-weekly-recap: Mondays 09:00 Manila (01:00 UTC), retried hourly to noon; posts once a
@@ -18,6 +19,8 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+import { scrapeTikTok } from '../_shared/tiktokApify.ts';
 
 import { postDiscord } from '../_shared/discord.ts';
 import { isInternalRequest } from '../_shared/internalAuth.ts';
@@ -106,30 +109,10 @@ const siteVisits = async (apiKey: string) => {
 
 const TIKTOK_HANDLE = 'moodeng.credit';
 
-type TikTokVideo = { created: number; text: string; views: number; likes: number; comments: number; shares: number; saves: number; link: string };
-
-/** The account's latest videos with their lifetime stats, plus follower count (public data via Apify). */
+/** The account's latest videos with their lifetime stats (when Apify returns them) + follower count. */
 const tiktokVideos = async (apifyToken: string) => {
-   const res = await fetch(`https://api.apify.com/v2/acts/clockworks~tiktok-profile-scraper/run-sync-get-dataset-items?timeout=120`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apifyToken}` },
-      body: JSON.stringify({ profiles: [TIKTOK_HANDLE], resultsPerPage: 20, shouldDownloadVideos: false, shouldDownloadCovers: false }),
-      signal: AbortSignal.timeout(150_000)
-   });
-   if (!res.ok) throw new Error(`Apify ${res.status}`);
-   const items = (await res.json()) as any[];
-   if (items[0]?.error) throw new Error(items[0].error);
-   const videos: TikTokVideo[] = items.map((v) => ({
-      created: Date.parse(v.createTimeISO),
-      text: String(v.text ?? '').replace(/\s+/g, ' ').trim(),
-      views: v.playCount ?? 0,
-      likes: v.diggCount ?? 0,
-      comments: v.commentCount ?? 0,
-      shares: v.shareCount ?? 0,
-      saves: v.collectCount ?? 0,
-      link: v.webVideoUrl ?? ''
-   }));
-   return { videos, followers: items[0]?.authorMeta?.fans as number | undefined };
+   const { profile, videos } = await scrapeTikTok(apifyToken, TIKTOK_HANDLE, { videos: 20, waitSeconds: 60 });
+   return { videos, followers: profile?.followers ?? undefined, likes: profile?.likes ?? null, videoCount: profile?.videos ?? null };
 };
 
 // 🚀 Growth ideas from DeepSeek, grounded in this week's recap text. Optional: skipped on any failure.
@@ -238,6 +221,9 @@ serve(async (req) => {
                   const title = v.text ? `${v.text.slice(0, 60)}${v.text.length > 60 ? '…' : ''}` : '(video)';
                   lines.push(`${['🥇', '🥈', '🥉'][i]} ${manilaDate(v.created)} ${title}`, `   ${fmt(v.views)} views · ${v.likes} likes · ${v.comments} comments · ${v.shares} shares\n   ${v.link}`);
                });
+         } else if (!tt.videos.length) {
+            // Apify gave the profile but no video rows: say so instead of "no videos".
+            lines.push(`Per-video views not available this week${tt.likes != null ? ` · ${fmt(tt.likes)} likes on ${fmt(tt.videoCount ?? 0)} videos all-time` : ''}.`);
          } else {
             lines.push('No TikTok videos this week.');
          }
