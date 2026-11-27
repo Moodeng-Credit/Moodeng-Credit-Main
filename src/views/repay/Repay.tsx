@@ -41,7 +41,7 @@ import useWallet, { type PaymentMethod, toSettlementMethod, useActivePaymentMeth
 import { parseDateSafely } from '@/utils/dateFormatters';
 import { formatCurrency, toNumber } from '@/utils/decimalHelpers';
 
-import { getCreditLevelNumber, getIncomeNextLimit, getNextCreditTier, isLowIncomeLadder, STARTING_CREDIT_LIMIT } from '@/config/creditTiers';
+import { earnsLimitSpin, getCreditLevelNumber, getIncomeNextLimit, getNextCreditTier, isLowIncomeLadder, STARTING_CREDIT_LIMIT } from '@/config/creditTiers';
 import { COINS_PH_SUSPENDED, COINS_PH_SUSPENDED_MESSAGE, COINS_PH_SUSPENDED_TITLE } from '@/config/paymentRails';
 import { ALLOWED_CHAIN_ID, BASE_USDC_ADDRESS } from '@/config/wagmiConfig';
 import { useLocalization } from '@/i18n';
@@ -2386,7 +2386,7 @@ export default function Repay() {
                ...(fastSecondHalf ? {} : { hour: 'numeric', minute: '2-digit' }),
                timeZone: getLoanTimezone(selectedLoan)
             })}{' '}
-            {isLowIncomeLadder(limitCeiling, user.createdAt)
+            {earnsLimitSpin(limitCeiling, user.createdAt, selectedLoan.fundedAt)
                ? 'to earn a spin 🎡'
                : fastSecondHalf
                  ? 'to raise your limit: the 2nd half of your loan.'
