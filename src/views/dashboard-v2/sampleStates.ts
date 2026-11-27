@@ -52,7 +52,7 @@ export const SAMPLE_STATES: Record<Exclude<DashboardV2PreviewState, 'real'>, Das
       creditLevel: 0,
       creditLimit: 0,
       creditInUse: 0,
-      creditHint: { highlight: 'Verify', rest: ' to unlock LV.1' },
+      creditHint: { highlight: 'Verify', rest: ' to unlock your $15 loan' },
       summary: { repaymentsTotal: 0, active: 0, pending: 0, defaulted: 0 },
       dues: [],
       hasOverdue: false

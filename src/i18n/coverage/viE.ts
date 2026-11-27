@@ -144,8 +144,8 @@ export const vietnameseCoverageE: Record<string, string> = {
    'Most borrowers use both — Trust-Building Loans to stay active, Credit-Building Loans to climb.':
       'Hầu hết người vay dùng cả hai — Trust-Building Loan để duy trì hoạt động, Credit-Building Loan để lên hạng.',
    'How Credit Levels Work on Moodeng Credit': 'Hạng tín dụng hoạt động như thế nào trên Moodeng Credit',
-   'Credit Levels set how much you can borrow on Moodeng Credit. You start at $15 and each full-limit loan you repay adds $10. Learn what a Credit-Building Loan is and how to unlock your next level.':
-      'Hạng tín dụng quyết định số tiền bạn có thể vay trên Moodeng Credit. Bạn bắt đầu với $15 và mỗi khoản vay toàn hạn mức bạn trả xong sẽ cộng thêm $10. Tìm hiểu Credit-Building Loan là gì và cách mở khóa hạng tiếp theo.',
+   'Credit Levels set how much you can borrow on Moodeng Credit. You start at $15 and your limit grows each time you repay a full-limit loan on time. Learn what a Credit-Building Loan is and how to unlock your next level.':
+      'Hạng tín dụng quyết định bạn có thể vay bao nhiêu trên Moodeng Credit. Bạn bắt đầu với $15 và hạn mức tăng mỗi khi bạn trả đúng hạn một khoản vay toàn hạn mức. Tìm hiểu Credit-Building Loan là gì và cách mở khóa hạng tiếp theo.',
    'Verify, then make your first request': 'Xác minh, rồi gửi yêu cầu đầu tiên',
    'Repay your $15 loan on time': 'Trả khoản vay $15 đúng hạn',
    'Repay your $20 loan on time': 'Trả khoản vay $20 đúng hạn',
@@ -154,7 +154,8 @@ export const vietnameseCoverageE: Record<string, string> = {
    'Repay your $80 loan on time': 'Trả khoản vay $80 đúng hạn',
    'Repay your $100 loan on time': 'Trả khoản vay $100 đúng hạn',
    'Repay your $120 loan on time': 'Trả khoản vay $120 đúng hạn',
-   'You start at $15. Each full-limit loan you repay adds $10.': 'Bạn bắt đầu với $15. Mỗi khoản vay toàn hạn mức bạn trả xong sẽ cộng thêm $10.',
+   'You start at $15. Each full-limit loan you repay on time raises your limit, and your Dashboard shows your next one.':
+      'Bạn bắt đầu với $15. Mỗi khoản vay toàn hạn mức bạn trả đúng hạn sẽ nâng hạn mức của bạn, và Bảng điều khiển hiển thị hạn mức tiếp theo.',
    'How reliable repayment becomes a portable reputation moo-lenders trust.':
       'Việc trả nợ đáng tin cậy trở thành uy tín mang theo được mà moo-lender tin tưởng như thế nào.',
    'The difference between the two loan types and when to use each.': 'Sự khác nhau giữa hai loại khoản vay và khi nào nên dùng từng loại.',

@@ -769,8 +769,8 @@ export const indonesianCoverageC: Record<string, string> = {
    'A Credit Level is your borrowing limit. Everyone starts at Level 1 with a $15 limit, and the limit grows as you complete Credit-Building Loans.':
       'Level Kredit adalah limit pinjamanmu. Semua orang mulai dari Level 1 dengan limit $15, dan limitnya naik seiring kamu menyelesaikan Credit-Building Loan.',
    'How do I move to the next level?': 'Bagaimana cara naik ke level berikutnya?',
-   'Take a Credit-Building Loan at your full current limit and repay it in full and on time. A clean repayment adds $10 to your limit: $15, then $25, then $35, and so on.':
-      'Ambil Credit-Building Loan senilai limit penuhmu saat ini dan bayar kembali secara penuh dan tepat waktu. Setiap pembayaran yang lancar menambah limitmu $10: $15, lalu $25, lalu $35, dan seterusnya.',
+   'Take a Credit-Building Loan at your full current limit and repay it in full and on time, in the 2nd half of the loan. Your limit goes up after each one, and your Dashboard always shows your next limit.':
+      'Ambil Credit-Building Loan sebesar limit penuhmu saat ini dan lunasi penuh serta tepat waktu, di paruh kedua masa pinjaman. Limitmu naik setelah setiap pinjaman, dan Dashboard selalu menunjukkan limit berikutnya.',
    'Does borrowing a small amount level me up?': 'Apakah meminjam jumlah kecil bisa menaikkan levelku?',
    'No. Borrowing below your limit is a Trust-Building Loan. It improves your reputation with moo-lenders but does not raise your Credit Level. Only a full-limit Credit-Building Loan advances you.':
       'Tidak. Meminjam di bawah limitmu disebut Trust-Building Loan. Ini meningkatkan reputasimu di mata moo-lender, tetapi tidak menaikkan Level Kredit-mu. Hanya Credit-Building Loan senilai limit penuh yang menaikkan levelmu.',

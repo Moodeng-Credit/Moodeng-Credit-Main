@@ -72,7 +72,9 @@ const COPY = {
       top: 'You are at the top limit. Keep paying on time.',
       ceiling: (limit: number) =>
          `We set your limit so payments fit what you earn. $${limit} is the most we can lend on what you've shown us.`,
-      ceilingLink: 'Show your income to go higher'
+      ceilingLink: 'Show your income to go higher',
+      proofEnds: (date: string) => `Your income proof counts until ${date}. Send a new one to keep growing.`,
+      proofLink: 'Send new proof'
    },
    fil: {
       eyebrow: 'Susunod mong loan',
@@ -94,7 +96,9 @@ const COPY = {
       top: 'Nasa pinakamataas na limit ka na. Ituloy ang on-time na bayad.',
       ceiling: (limit: number) =>
          `Itinakda namin ang limit mo para kaya ng kita mo ang bayad. $${limit} ang pinakamalaking maipapahiram namin batay sa naipakita mo.`,
-      ceilingLink: 'Ipakita ang kita mo para tumaas pa'
+      ceilingLink: 'Ipakita ang kita mo para tumaas pa',
+      proofEnds: (date: string) => `Bilang ang proof of income mo hanggang ${date}. Magpadala ng bago para tuloy ang pagtaas.`,
+      proofLink: 'Magpadala ng bagong proof'
    }
 };
 
@@ -108,6 +112,7 @@ export default function NextLoanCard({
    nextLimit,
    atCeiling = false,
    lowIncome = false,
+   proofUntil = null,
    streak,
    now
 }: {
@@ -118,6 +123,8 @@ export default function NextLoanCard({
    atCeiling?: boolean;
    /** On the low-income ladder: their repayment counts from day 7. */
    lowIncome?: boolean;
+   /** Approved income proof stops counting after this date (YYYY-MM-DD): warn 3 weeks ahead. */
+   proofUntil?: string | null;
    streak?: RepayStreak;
    /** Preview only: a fixed "today". */
    now?: number;
@@ -273,6 +280,16 @@ export default function NextLoanCard({
                   </a>
                ) : null}
             </div>
+         ) : null}
+
+         {inPhilippines && proofUntil && Date.parse(`${proofUntil}T00:00:00+08:00`) - today < 21 * DAY ? (
+            // Income proof only counts for 3 months (2026-11-27): ask for a fresh one before growth stops.
+            <p className="text-[13px] leading-[18px] text-[#70617F] dark:text-[#A89BB8]">
+               {t.proofEnds(dayLabel(Date.parse(`${proofUntil}T00:00:00+08:00`), 'Asia/Manila'))}{' '}
+               <a href="/documents" className="font-semibold text-[#6010D2] dark:text-[#C4B8FF]">
+                  {t.proofLink} ›
+               </a>
+            </p>
          ) : null}
 
          {streakCopy ? (

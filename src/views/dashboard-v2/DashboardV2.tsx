@@ -26,7 +26,7 @@ import { needsHomeScreenForPush } from '@/lib/push/webPushClient';
 import { getVerificationUiState } from '@/lib/verificationUiState';
 import type { RootState } from '@/store/store';
 import WalletBalanceCard from '@/views/account/WalletBalanceCard';
-import CreditTrackCard from '@/views/dashboard-v2/components/CreditTrackCard';
+import AddIncomeCard from '@/views/dashboard-v2/components/AddIncomeCard';
 import {
    ConnectFacebookBanner,
    ConnectWalletBanner,
@@ -186,6 +186,9 @@ export default function DashboardV2() {
       ? getIncomeNextLimit(payOnTimeLimit, ceiling, authUser?.createdAt, findOpenFullLimitLoan(myLoans, payOnTimeLimit)?.fundedAt ?? null)
       : 0;
    const lowIncome = isLowIncomeLadder(ceiling, authUser?.createdAt);
+   // Header = the card: a loan out that's below their limit can't grow it, so show their limit, not a next one.
+   const heroNextLimit =
+      model.dues.length && !model.dues.some((due) => (due.principal ?? 0) >= payOnTimeLimit - 0.01) ? payOnTimeLimit : payOnTimeNextLimit;
    const atCeiling = Boolean(ceiling) && payOnTimeLimit > 0 && payOnTimeLimit >= (ceiling ?? 0) && rawNextLimit > payOnTimeLimit;
    const previewTrack = isPreviewHost() && (trackParam === 'A' || trackParam === 'B') ? trackParam : undefined;
    const showTour = searchParams.has('tour') && shouldShowGuidedTour(BORROWER_GUIDED_TOUR_ID, userId, false);
@@ -253,6 +256,7 @@ export default function DashboardV2() {
                key={`${previewState}-${model.tier}-${model.isVerified}-${model.creditLevel}`}
                model={model}
                showRealAvatar={isReal}
+               nextLimit={heroNextLimit}
                // Sample states have no account to send anywhere, so they open the verify chooser instead.
                onVerify={
                   isReal
@@ -304,21 +308,14 @@ export default function DashboardV2() {
                   {isReal || new URLSearchParams(window.location.search).has('limit') ? (
                      <LimitStaysCard language={language} preview={!isReal} />
                   ) : null}
-                  {/* Credit tracks: early members keep the old ladder; others at an old limit see the new steps. */}
-                  {isReal || previewTrack ? (
-                     <CreditTrackCard
-                        language={language}
-                        userId={userId}
-                        joinedAt={authUser?.createdAt}
-                        limit={creditLimitNow}
-                        openFundedAt={findOpenFullLimitLoan(myLoans, creditLimitNow)?.fundedAt ?? null}
-                        preview={isReal ? undefined : previewTrack}
-                        previewPromise={searchParams.has('promise')}
-                     />
+                  {/* Never answered the income question: one tap sets a limit that fits them (2026-11-27). The
+                      Track A/B card is gone: borrowers only see their own next number. */}
+                  {isReal && userId && model.isVerified && liveCeiling?.source === 'sign_up' && !liveCeiling.answered ? (
+                     <AddIncomeCard userId={userId} language={language} />
                   ) : null}
                   {/* Anything to repay sits near the top, with the streak and what paying on time earns. */}
                   {model.dues.length ? (
-                     <UpcomingDuesSection model={model} limit={payOnTimeLimit} nextLimit={payOnTimeNextLimit} atCeiling={atCeiling} lowIncome={lowIncome} />
+                     <UpcomingDuesSection model={model} limit={payOnTimeLimit} nextLimit={payOnTimeNextLimit} atCeiling={atCeiling} lowIncome={lowIncome} proofUntil={liveCeiling?.proofUntil ?? null} />
                   ) : null}
                   {voucherFollowUp ? (
                      <VoucherFollowUpCard
@@ -332,7 +329,7 @@ export default function DashboardV2() {
                   {milestonesAndVoucher}
                   <LoanSummarySection model={model} />
                   {!model.dues.length ? (
-                     <UpcomingDuesSection model={model} limit={payOnTimeLimit} nextLimit={payOnTimeNextLimit} atCeiling={atCeiling} lowIncome={lowIncome} />
+                     <UpcomingDuesSection model={model} limit={payOnTimeLimit} nextLimit={payOnTimeNextLimit} atCeiling={atCeiling} lowIncome={lowIncome} proofUntil={liveCeiling?.proofUntil ?? null} />
                   ) : null}
                </div>
             )}

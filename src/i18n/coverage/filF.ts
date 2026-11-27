@@ -783,6 +783,8 @@ export const filipinoCoverageF: Record<string, string> = {
 
    // src/views/dashboard-v2/dashboardV2Model.ts
    'to unlock LV.1': 'para ma-unlock ang LV.1',
+   ' to unlock your $15 loan': ' para ma-unlock ang $15 loan mo',
+   'to unlock your $15 loan': 'para ma-unlock ang $15 loan mo',
    'level reached': 'level na ang naabot mo',
    Paused: 'Naka-pause',
    '· repay on time to resume': '· magbayad on time para magpatuloy',

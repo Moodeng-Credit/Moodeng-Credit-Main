@@ -243,7 +243,7 @@ export const getCreditLevelProgress = ({
    joinedAt?: string | null;
 }): { level: number; progress: number; hint: CreditLevelHint } => {
    if (!isVerified || creditLimit <= 0) {
-      return { level: 0, progress: 0, hint: { highlight: 'Verify', rest: ' to unlock LV.1' } };
+      return { level: 0, progress: 0, hint: { highlight: 'Verify', rest: ' to unlock your $15 loan' } };
    }
 
    const level = getCreditLevelNumber(creditLimit, getCreditTrack(joinedAt));

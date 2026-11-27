@@ -9,6 +9,7 @@ import { Bar, BarChart, Cell, Line, LineChart, ResponsiveContainer, Tooltip, XAx
 import { BorrowerTimeline } from '@/app/admin/AdminHistory';
 import ProofHistory from '@/app/admin/ProofHistory';
 import { AdminLiveProvider } from '@/app/admin/useAdminLive';
+import LadderRow from '@/app/admin/user/LadderRow';
 import {
    aboutVsId,
    bkkDate,
@@ -741,6 +742,7 @@ function Approval({ d }: { d: Dossier }) {
          <Row label="Approved">{u.loan_access_approved_at ? bkkDateTime(u.loan_access_approved_at) : null}</Row>
          <Row label="Reject reason">{u.loan_access_reject_reason}</Row>
          <Row label="Credit limit">{u.cs != null ? `${usd(u.cs)}${u.credit_progression_paused ? ' (paused)' : ''}` : null}</Row>
+         <LadderRow userId={u.id} />
          <Row label="Loan cap">{d.loan_cap ? `${usd(d.loan_cap.cap_usd)}${d.loan_cap.note ? ` — ${d.loan_cap.note}` : ''}` : null}</Row>
          <Row label="Requests blocked">{u.loan_requests_blocked ? 'Yes' : null}</Row>
          {d.access_requests.length ? (

@@ -19,6 +19,8 @@ interface DashboardV2HeroProps {
    /** Unverified: tapping the avatar + "Unverified" badge or "Verify to unlock" goes to their next
     *  verification step (PostHog, Nov 2026: people tapped them and nothing happened). */
    onVerify?: () => void;
+   /** Their next loan after a full-limit repay (income ladder, capped at their ceiling). */
+   nextLimit?: number;
 }
 
 // The hero is one illustrated scene, so it keeps the Figma frame's vertical positions (minus the
@@ -114,7 +116,11 @@ function PettableMoodeng({ src, alt, mood, isLocked }: { src: string; alt: strin
 
 const formatUsd = (value: number) => `$${Number.isInteger(value) ? value : value.toFixed(2)}`;
 
-export default function DashboardV2Hero({ model, showRealAvatar, onVerify }: DashboardV2HeroProps) {
+export default function DashboardV2Hero({ model, showRealAvatar, onVerify, nextLimit = 0 }: DashboardV2HeroProps) {
+   // No level numbers (2026-11-27): one number they can act on — the next loan, else their limit.
+   const showNext = model.isVerified && nextLimit > model.creditLimit;
+   const heroAmount = model.isVerified ? (showNext ? nextLimit : model.creditLimit) : 15;
+   const heroLabel = !model.isVerified ? 'First loan' : showNext ? 'Next loan' : 'Limit';
    const verifyTap = !model.isVerified ? onVerify : undefined;
    const avatarColumn = (
       <>
@@ -288,10 +294,10 @@ export default function DashboardV2Hero({ model, showRealAvatar, onVerify }: Das
          <div className="absolute inset-x-5 top-[347px] flex items-end justify-between gap-2" data-tour-target="dashboard-credit-level">
             <div className="flex shrink-0 items-baseline gap-0.5">
                <span className="text-[clamp(28px,7.7vw,34px)] font-black italic leading-[1.2] tracking-[-0.68px] text-[#735dfa] dark:text-[#9d8cff]">
-                  LV{model.creditLevel}
+                  ${heroAmount}
                </span>
-               <span className="bg-gradient-to-r from-[#c3bbce] to-[#a78acf] bg-clip-text text-[clamp(16px,4.6vw,20px)] font-semibold leading-9 text-transparent">
-                  Credit Level
+               <span className="ml-1 bg-gradient-to-r from-[#c3bbce] to-[#a78acf] bg-clip-text text-[clamp(16px,4.6vw,20px)] font-semibold leading-9 text-transparent">
+                  {heroLabel}
                </span>
                {/* The icon is 14px; the ::before gives it a ~38px tap area (PostHog: rage-taps on it). */}
                <button
@@ -306,7 +312,7 @@ export default function DashboardV2Hero({ model, showRealAvatar, onVerify }: Das
             </div>
             <p className="min-w-0 whitespace-nowrap pb-2 text-right text-[clamp(14px,4.5vw,20px)] font-medium leading-4 tracking-[0.2px]">
                {/* Borrowing room, which is what a borrower actually needs here. Before a limit exists
-                   (unverified) it falls back to the "Verify to unlock LV.1" hint. */}
+                   (unverified) it falls back to the "Verify to unlock your $15 loan" hint. */}
                {model.creditLimit > 0 ? (
                   <>
                      <span className="text-[#4f36ef] dark:text-[#b3a6ff]">{formatUsd(creditAvailable)}</span>
@@ -347,7 +353,9 @@ export default function DashboardV2Hero({ model, showRealAvatar, onVerify }: Das
                <span className="absolute left-[17px] top-0 h-0 w-0 border-x-[7px] border-b-[8px] border-x-transparent border-b-[#34268e]/80" />
                <p className="mt-1.5 rounded-[10px] bg-[#34268e]/80 px-[7px] py-[6px] text-[14px] font-medium leading-[14px] text-white">
                   {/* Unverified people can't borrow yet, so "repay a loan" was the wrong next step for them. */}
-                  {model.isVerified ? 'Repay a full-limit loan to unlock the next level.' : 'Get verified to unlock LV.1.'}
+                  {model.isVerified
+                     ? 'Pay back a full-limit loan in its best days to grow your limit.'
+                     : 'Get verified to unlock your first $15 loan.'}
                </p>
             </div>
          ) : null}

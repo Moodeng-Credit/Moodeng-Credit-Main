@@ -286,8 +286,8 @@ export const indonesianCoverageG: Record<string, string> = {
    'Repay your $80 loan on time': 'Bayar kembali pinjaman $80 kamu tepat waktu',
    'Repay your $100 loan on time': 'Bayar kembali pinjaman $100 kamu tepat waktu',
    'Repay your $120 loan on time': 'Bayar kembali pinjaman $120 kamu tepat waktu',
-   'You start at $15. Each full-limit loan you repay adds $10.':
-      'Kamu mulai dari $15. Setiap pinjaman limit penuh yang kamu lunasi menambah $10.',
+   'You start at $15. Each full-limit loan you repay on time raises your limit, and your Dashboard shows your next one.':
+      'Kamu mulai dari $15. Setiap pinjaman batas penuh yang kamu lunasi tepat waktu menaikkan limitmu, dan Dashboard menunjukkan limit berikutnya.',
    'you need a smaller amount, or want to build trust first.': 'kamu butuh jumlah yang lebih kecil, atau ingin membangun kepercayaan dulu.',
    'also called a Credit Growth Loan': 'disebut juga Credit Growth Loan',
    'you’re ready to grow your limit and sure you can repay on time.':
