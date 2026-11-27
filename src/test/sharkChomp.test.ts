@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
+import { callAtFromCode } from '@/app/chomp/page';
+
 import { buy, callStatus, chomp, LEVELS, lessonFor, nextLevel, POWER_MS, spinWheel, WHEEL, type ChompState, CHOMP_COOLDOWN_MS, COLS, moveHippo, newWave, ROWS, stepSharks, stepToward, aimAt } from '@/lib/sharkChomp';
 
 // Deterministic rng: always the same value.
@@ -146,5 +148,15 @@ describe('Shark Chomp rules', () => {
       expect(aimAt(s, { x: 1.2, y: 3 })).toBe('down');
       expect(aimAt(s, { x: 4, y: 2 })).toBe('right');
       expect(aimAt(s, { x: 1.1, y: 0.9 })).toBeNull();
+   });
+
+   it('short link: /game/CODE is the call time in base-36 seconds', () => {
+      const at = '2026-11-28T12:30:00.000Z';
+      const code = Math.floor(Date.parse(at) / 1000).toString(36);
+      expect(code.length).toBeLessThanOrEqual(7);
+      expect(callAtFromCode(code)).toBe(at);
+      expect(callAtFromCode(undefined)).toBeNull();
+      expect(callAtFromCode('hello!')).toBeNull();
+      expect(callAtFromCode('zz')).toBeNull();
    });
 });

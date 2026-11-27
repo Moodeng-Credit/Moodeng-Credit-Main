@@ -1,7 +1,7 @@
 import { type PointerEvent as ReactPointerEvent, useCallback, useEffect, useRef, useState } from 'react';
 
 import { Video } from 'lucide-react';
-import { useSearchParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 
 import { clarityEvent } from '@/lib/analytics/clarity';
 import { earnGameSpin, GAME_SPIN_TEXT } from '@/lib/spinWheel';
@@ -93,6 +93,15 @@ const saveBest = (n: number) => {
    }
 };
 
+// The short link's code (moodeng.app/game/CODE, George 2026-11-28: "the link is super long"): the call's start
+// time in seconds, base 36 (videoCall.ts buildWaitGameUrl). Anything else → no call.
+export const callAtFromCode = (code: string | undefined): string | null => {
+   if (!code || !/^[0-9a-z]{5,8}$/i.test(code)) return null;
+   const seconds = parseInt(code, 36);
+   const at = new Date(seconds * 1000);
+   return Number.isFinite(seconds) && at.getUTCFullYear() >= 2026 && at.getUTCFullYear() < 2100 ? at.toISOString() : null;
+};
+
 const safeJoinUrl = (raw: string | null): string | null => {
    if (!raw) return null;
    try {
@@ -164,8 +173,27 @@ const sprite = (ref: { current: Record<keyof typeof SPRITES, HTMLImageElement> |
 
 export default function SharkChompPage() {
    const [params] = useSearchParams();
-   const callAt = params.get('at');
-   const joinUrl = safeJoinUrl(params.get('join'));
+   const { code } = useParams();
+   const callAt = params.get('at') ?? callAtFromCode(code);
+   // The short link has no Zoom link in it: signed in, their own call's Join link is read from their account
+   // (signed out, the call screen points them to the Zoom link in Messenger).
+   const [ownJoin, setOwnJoin] = useState<string | null>(null);
+   const joinUrl = safeJoinUrl(params.get('join')) ?? ownJoin;
+   useEffect(() => {
+      if (params.get('join') || !callAt || !isSupabaseBrowserConfigured()) return;
+      let gone = false;
+      void (async () => {
+         const client = getSupabaseBrowserClient();
+         const uid = (await client.auth.getSession()).data.session?.user.id;
+         if (!uid) return;
+         const { data } = await client.from('users').select('video_call_join_url').eq('id', uid).maybeSingle();
+         const url = safeJoinUrl((data as { video_call_join_url?: string | null } | null)?.video_call_join_url ?? null);
+         if (!gone && url) setOwnJoin(url);
+      })();
+      return () => {
+         gone = true;
+      };
+   }, [params, callAt]);
 
    const canvasRef = useRef<HTMLCanvasElement | null>(null);
    const boardRef = useRef<HTMLDivElement | null>(null);
