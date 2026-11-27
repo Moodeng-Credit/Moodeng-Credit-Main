@@ -843,6 +843,7 @@ export const filipinoCoverageB: Record<string, string> = {
    'Your spin unlocks': 'Magbubukas ang spin mo sa',
    'Your spin is almost ready': 'Malapit nang ma-ready ang spin mo',
    'Play Shark Chomp while you wait 🦈': 'Laruin ang Shark Chomp habang naghihintay 🦈',
+   'Beat level 3 of Shark Chomp: +$1 on your spin 🦈': 'Talunin ang level 3 ng Shark Chomp: +$1 sa spin mo 🦈',
    'Paying earns a spin.': 'May spin ka kapag nagbayad.',
    'It unlocks': 'Magbubukas sa',
    'to earn a spin 🎡': 'para may spin ka 🎡',
