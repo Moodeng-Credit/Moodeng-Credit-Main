@@ -94,6 +94,19 @@
          /* First screen (2026-11-28) in the look George asked for (Tilt's home page + the Figma
             reference board): near-black, big cream headline, yellow button, a row of three
             numbers, straight-edged portraits with a "+$" tag and a "Cash for …" caption. */
+         /* Whole page: one palette to match the first screen. Near-black, warm paper, yellow
+            buttons. No lavender washes, no purple italic words, no all-caps tracked labels. */
+         :root {
+            --ink: #141216; --ink-soft: #45413a; --muted: #6b665c; --paper: #fffdf8; --canvas: #f6f2e8;
+            --lavender-50: #f6f2e8; --lavender-100: #ede7d8; --lavender-200: #ddd4bf;
+            --purple: #2b1a52; --purple-dark: #141216; --purple-ink: #141216; --line: #e3dccb;
+            --night: #141216; --night-2: #211e25; --night-text: #e9e3d6;
+         }
+         .ask-section, .dignity-section,
+         html[data-landing-version] #main-content > .ask-section, html[data-landing-version] #main-content > .dignity-section { background: var(--canvas); }
+         .final-cta .button.light, a.button.light { border: 0; background: #ffd43b; color: #141216; }
+         .display em, .section-title em, .page-title em { color: inherit; font-family: inherit; font-style: normal; font-weight: inherit; letter-spacing: inherit; }
+         .eyebrow { color: var(--muted); font-size: 1rem; font-weight: 700; letter-spacing: 0; text-transform: none; }
          html[data-landing-version='2'] #main-content > .hero-home { background: #141216; color: #fff9ec; }
          html[data-landing-version='2'] .hero-home .display { color: #fff9ec; }
          .hero-home .display em { color: inherit; font-family: inherit; font-style: normal; font-weight: inherit; letter-spacing: inherit; }
