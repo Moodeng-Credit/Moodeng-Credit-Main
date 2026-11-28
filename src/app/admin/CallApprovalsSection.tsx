@@ -37,7 +37,7 @@ const DAY_MS = 24 * 3600000;
 // The soft-teal look (preview). /admin/calls?look=teal turns it on for this computer (teal-light and
 // teal-dark force a mode; plain teal follows the app's light/dark setting), ?look=off turns it off.
 // Only the full Calls screen wears it: colors are CSS variables set by the .calls-teal wrapper
-// (index.css) and every class falls back to the purple admin look without it.
+// (globals.css) and every class falls back to the purple admin look without it.
 const LOOK_KEY = 'moodeng_admin_calls_look';
 const LOOKS = ['teal', 'teal-light', 'teal-dark'];
 const readLook = (): string => {
