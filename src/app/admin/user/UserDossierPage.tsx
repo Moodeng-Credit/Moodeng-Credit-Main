@@ -8,6 +8,7 @@ import { Bar, BarChart, Cell, Line, LineChart, ResponsiveContainer, Tooltip, XAx
 
 import { BorrowerTimeline } from '@/app/admin/AdminHistory';
 import type { AdminCallFace } from '@/app/admin/adminSupabase';
+import CallBriefCard from '@/app/admin/CallBrief';
 import { FaceStrip, FaceThumb, useCallFaces } from '@/app/admin/CallFaces';
 import ProofHistory from '@/app/admin/ProofHistory';
 import { AdminLiveProvider } from '@/app/admin/useAdminLive';
@@ -923,6 +924,7 @@ function DossierBody({ userId }: { userId: string }) {
                <FaceStrip face={face} />
             </section>
          ) : null}
+         <CallBriefCard userId={userId} auto={false} />
          <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-7">
             <Kpi label="Credit limit" value={usd(u.cs)} note={d.loan_cap ? `cap ${usd(d.loan_cap.cap_usd)}` : undefined} />
             <Kpi label="Borrowed" value={usd(stats.borrowed)} note={`${stats.count} loans · biggest ${usd(stats.biggest)}`} />

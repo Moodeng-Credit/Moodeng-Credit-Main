@@ -3318,7 +3318,7 @@ export type AdminCallDecision =
 let callApprovalsCache: { at: number; rows: Promise<AdminCallApprovalRow[]> } | null = null;
 
 async function invokeAdminCallApprovals<T>(body: Record<string, unknown>): Promise<T> {
-   if (body.action !== 'list' && body.action !== 'faces') callApprovalsCache = null;
+   if (body.action !== 'list' && body.action !== 'faces' && body.action !== 'brief') callApprovalsCache = null;
    const { data, error } = await getSupabaseBrowserClient().functions.invoke('admin-call-approvals', { body });
    if (error) {
       const ctx = (error as { context?: Response }).context;
@@ -3372,6 +3372,27 @@ export async function getAdminCallFaces(userIds: string[]): Promise<Record<strin
       }
    }
    return out;
+}
+
+/** The AI's read-back for the host: what the borrower told us, as sentences to confirm on the call. */
+export interface AdminCallBrief {
+   headline: string;
+   say_back: string[];
+   ask: string[];
+   watch: string[];
+}
+
+// 'peek' returns the saved brief or null without writing one; 'refresh' writes a new one.
+export async function getAdminCallBrief(
+   userId: string,
+   mode: 'make' | 'peek' | 'refresh' = 'make'
+): Promise<{ brief: AdminCallBrief; createdAt: string } | null> {
+   const result = await invokeAdminCallApprovals<{ brief: AdminCallBrief | null; createdAt?: string }>({
+      action: 'brief',
+      userId,
+      ...(mode === 'peek' ? { peek: true } : mode === 'refresh' ? { refresh: true } : {})
+   });
+   return result.brief ? { brief: result.brief, createdAt: result.createdAt ?? '' } : null;
 }
 
 export async function decideAdminCall(input: AdminCallDecision): Promise<{ ok: boolean; summary: string }> {

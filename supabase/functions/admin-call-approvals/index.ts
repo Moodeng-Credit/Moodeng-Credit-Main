@@ -2,6 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { ATTENDANCE_COLUMNS, describeAttendance, zoomActiveForHost } from '../_shared/attendance.ts';
+import { loadCallBrief, makeCallBrief } from '../_shared/callBrief.ts';
 import { checkCallForm } from '../_shared/callFormCheck.ts';
 import { getEffectiveCreditLimit, shiftCreditLevel } from '../_shared/creditAndPoints.ts';
 import { postDiscord } from '../_shared/discord.ts';
@@ -39,6 +40,9 @@ import { recordCallOutcome } from '../_shared/videoCallOutcome.ts';
 //                                       (after the host edits the sheet)  → { ok, check }
 //   { action: 'faces', userIds }      profile picture + pre-screening intro video + photos per person, so
 //                                       the host knows the face before the call  → { faces: { [userId]: … } }
+//   { action: 'brief', userId, refresh?, peek? }  the AI's "say this back to them" summary of everything we
+//                                       know (saved; refresh makes a new one, peek never makes one)
+//                                       → { brief, createdAt } | { brief: null }
 //   { action: 'credit_level', userId, direction: 'up' | 'down' }  move their limit one ladder step
 //                                       (mistakes, early repay) → { ok, summary, cs }
 // verify_jwt is on; the caller must also be an active admin.
@@ -228,6 +232,13 @@ serve(async (req) => {
             };
          }
          return json({ faces });
+      }
+
+      if (body.action === 'brief' && typeof body.userId === 'string' && UUID_RE.test(body.userId)) {
+         const saved = body.refresh === true ? null : await loadCallBrief(svc, body.userId);
+         if (saved) return json(saved);
+         if (body.peek === true) return json({ brief: null });
+         return json(await makeCallBrief(svc, body.userId));
       }
 
       if (body.action === 'decide') {

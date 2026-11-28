@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { type AdminCallApprovalRow, recheckAdminCallForm, rejectAdminUser, sendAdminCallFacebookSteps } from '@/app/admin/adminSupabase';
+import CallBriefCard from '@/app/admin/CallBrief';
 import { FaceStrip, useCallFaces } from '@/app/admin/CallFaces';
 import IndonesiaContactCard from '@/app/admin/IndonesiaContactCard';
 import SocialHandlesLine from '@/app/admin/SocialHandlesLine';
@@ -808,8 +809,9 @@ export default function CallSheet({ row, onClose }: { row: AdminCallApprovalRow;
          <div className="mx-auto max-w-[1100px] px-5 pb-10 pt-3">
             {error ? <p className="mb-2 rounded-md bg-[#fde8e8] p-2 text-[13px] font-semibold text-[#b42318]">{error}</p> : null}
             {/* What they look like: profile picture, pre-screening intro video, the photos they took. */}
-            <div className="mb-3">
+            <div className="mb-3 grid gap-3 lg:grid-cols-[auto_minmax(0,1fr)] lg:items-start">
                <FaceStrip face={face} light />
+               <CallBriefCard userId={row.userId} light />
             </div>
             {!profile && !error ? <p className="mt-6 text-[#7a7a7a]">Loading…</p> : null}
 

@@ -18,6 +18,7 @@ import {
    relativeStart,
    type ScheduleState
 } from '@/app/admin/callApprovalsModel';
+import CallBriefCard from '@/app/admin/CallBrief';
 import { FaceStrip, FaceThumb, useCallFaces } from '@/app/admin/CallFaces';
 import CallSheet from '@/app/admin/CallSheet';
 import { type AdminIndoProfile, fetchIndonesiaProfiles, telegramUrl, whatsappChatUrl } from '@/app/admin/indonesiaAdmin';
@@ -483,6 +484,9 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
             </div>
             <div className="mt-3">
                <FaceStrip face={faces[row.userId]} />
+            </div>
+            <div className="mt-3">
+               <CallBriefCard userId={row.userId} />
             </div>
             <div className="mt-4 flex flex-wrap items-center gap-2">
                {prepButtons(row, true)}
