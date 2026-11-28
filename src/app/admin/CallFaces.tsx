@@ -36,16 +36,17 @@ export function useCallFaces(userIds: string[]): Record<string, AdminCallFace> {
 
 const SIZES = { sm: 'h-10 w-10 text-base', md: 'h-14 w-14 text-xl', lg: 'h-24 w-24 text-4xl' } as const;
 
-/** Round face: profile picture, else a still from their intro video, else their initial. */
+/** Round face: a still from their intro video, else their profile picture, else their initial. */
 export function FaceThumb({ face, name, size = 'sm' }: { face?: AdminCallFace | null; name: string; size?: keyof typeof SIZES }) {
    const [avatarBroken, setAvatarBroken] = useState(false);
    const box = `${SIZES[size]} shrink-0 overflow-hidden rounded-full border-2 border-[color:var(--ct-pill,#8336f0)] bg-[var(--ct-soft,#2a1453)]`;
-   if (face?.avatar && !avatarBroken) {
-      return <img src={face.avatar} alt="" loading="lazy" referrerPolicy="no-referrer" onError={() => setAvatarBroken(true)} className={`${box} object-cover`} />;
-   }
+   // Their own intro video first: sign-in pictures are often a blank letter circle or someone else.
    if (face?.clip) {
       // #t=0.5 makes the browser show a frame half a second in instead of a black first frame.
       return <video src={`${face.clip}#t=0.5`} muted playsInline preload="metadata" tabIndex={-1} aria-hidden="true" className={`${box} object-cover`} />;
+   }
+   if (face?.avatar && !avatarBroken) {
+      return <img src={face.avatar} alt="" loading="lazy" referrerPolicy="no-referrer" onError={() => setAvatarBroken(true)} className={`${box} object-cover`} />;
    }
    return (
       <span aria-hidden="true" className={`${box} grid place-items-center font-black text-[color:var(--ct-ink,#fff)]`}>
