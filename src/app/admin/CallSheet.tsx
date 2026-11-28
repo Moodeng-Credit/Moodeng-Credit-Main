@@ -1,13 +1,12 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+
 import { Link } from 'react-router-dom';
 
 import { type AdminCallApprovalRow, recheckAdminCallForm, rejectAdminUser, sendAdminCallFacebookSteps } from '@/app/admin/adminSupabase';
 import CallBriefCard from '@/app/admin/CallBrief';
 import { FaceStrip, useCallFaces } from '@/app/admin/CallFaces';
-import IndonesiaContactCard from '@/app/admin/IndonesiaContactCard';
-import SocialHandlesLine from '@/app/admin/SocialHandlesLine';
 import { type CheckField, currentVerdict, type FormCheck, tallyCheck } from '@/app/admin/callFormCheck';
 import {
    type BotAnswers,
@@ -30,8 +29,10 @@ import {
    saveLoanCap,
    type ScreeningAnswers
 } from '@/app/admin/callSheetData';
+import IndonesiaContactCard from '@/app/admin/IndonesiaContactCard';
 import ProofHistory from '@/app/admin/ProofHistory';
 import ProofRequestComposer from '@/app/admin/ProofRequestComposer';
+import SocialHandlesLine from '@/app/admin/SocialHandlesLine';
 
 // Admin → Call approvals → Call sheet: everything the host needs on a borrower's onboarding call in
 // one place — who they are (bio, checks, loans), the screening questions to fill in while talking
@@ -55,6 +56,54 @@ function Question({ n, title, hint, children }: { n: number; title: string; hint
          </p>
          <div className="mt-1">{children}</div>
       </section>
+   );
+}
+
+// The sheet's layout pieces: a numbered step of the call (right side), and the reference cards (left side).
+function Step({
+   n,
+   title,
+   hint,
+   strong,
+   children
+}: {
+   n: number;
+   title: string;
+   hint?: string;
+   strong?: boolean;
+   children: React.ReactNode;
+}) {
+   return (
+      <section className={`rounded-2xl border bg-white p-4 shadow-sm ${strong ? 'border-[#6b55f7]' : 'border-[#ececec]'}`}>
+         <h2 className="mb-3 flex flex-wrap items-center gap-2 text-[16px] font-bold leading-tight">
+            <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[#6b55f7] text-[12px] font-bold text-white">{n}</span>
+            {title}
+            {hint ? <span className="text-[12px] font-normal text-[#9a9a9a]">{hint}</span> : null}
+         </h2>
+         {children}
+      </section>
+   );
+}
+
+function Pane({ title, children }: { title: string; children: React.ReactNode }) {
+   return (
+      <section className="rounded-2xl border border-[#ececec] bg-white p-3 shadow-sm">
+         <h2 className="mb-2 text-[11px] font-bold uppercase tracking-wide text-[#9a9a9a]">{title}</h2>
+         {children}
+      </section>
+   );
+}
+
+// A reference card that opens on a tap, so the left side stays short.
+function Fold({ title, startOpen, children }: { title: string; startOpen?: boolean; children: React.ReactNode }) {
+   return (
+      <details className="group rounded-2xl border border-[#ececec] bg-white shadow-sm" open={startOpen}>
+         <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2.5 text-[13px] font-bold text-[#37352f]">
+            {title}
+            <span className="text-[#9a9a9a] group-open:rotate-180">▾</span>
+         </summary>
+         <div className="border-t border-[#f0f0f0] p-3">{children}</div>
+      </details>
    );
 }
 
@@ -311,8 +360,7 @@ function ProfileCard({ profile }: { profile: CallSheetProfile }) {
                <a
                   className="font-semibold text-[#6c5ce7] underline"
                   href={
-                     profile.facebookProfileUrl ??
-                     `https://www.facebook.com/search/people/?q=${encodeURIComponent(profile.facebookName)}`
+                     profile.facebookProfileUrl ?? `https://www.facebook.com/search/people/?q=${encodeURIComponent(profile.facebookName)}`
                   }
                   rel="noopener noreferrer"
                   target="_blank"
@@ -443,7 +491,10 @@ function LoanCapBox({ userId }: { userId: string }) {
             setNote(c?.note ?? '');
             setSoft(c?.soft ?? false);
          })
-         .catch((err) => !cancelled && (setCap(null), setMsg({ ok: false, text: err instanceof Error ? err.message : 'Could not load the cap.' })));
+         .catch(
+            (err) =>
+               !cancelled && (setCap(null), setMsg({ ok: false, text: err instanceof Error ? err.message : 'Could not load the cap.' }))
+         );
       return () => {
          cancelled = true;
       };
@@ -482,7 +533,13 @@ function LoanCapBox({ userId }: { userId: string }) {
                   value={amount}
                />
             </div>
-            <input aria-label="Why capped" className={inputClass} onChange={(e) => setNote(e.target.value)} placeholder="Why (the team sees this)" value={note} />
+            <input
+               aria-label="Why capped"
+               className={inputClass}
+               onChange={(e) => setNote(e.target.value)}
+               placeholder="Why (the team sees this)"
+               value={note}
+            />
          </div>
          <div className="flex gap-1.5">
             <button
@@ -504,7 +561,9 @@ function LoanCapBox({ userId }: { userId: string }) {
                <button
                   className="h-9 rounded-md border border-[#e3e3e3] px-3 text-[14px] font-semibold text-[#37352f] hover:bg-[#fafafa] disabled:opacity-40"
                   disabled={busy}
-                  onClick={() => void run(() => removeLoanCap(userId), 'Cap removed', null).then((ok) => ok && (setAmount(''), setNote('')))}
+                  onClick={() =>
+                     void run(() => removeLoanCap(userId), 'Cap removed', null).then((ok) => ok && (setAmount(''), setNote('')))
+                  }
                   type="button"
                >
                   Remove
@@ -739,13 +798,13 @@ export default function CallSheet({ row, onClose }: { row: AdminCallApprovalRow;
                : 'Not saved yet';
 
    return (
-      <div aria-modal="true" className="fixed inset-0 z-[80] overflow-y-auto bg-white text-[#1f1f1f]" role="dialog">
+      <div aria-modal="true" className="fixed inset-0 z-[80] overflow-y-auto bg-[#f7f6fb] text-[#1f1f1f]" role="dialog">
          {/* Header + progress, pinned. Everything below is laid out to fit one laptop screen. */}
          <div className="sticky top-0 z-10 border-b border-[#f0f0f0] bg-white/95 backdrop-blur">
             <div className="h-1 bg-[#f0f0f0]">
                <div className="h-1 bg-[#6b55f7] transition-all" style={{ width: `${Math.round(progress * 100)}%` }} />
             </div>
-            <div className="mx-auto flex max-w-[1100px] flex-wrap items-center gap-x-3 gap-y-1 px-5 py-2">
+            <div className="mx-auto flex max-w-[1320px] flex-wrap items-center gap-x-3 gap-y-1 px-5 py-2">
                <h1 className="min-w-0 truncate text-[18px] font-bold">
                   {/* New tab: leaving the sheet mid-call would lose unsaved notes. */}
                   <Link
@@ -806,223 +865,251 @@ export default function CallSheet({ row, onClose }: { row: AdminCallApprovalRow;
             </div>
          </div>
 
-         <div className="mx-auto max-w-[1100px] px-5 pb-10 pt-3">
+         <div className="mx-auto max-w-[1320px] px-5 pb-10 pt-4">
             {error ? <p className="mb-2 rounded-md bg-[#fde8e8] p-2 text-[13px] font-semibold text-[#b42318]">{error}</p> : null}
-            {/* What they look like: profile picture, pre-screening intro video, the photos they took. */}
-            <div className="mb-3 grid gap-3 lg:grid-cols-[auto_minmax(0,1fr)] lg:items-start">
-               <FaceStrip face={face} light />
-               <CallBriefCard userId={row.userId} light />
-            </div>
-            {!profile && !error ? <p className="mt-6 text-[#7a7a7a]">Loading…</p> : null}
+            <div className="grid gap-5 lg:grid-cols-[minmax(0,25rem)_minmax(0,1fr)] lg:items-start">
+               {/* Left: who they are. Stays in view while the host fills in the right side. */}
+               <aside className="space-y-3 lg:sticky lg:top-[60px] lg:max-h-[calc(100vh-76px)] lg:overflow-y-auto lg:pr-1">
+                  <Pane title="Who you're meeting">
+                     <FaceStrip face={face} light />
+                  </Pane>
+                  <CallBriefCard userId={row.userId} light />
+                  {profile ? (
+                     <>
+                        <Fold title="What they filled in" startOpen>
+                           <ProfileCard profile={profile} />
+                        </Fold>
+                        {/* Indonesia track: how to reach them (WhatsApp/Telegram/Facebook), Walt address, KYC + income doc. */}
+                        <IndonesiaContactCard userId={row.userId} />
+                        <SocialHandlesLine userId={row.userId} />
+                        <BotAnswersCard records={botAnswers} />
+                        {/* Every proof they ever sent (income docs, pre-screening, proof requests) with the AI's read: team only. */}
+                        <Fold title="All their proof and pre-screening answers">
+                           <ProofHistory userId={row.userId} />
+                        </Fold>
+                     </>
+                  ) : null}
+               </aside>
 
-            {profile ? (
-               <div className="space-y-3">
-                  <ProfileCard profile={profile} />
-                  {/* Indonesia track: how to reach them (WhatsApp/Telegram/Facebook), Walt address, KYC + income doc. */}
-                  <IndonesiaContactCard userId={row.userId} />
-                  <SocialHandlesLine userId={row.userId} />
-                  <BotAnswersCard records={botAnswers} />
-                  {/* Every proof they ever sent (income docs, pre-screening, proof requests) with the AI's read: team only. */}
-                  <ProofHistory userId={row.userId} />
-                  <FormCheckBar answers={answers} busy={rechecking} onRecheck={() => void recheck()} transcript={transcript} />
-
-                  <div className="grid gap-x-6 gap-y-3 lg:grid-cols-2">
-                     <div className="space-y-2.5">
-                        <div className="grid grid-cols-2 gap-x-3 gap-y-2.5">
-                           <Question n={1} title="Full name">
-                              <input
-                                 className={inputClass}
-                                 onChange={(e) => set('fullName', e.target.value)}
-                                 placeholder="Their name"
-                                 value={answers.fullName ?? ''}
-                              />
-                              {checkLine('fullName')}
-                           </Question>
-                           <Question n={2} title="What do they do?">
-                              <input
-                                 className={inputClass}
-                                 onChange={(e) => set('role', e.target.value)}
-                                 placeholder="Role / specialty"
-                                 value={answers.role ?? ''}
-                              />
-                              {checkLine('role')}
-                           </Question>
-                           <Question n={3} title="Facebook">
-                              <input
-                                 className={inputClass}
-                                 onChange={(e) => set('facebookUrl', e.target.value)}
-                                 placeholder="facebook.com/…"
-                                 value={answers.facebookUrl ?? ''}
-                              />
-                              {checkLine('facebookUrl')}
-                           </Question>
-                           <Question n={4} title="TikTok">
-                              <input
-                                 className={inputClass}
-                                 onChange={(e) => set('tiktokUrl', e.target.value)}
-                                 placeholder="tiktok.com/@…"
-                                 value={answers.tiktokUrl ?? ''}
-                              />
-                              {checkLine('tiktokUrl')}
-                           </Question>
-                        </div>
-                        <Question n={5} title="How do they know us?" hint="referred by / where they saw us">
-                           <label className="mb-2 flex items-center gap-2 text-[14px] font-semibold">
-                              Referred by
-                              <select
-                                 className={inputClass.replace('w-full', 'w-auto')}
-                                 onChange={(e) => void pickReferrer(e.target.value)}
-                                 value={referredBy}
-                              >
-                                 <option value="">—</option>
-                                 {INFLUENCERS.map((i) => (
-                                    <option key={i.code} value={i.code}>
-                                       {i.label}
-                                    </option>
-                                 ))}
-                                 <option value="other">Someone else / nobody</option>
-                              </select>
-                           </label>
-                           {referralMsg ? (
-                              <p className={`mb-2 text-[13px] ${referralMsg.ok ? 'text-[#0f7b3f]' : 'text-[#b42318]'}`}>{referralMsg.text}</p>
-                           ) : null}
-                           <input
-                              className={inputClass}
-                              onChange={(e) => set('referral', e.target.value)}
-                              placeholder="e.g. Saw a Facebook poster"
-                              value={answers.referral ?? ''}
-                           />
-                           {checkLine('referral')}
-                        </Question>
-                        <Question n={6} title="Loan today: how would they use it for an immediate win?">
-                           <textarea
-                              className={`${inputClass} h-[64px] resize-none`}
-                              onChange={(e) => set('loanUse', e.target.value)}
-                              placeholder="Their words"
-                              value={answers.loanUse ?? ''}
-                           />
-                           {checkLine('loanUse')}
-                        </Question>
-                        <Question n={7} title="Local exchange they use">
-                           <div className="flex flex-wrap gap-1.5">
-                              {EXCHANGES.map((ex) => {
-                                 const on = (answers.exchanges ?? []).includes(ex);
-                                 return (
-                                    <button
-                                       aria-pressed={on}
-                                       className={`rounded-full border px-2.5 py-0.5 text-[12px] font-medium ${on ? 'border-[#6b55f7] bg-[#6b55f7] text-white' : 'border-[#e3e3e3] text-[#37352f] hover:bg-[#fafafa]'}`}
-                                       key={ex}
-                                       onClick={() => toggleExchange(ex)}
-                                       type="button"
-                                    >
-                                       {on ? '✓ ' : ''}
-                                       {ex}
-                                    </button>
-                                 );
-                              })}
-                           </div>
-                           {checkLine('exchanges')}
-                        </Question>
-                     </div>
-
-                     <div className="space-y-2.5">
-                        <Question n={8} title="Before you finish, cover these">
-                           <div className="space-y-1.5">
-                              <Choice
-                                 letter="A"
-                                 onClick={() => set('showedCashInOut', !answers.showedCashInOut)}
-                                 selected={Boolean(answers.showedCashInOut)}
-                              >
-                                 Showed how to cash out and repay ·{' '}
-                                 {CASH_VIDEOS.map((v, i) => (
-                                    <a
-                                       className="font-semibold text-[#6b55f7] underline"
-                                       href={v.url}
-                                       key={v.url}
-                                       onClick={(e) => e.stopPropagation()}
-                                       rel="noreferrer"
-                                       target="_blank"
-                                    >
-                                       {i ? ' · ' : ''}▶ {v.label}
-                                    </a>
-                                 ))}
-                              </Choice>
-                              {checkLine('showedCashInOut')}
-                              <Choice
-                                 letter="B"
-                                 onClick={() => set('informedTerms', !answers.informedTerms)}
-                                 selected={Boolean(answers.informedTerms)}
-                              >
-                                 Explained the repayment terms: a default is flagged right away and means a permanent ban across all
-                                 affiliated platforms
-                              </Choice>
-                              {checkLine('informedTerms')}
-                              <Choice letter="C" onClick={() => set('addedEmma', !answers.addedEmma)} selected={Boolean(answers.addedEmma)}>
-                                 Added Emma Moodeng and Voices Against Unfair Loan on Facebook
-                              </Choice>
-                              <div className="flex items-center gap-2 pl-7 text-[11px] text-[#6f6f6f]">
-                                 <button
-                                    className="rounded-md border border-[#d9d4ff] bg-[#f4f1ff] px-2 py-1 font-semibold text-[#6b55f7] disabled:opacity-50"
-                                    disabled={sendingFbSteps}
-                                    onClick={() => void sendFbSteps()}
-                                    type="button"
-                                 >
-                                    {sendingFbSteps ? 'Sending…' : fbStepsSentAt ? 'Send again' : 'Send Facebook steps'}
-                                 </button>
-                                 <span>
-                                    {fbStepsSentAt
-                                       ? `Links sent ${new Date(fbStepsSentAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}. Accept both on Facebook, then tick.`
-                                       : 'Not sent yet. Sends the two links to their Messenger.'}
-                                 </span>
+               {/* Right: the call itself, in the order it happens. */}
+               <div className="min-w-0 space-y-3">
+                  {!profile && !error ? <p className="mt-6 text-[#7a7a7a]">Loading…</p> : null}
+                  {profile ? (
+                     <>
+                        <FormCheckBar answers={answers} busy={rechecking} onRecheck={() => void recheck()} transcript={transcript} />
+                        <Step n={1} title="Confirm who they are" hint="read the brief back, fix anything that's wrong">
+                           <div className="space-y-2.5">
+                              <div className="grid grid-cols-2 gap-x-3 gap-y-2.5">
+                                 <Question n={1} title="Full name">
+                                    <input
+                                       className={inputClass}
+                                       onChange={(e) => set('fullName', e.target.value)}
+                                       placeholder="Their name"
+                                       value={answers.fullName ?? ''}
+                                    />
+                                    {checkLine('fullName')}
+                                 </Question>
+                                 <Question n={2} title="What do they do?">
+                                    <input
+                                       className={inputClass}
+                                       onChange={(e) => set('role', e.target.value)}
+                                       placeholder="Role / specialty"
+                                       value={answers.role ?? ''}
+                                    />
+                                    {checkLine('role')}
+                                 </Question>
+                                 <Question n={3} title="Facebook">
+                                    <input
+                                       className={inputClass}
+                                       onChange={(e) => set('facebookUrl', e.target.value)}
+                                       placeholder="facebook.com/…"
+                                       value={answers.facebookUrl ?? ''}
+                                    />
+                                    {checkLine('facebookUrl')}
+                                 </Question>
+                                 <Question n={4} title="TikTok">
+                                    <input
+                                       className={inputClass}
+                                       onChange={(e) => set('tiktokUrl', e.target.value)}
+                                       placeholder="tiktok.com/@…"
+                                       value={answers.tiktokUrl ?? ''}
+                                    />
+                                    {checkLine('tiktokUrl')}
+                                 </Question>
                               </div>
-                              {checkLine('addedEmma')}
+                              <Question n={5} title="How do they know us?" hint="referred by / where they saw us">
+                                 <label className="mb-2 flex items-center gap-2 text-[14px] font-semibold">
+                                    Referred by
+                                    <select
+                                       className={inputClass.replace('w-full', 'w-auto')}
+                                       onChange={(e) => void pickReferrer(e.target.value)}
+                                       value={referredBy}
+                                    >
+                                       <option value="">—</option>
+                                       {INFLUENCERS.map((i) => (
+                                          <option key={i.code} value={i.code}>
+                                             {i.label}
+                                          </option>
+                                       ))}
+                                       <option value="other">Someone else / nobody</option>
+                                    </select>
+                                 </label>
+                                 {referralMsg ? (
+                                    <p className={`mb-2 text-[13px] ${referralMsg.ok ? 'text-[#0f7b3f]' : 'text-[#b42318]'}`}>
+                                       {referralMsg.text}
+                                    </p>
+                                 ) : null}
+                                 <input
+                                    className={inputClass}
+                                    onChange={(e) => set('referral', e.target.value)}
+                                    placeholder="e.g. Saw a Facebook poster"
+                                    value={answers.referral ?? ''}
+                                 />
+                                 {checkLine('referral')}
+                              </Question>
                            </div>
-                        </Question>
-                        <div className="grid grid-cols-2 gap-x-3">
-                           <Question n={9} title="Notes">
-                              <textarea
-                                 className={`${inputClass} h-[76px] resize-none`}
-                                 onChange={(e) => (setNotes(e.target.value), touch())}
-                                 value={notes}
-                              />
-                           </Question>
-                           <Question n={10} title="Red flags" hint="if any">
-                              <textarea
-                                 className={`${inputClass} h-[76px] resize-none`}
-                                 onChange={(e) => (setRedFlags(e.target.value), touch())}
-                                 value={redFlags}
-                              />
-                           </Question>
-                        </div>
-                        <Question n={11} title="Lend to them?" hint="1 = reject · 5 = great">
-                           <div className="flex gap-1.5">
-                              {[1, 2, 3, 4, 5].map((n) => (
-                                 <button
-                                    aria-pressed={score === n}
-                                    className={`h-9 flex-1 rounded-md border text-[15px] font-semibold transition ${
-                                       score === n
-                                          ? 'border-[#6b55f7] bg-[#6b55f7] text-white'
-                                          : 'border-[#e3e3e3] bg-white text-[#37352f] hover:bg-[#fafafa]'
-                                    }`}
-                                    key={n}
-                                    onClick={() => void pickScore(n)}
-                                    type="button"
-                                 >
-                                    {n}
-                                 </button>
-                              ))}
+                        </Step>
+                        <Step n={2} title="The loan" hint="what it's for and how they cash out">
+                           <div className="space-y-2.5">
+                              <Question n={6} title="Loan today: how would they use it for an immediate win?">
+                                 <textarea
+                                    className={`${inputClass} h-[64px] resize-none`}
+                                    onChange={(e) => set('loanUse', e.target.value)}
+                                    placeholder="Their words"
+                                    value={answers.loanUse ?? ''}
+                                 />
+                                 {checkLine('loanUse')}
+                              </Question>
+                              <Question n={7} title="Local exchange they use">
+                                 <div className="flex flex-wrap gap-1.5">
+                                    {EXCHANGES.map((ex) => {
+                                       const on = (answers.exchanges ?? []).includes(ex);
+                                       return (
+                                          <button
+                                             aria-pressed={on}
+                                             className={`rounded-full border px-2.5 py-0.5 text-[12px] font-medium ${on ? 'border-[#6b55f7] bg-[#6b55f7] text-white' : 'border-[#e3e3e3] text-[#37352f] hover:bg-[#fafafa]'}`}
+                                             key={ex}
+                                             onClick={() => toggleExchange(ex)}
+                                             type="button"
+                                          >
+                                             {on ? '✓ ' : ''}
+                                             {ex}
+                                          </button>
+                                       );
+                                    })}
+                                 </div>
+                                 {checkLine('exchanges')}
+                              </Question>
                            </div>
-                           {rejectNote ? <p className="mt-1.5 whitespace-pre-line text-[13px] text-[#b42318]">{rejectNote}</p> : null}
-                        </Question>
-                        <Question n={12} title="Loan cap" hint="optional · asking above it needs a team override">
-                           <LoanCapBox userId={row.userId} />
-                        </Question>
-                     </div>
-                  </div>
-
-                  <TranscriptBlock transcript={transcript} />
+                        </Step>
+                        <Step n={3} title="Before you hang up" hint="tick each one as you cover it">
+                           <div className="space-y-2.5">
+                              <Question n={8} title="Before you finish, cover these">
+                                 <div className="space-y-1.5">
+                                    <Choice
+                                       letter="A"
+                                       onClick={() => set('showedCashInOut', !answers.showedCashInOut)}
+                                       selected={Boolean(answers.showedCashInOut)}
+                                    >
+                                       Showed how to cash out and repay ·{' '}
+                                       {CASH_VIDEOS.map((v, i) => (
+                                          <a
+                                             className="font-semibold text-[#6b55f7] underline"
+                                             href={v.url}
+                                             key={v.url}
+                                             onClick={(e) => e.stopPropagation()}
+                                             rel="noreferrer"
+                                             target="_blank"
+                                          >
+                                             {i ? ' · ' : ''}▶ {v.label}
+                                          </a>
+                                       ))}
+                                    </Choice>
+                                    {checkLine('showedCashInOut')}
+                                    <Choice
+                                       letter="B"
+                                       onClick={() => set('informedTerms', !answers.informedTerms)}
+                                       selected={Boolean(answers.informedTerms)}
+                                    >
+                                       Explained the repayment terms: a default is flagged right away and means a permanent ban across all
+                                       affiliated platforms
+                                    </Choice>
+                                    {checkLine('informedTerms')}
+                                    <Choice
+                                       letter="C"
+                                       onClick={() => set('addedEmma', !answers.addedEmma)}
+                                       selected={Boolean(answers.addedEmma)}
+                                    >
+                                       Added Emma Moodeng and Voices Against Unfair Loan on Facebook
+                                    </Choice>
+                                    <div className="flex items-center gap-2 pl-7 text-[11px] text-[#6f6f6f]">
+                                       <button
+                                          className="rounded-md border border-[#d9d4ff] bg-[#f4f1ff] px-2 py-1 font-semibold text-[#6b55f7] disabled:opacity-50"
+                                          disabled={sendingFbSteps}
+                                          onClick={() => void sendFbSteps()}
+                                          type="button"
+                                       >
+                                          {sendingFbSteps ? 'Sending…' : fbStepsSentAt ? 'Send again' : 'Send Facebook steps'}
+                                       </button>
+                                       <span>
+                                          {fbStepsSentAt
+                                             ? `Links sent ${new Date(fbStepsSentAt).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}. Accept both on Facebook, then tick.`
+                                             : 'Not sent yet. Sends the two links to their Messenger.'}
+                                       </span>
+                                    </div>
+                                    {checkLine('addedEmma')}
+                                 </div>
+                              </Question>
+                           </div>
+                        </Step>
+                        <Step n={4} title="Your decision" hint="score 1 rejects them; otherwise mark Showed up on the Calls screen" strong>
+                           <div className="space-y-2.5">
+                              <div className="grid grid-cols-2 gap-x-3">
+                                 <Question n={9} title="Notes">
+                                    <textarea
+                                       className={`${inputClass} h-[76px] resize-none`}
+                                       onChange={(e) => (setNotes(e.target.value), touch())}
+                                       value={notes}
+                                    />
+                                 </Question>
+                                 <Question n={10} title="Red flags" hint="if any">
+                                    <textarea
+                                       className={`${inputClass} h-[76px] resize-none`}
+                                       onChange={(e) => (setRedFlags(e.target.value), touch())}
+                                       value={redFlags}
+                                    />
+                                 </Question>
+                              </div>
+                              <Question n={11} title="Lend to them?" hint="1 = reject · 5 = great">
+                                 <div className="flex gap-1.5">
+                                    {[1, 2, 3, 4, 5].map((n) => (
+                                       <button
+                                          aria-pressed={score === n}
+                                          className={`h-9 flex-1 rounded-md border text-[15px] font-semibold transition ${
+                                             score === n
+                                                ? 'border-[#6b55f7] bg-[#6b55f7] text-white'
+                                                : 'border-[#e3e3e3] bg-white text-[#37352f] hover:bg-[#fafafa]'
+                                          }`}
+                                          key={n}
+                                          onClick={() => void pickScore(n)}
+                                          type="button"
+                                       >
+                                          {n}
+                                       </button>
+                                    ))}
+                                 </div>
+                                 {rejectNote ? <p className="mt-1.5 whitespace-pre-line text-[13px] text-[#b42318]">{rejectNote}</p> : null}
+                              </Question>
+                              <Question n={12} title="Loan cap" hint="optional · asking above it needs a team override">
+                                 <LoanCapBox userId={row.userId} />
+                              </Question>
+                           </div>
+                        </Step>
+                        <TranscriptBlock transcript={transcript} />
+                     </>
+                  ) : null}
                </div>
-            ) : null}
+            </div>
          </div>
          {askingProof ? (
             <ProofRequestComposer
