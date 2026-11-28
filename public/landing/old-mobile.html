@@ -999,6 +999,10 @@
   .stars { display: flex; justify-content: center; gap: 6px; margin: 20px 0 12px; }
   .stars svg { width: 30px; height: 30px; filter: drop-shadow(0 4px 8px rgba(96,16,210,0.28)); }
   .rating-line { font-family: var(--display); font-size: 20px; color: var(--heading); }
+  .proof-nums { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 22px; text-align: left; }
+  .proof-nums > div { border: 1.5px solid var(--heading); border-radius: 12px; background: #fff; padding: 12px 14px; display: grid; gap: 2px; }
+  .proof-nums b { font-family: var(--display); font-size: 24px; line-height: 1.1; color: var(--heading); }
+  .proof-nums span { font-size: 13px; font-weight: 600; color: var(--text-soft); line-height: 1.3; }
   .rating-sub { margin-top: 5px; font-size: 13px; font-weight: 600; color: #6010D2; }
 
   /* ---- Honest stars strip (empty on purpose) — we have no rating yet, so we
@@ -1081,9 +1085,9 @@
     margin: 26px 0 0; font-size: 11px; font-weight: 800;
     letter-spacing: 0.14em; text-transform: uppercase; color: #6010D2;
   }
-  .vidrow { display: flex; gap: 12px; margin-top: 14px; justify-content: center; }
+  .vidrow { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 14px; justify-content: center; }
   .vid {
-    position: relative; flex: 1; max-width: 158px; aspect-ratio: 9 / 14;
+    position: relative; flex: 1 1 40%; max-width: 158px; aspect-ratio: 9 / 14;
     border-radius: 18px; overflow: hidden; display: block; background: #17082F;
     box-shadow: 0 14px 30px rgba(64,10,140,0.22);
   }
@@ -1721,6 +1725,93 @@
     box-shadow: 0 10px 24px rgba(214, 158, 0, 0.35);
   }
   .cta:hover, html.mobile-professional .cta:hover { box-shadow: 0 14px 30px rgba(214, 158, 0, 0.45); }
+
+  /* First screen (2026-11-28): the deal, the steps and what you need, in the look George asked
+     for (Tilt's home page + the Figma reference board): near-black, big cream headline, yellow
+     button, a row of three numbers, and straight-edged portraits with a "+ $" tag and a
+     "Cash for …" caption. */
+  /* Whole page (2026-11-28): one palette to match the first screen. Near-black, warm paper,
+     yellow buttons. No lavender washes, no purple italic words, no all-caps tracked labels. */
+  html.mobile-professional {
+    --lavender: #6E4AD9; --purple: #2B1A52; --deep: #141216; --heading: #141216;
+    --surface: #FFFDF8; --surface-muted: #F6F2E8; --lavender-bg: #F6F2E8; --lavender-border: #E3DCCB;
+    --text-muted: #6B665C; --text-soft: #45413A; --panel: #E8E1D0; --card-tint: #FBF8F0;
+  }
+  html.mobile-professional .accent { font-family: inherit; font-style: normal; font-weight: inherit; letter-spacing: inherit; color: inherit; }
+  html.mobile-professional .label { font-size: 14px; font-weight: 700; letter-spacing: 0; text-transform: none; color: var(--text-muted); }
+  html.mobile-professional .rating-sub { color: var(--text-muted); }
+  /* Less black after the first screen (George, 2026-11-28): the promise section and the
+     closing section are light; only the first screen, header and footer stay dark. */
+  html.mobile-professional .sec-dark { background: var(--lavender-bg); }
+  html.mobile-professional .sec-dark .label,
+  html.mobile-professional .sec-dark .sec-lead,
+  html.mobile-professional .sec-dark .tile-cap { color: var(--text-soft); }
+  html.mobile-professional .sec-dark .sec-h,
+  html.mobile-professional .sec-dark .tile-h,
+  html.mobile-professional .sec-dark .sec-h .accent,
+  html.mobile-professional .sec-dark .tile-h .accent { color: var(--heading); }
+  html.mobile-professional .sec-dark .tile-panel.night { background: #fff; border-color: var(--lavender-border); }
+  html.mobile-professional .dark-dots button::after { background: var(--lavender-border); }
+  html.mobile-professional .dark-dots button.on::after { background: var(--heading); }
+  html.mobile-professional .f-cols h4 { color: rgba(255, 249, 236, 0.6); font-size: 13px; letter-spacing: 0; text-transform: none; }
+  html.mobile-professional .sec-final { background: #FFD43B; border-top: 0; }
+  html.mobile-professional .sec-final .sec-h { color: #141216; }
+  html.mobile-professional .sec-final .reassure { color: rgba(20, 18, 22, 0.75); }
+  html.mobile-professional .sec-final .cta { background: #141216; color: #FFF9EC; border-color: #141216; box-shadow: none; }
+  html.mobile-professional .stage-panel,
+  html.mobile-professional .stage-panel.dark { background: var(--panel); box-shadow: none; }
+  html.mobile-professional .vid { box-shadow: none; border-radius: 0; border: 1.5px solid var(--heading); }
+  html.mobile-professional .hero-top { background: #141216; }
+  html.mobile-professional .hero-copy { padding-top: 30px; text-align: center; }
+  .hero-eyebrow, html.mobile-professional .hero-eyebrow {
+    margin: 0 0 12px; font-size: 15px; font-weight: 700; letter-spacing: 0;
+    text-transform: none; color: #FFD43B;
+  }
+  html.mobile-professional .hero-top h1 {
+    max-width: 9ch; margin: 0 auto; color: #FFF9EC;
+    font-size: clamp(2.6rem, 12vw, 3.2rem); line-height: 0.96; letter-spacing: -0.04em;
+  }
+  .hero-top h1 .accent, html.mobile-professional .hero-top h1 .accent {
+    font-family: inherit; font-style: normal; font-weight: inherit; letter-spacing: inherit; color: inherit;
+  }
+  .hero-top .cta, html.mobile-professional .hero-top .cta {
+    display: flex; width: 100%; justify-content: center; margin-top: 22px;
+    border: 0; box-shadow: none;
+  }
+  .hero-promise { margin: 14px 0 0; font-size: 16px; font-weight: 600; line-height: 1.35; color: rgba(255, 249, 236, 0.85); }
+  .hero-promise b { font-weight: 800; color: #FFD43B; }
+  .hero-signin-note { margin: 12px 0 0; font-size: 13.5px; font-weight: 600; color: rgba(255, 249, 236, 0.7); }
+  .hero-signin-note a { color: #FFD43B; text-decoration: underline; text-underline-offset: 2px; }
+  .hero-deal { display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 6px; margin: 22px 0 0; }
+  .hero-deal > div { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .hero-deal b { font-family: var(--display); font-size: 23px; line-height: 1.1; color: #FFF9EC; }
+  .hero-deal .k { font-size: 12.5px; font-weight: 600; color: rgba(255, 249, 236, 0.7); }
+  .hero-deal .peso { font-size: 11.5px; font-weight: 600; color: rgba(255, 249, 236, 0.5); }
+  .hero-steps { list-style: none; width: fit-content; margin: 22px auto 0; display: grid; gap: 7px; text-align: left; }
+  .hero-steps li { display: flex; align-items: baseline; gap: 8px; font-size: 15px; font-weight: 600; color: #FFF9EC; }
+  .hero-steps li span { flex: none; font-weight: 800; color: #FFD43B; }
+  .hero-steps li span::after { content: "."; }
+  html.mobile-professional .hero-top .reassure { max-width: none; margin: 12px 0 0; font-size: 13px; color: rgba(255, 249, 236, 0.6); }
+  html.mobile-professional .sec-faces { padding: 30px 0 40px; }
+  html.mobile-professional .face-photo {
+    border: 1.5px solid #FFF9EC; border-radius: 0; background: #26222b; box-shadow: none;
+  }
+  html.mobile-professional .face-pill {
+    left: 50%; bottom: 14px; transform: translateX(-50%);
+    display: inline-flex; align-items: center; justify-items: initial; gap: 7px; min-width: 0;
+    border: 0; border-radius: 999px; background: #fff; padding: 5px 14px 5px 5px;
+    color: #141216; font-size: 15px; font-weight: 800; line-height: 1; white-space: nowrap; box-shadow: none;
+  }
+  html.mobile-professional .face-pill::before { content: none; }
+  html.mobile-professional .face-pill .ic {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 26px; height: 26px; border-radius: 50%; background: #FFD43B;
+  }
+  a.face-photo { display: block; color: inherit; text-decoration: none; }
+  html.mobile-professional .face-pill .ic { font-size: 11px; color: #141216; }
+  html.mobile-professional .face-cap { max-width: none; margin: 10px 2px 0; color: #FFF9EC; font-size: 15px; font-weight: 400; letter-spacing: 0; }
+  html.mobile-professional .face-cap b { font-weight: 800; }
+  html.mobile-professional .face-cap i { font-family: var(--serif); font-style: italic; font-weight: 500; }
 </style>
 <!-- wireboard tag -->
 <script type="text/javascript">
@@ -1824,13 +1915,33 @@
     <img class="cloud c3" src="/landing/assets/clouds/cloud-3.svg" alt="" />
     <div class="wrap">
       <div class="hero-copy">
+        <!-- First screen = the whole page for most visitors (Nov 2026: signed-out phone visitors
+             stay ~6s and almost never scroll). So the real deal, the steps and what you need
+             are all here. Terms match the app's fixed terms (src/lib/loanPricing.ts): 10%, 30 days. -->
+        <p class="label hero-eyebrow">Salary delayed? Bill due?</p>
         <h1>Small loans that <span class="accent">treat you right.</span></h1>
+        <!-- What borrowers tell us they are running from (George, 2026-11-28): loan sharks and online
+             lending apps (OLAs) that message their phone contacts. We never ask for contacts. -->
+        <p class="hero-promise">Not a loan shark. Not an OLA.<br><b>We never touch your phone contacts.</b></p>
+        <a class="cta" data-start href="/request-board"><span class="btn-label">Get your first loan <span class="arrow">→</span></span></a>
+        <p class="hero-signin-note">Already have an account? <a href="/sign-in">Sign in</a></p>
+        <div class="hero-deal" aria-label="Your first loan">
+          <div><b>$15</b><span class="k">You get</span><span class="peso" data-peso="15">≈ ₱855</span></div>
+          <div><b>$16.50</b><span class="k">You pay back</span><span class="peso" data-peso="16.5">≈ ₱941</span></div>
+          <div><b>30 days</b><span class="k">To pay</span></div>
+        </div>
         <!-- Word-weight pass 2026-07-12 (George: hero heavier than Tilt's ~13 words):
              CTA 6→4 words but keeps the "first loan" positioning (no generic
              "Get started" — labels stay concrete); reassure 3 fragments→2 —
              "no paperwork" cut here because the steps strip below carries it.
              Earlier critique (07-11) still applies: fragments only, no prose. -->
-        <a class="cta" href="/request-board"><span class="btn-label">Get your first loan <span class="arrow">→</span></span></a>
+        <ol class="hero-steps">
+          <li><span>1</span>Answer a few questions</li>
+          <li><span>2</span>Short video call</li>
+          <li><span>3</span>Money, usually the same day</li>
+          <li><span>4</span>Pay on time, borrow more: $25, then $35</li>
+        </ol>
+        <p class="reassure">You need: a job or income, Facebook, and a valid ID.</p>
       </div>
     </div>
   <!-- ===================== FACES STRIP (Tilt hero-carousel anatomy) =====================
@@ -1841,74 +1952,36 @@
     <div class="faces-list">
       <div class="faces-track">
       <div class="face-card">
-        <div class="face-photo">
-          <img src="/landing/assets/faces/seamstress.jpg" alt="Illustrative portrait: a seamstress working at her machine by a window" />
-          <span class="face-pill"><span class="ic"><img src="/landing/assets/icons/coins-gold.png" alt="" /></span>+ $15</span>
-        </div>
-        <p class="face-cap"><b>Cash</b> <i>for a school fee</i></p>
+        <!-- A frame from a real borrower's own video (same videos as the "Says who?" section). -->
+        <a class="face-photo" href="https://youtube.com/shorts/2ZmuK7Vq40k" target="_blank" rel="noreferrer" aria-label="Watch a real borrower's story on YouTube">
+          <img src="https://i.ytimg.com/vi/2ZmuK7Vq40k/oar2.jpg" alt="A real Moodeng borrower talking to the camera" style="object-position: 50% 35%; transform: scale(1.45)" />
+          <span class="face-pill"><span class="ic" aria-hidden="true">▶</span>Real borrower</span>
+        </a>
+        <p class="face-cap"><b>No harassment</b> <i>a safer way to borrow</i></p>
       </div>
       <div class="face-card">
-        <div class="face-photo">
-          <img src="/landing/assets/faces/rider.jpg" alt="Illustrative portrait: a delivery rider holding his helmet at sunset" loading="lazy" />
-          <span class="face-pill"><span class="ic"><img src="/landing/assets/icons/helmet.png" alt="" /></span>+ $30</span>
-        </div>
-        <p class="face-cap"><b>Cash</b> <i>for a new helmet</i></p>
+        <!-- A frame from a real borrower's own video (same videos as the "Says who?" section). -->
+        <a class="face-photo" href="https://youtube.com/shorts/DRAVbsiSPrA" target="_blank" rel="noreferrer" aria-label="Watch a real borrower's story on YouTube">
+          <img src="https://i.ytimg.com/vi/DRAVbsiSPrA/oar2.jpg" alt="A real Moodeng borrower talking to the camera" style="object-position: 50% 30%" />
+          <span class="face-pill"><span class="ic" aria-hidden="true">▶</span>Real borrower</span>
+        </a>
+        <p class="face-cap"><b>Single mom</b> <i>stress-free support</i></p>
       </div>
       <div class="face-card">
-        <div class="face-photo">
-          <img src="/landing/assets/faces/student.jpg" alt="Illustrative portrait: a college student holding her notebooks in a corridor" loading="lazy" />
-          <span class="face-pill"><span class="ic"><img src="/landing/assets/icons/grad-cap.png" alt="" /></span>+ $20</span>
-        </div>
-        <p class="face-cap"><b>Cash</b> <i>for enrollment week</i></p>
+        <!-- A frame from a real borrower's own video (same videos as the "Says who?" section). -->
+        <a class="face-photo" href="https://youtube.com/shorts/t8dnE2h4mNk" target="_blank" rel="noreferrer" aria-label="Watch a real borrower's story on YouTube">
+          <img src="https://i.ytimg.com/vi/t8dnE2h4mNk/oar2.jpg" alt="A real Moodeng borrower talking to the camera" style="object-position: 50% 30%" />
+          <span class="face-pill"><span class="ic" aria-hidden="true">▶</span>Real borrower</span>
+        </a>
+        <p class="face-cap"><b>“0% interest”</b> <i>was a lie at other apps</i></p>
       </div>
       <div class="face-card">
-        <div class="face-photo">
-          <img src="/landing/assets/faces/foodstall.jpg" alt="Illustrative portrait: a carinderia owner at her food stall" loading="lazy" />
-          <span class="face-pill"><span class="ic"><img src="/landing/assets/icons/cooking-pot.png" alt="" /></span>+ $35</span>
-        </div>
-        <p class="face-cap"><b>Cash</b> <i>to restock the carinderia</i></p>
-      </div>
-      <div class="face-card">
-        <div class="face-photo">
-          <img src="/landing/assets/faces/tricycle.jpg" alt="Illustrative portrait: a tricycle driver resting on his parked tricycle" loading="lazy" />
-          <span class="face-pill"><span class="ic"><img src="/landing/assets/icons/wrench.png" alt="" /></span>+ $25</span>
-        </div>
-        <p class="face-cap"><b>Cash</b> <i>for a surprise repair</i></p>
-      </div>
-      <div class="face-card">
-        <div class="face-photo">
-          <img src="/landing/assets/faces/bakery.jpg" alt="Illustrative portrait: a bakery owner with trays of fresh bread" loading="lazy" />
-          <span class="face-pill"><span class="ic"><img src="/landing/assets/icons/bread.png" alt="" /></span>+ $45</span>
-        </div>
-        <p class="face-cap"><b>Cash</b> <i>for flour and boxes</i></p>
-      </div>
-      <div class="face-card">
-        <div class="face-photo">
-          <img src="/landing/assets/faces/vendor.jpg" alt="Illustrative portrait: a market vendor standing at his produce stall" loading="lazy" />
-          <span class="face-pill"><span class="ic"><img src="/landing/assets/icons/basket.png" alt="" /></span>+ $40</span>
-        </div>
-        <p class="face-cap"><b>Cash</b> <i>to buy stock at dawn</i></p>
-      </div>
-      <div class="face-card">
-        <div class="face-photo">
-          <img src="/landing/assets/faces/snack-stall.jpg" alt="Illustrative portrait: a snack-stall owner at her tindahan counter" loading="lazy" />
-          <span class="face-pill"><span class="ic"><img src="/landing/assets/icons/price-tag.png" alt="" /></span>+ $30</span>
-        </div>
-        <p class="face-cap"><b>Cash</b> <i>for the supplier run</i></p>
-      </div>
-      <div class="face-card">
-        <div class="face-photo">
-          <img src="/landing/assets/faces/mechanic.jpg" alt="Illustrative portrait: a mechanic in his workshop" loading="lazy" />
-          <span class="face-pill"><span class="ic"><img src="/landing/assets/icons/toolbox.png" alt="" /></span>+ $50</span>
-        </div>
-        <p class="face-cap"><b>Cash</b> <i>for a new set of tools</i></p>
-      </div>
-      <div class="face-card">
-        <div class="face-photo">
-          <img src="/landing/assets/faces/sari-sari.jpg" alt="Illustrative portrait: a sari-sari store owner at her counter" loading="lazy" />
-          <span class="face-pill"><span class="ic"><img src="/landing/assets/icons/lock-dial-open.png" alt="" /></span>+ $60</span>
-        </div>
-        <p class="face-cap"><b>A higher limit</b> <i>to restock the store</i></p>
+        <!-- A frame from a real borrower's own video (same videos as the "Says who?" section). -->
+        <a class="face-photo" href="https://youtube.com/shorts/tJ4PtoiQOpU" target="_blank" rel="noreferrer" aria-label="Watch a real borrower's story on YouTube">
+          <img src="https://i.ytimg.com/vi/tJ4PtoiQOpU/oar2.jpg" alt="A real Moodeng borrower talking to the camera" style="object-position: 50% 30%" />
+          <span class="face-pill"><span class="ic" aria-hidden="true">▶</span>Real borrower</span>
+        </a>
+        <p class="face-cap"><b>Trapped</b> <i>by a loan app, until this</i></p>
       </div>
       </div>
     </div>
@@ -1920,8 +1993,8 @@
     <img class="cloud c2" src="/landing/assets/clouds/cloud-2.svg" alt="" />
     <div class="wrap">
       <p class="label">When payday feels far away</p>
-      <h2 class="hero-h">Sudden expense? There are people who <span class="accent">want to help.</span></h2>
-      <p class="hero-sub">Borrow small — <b>from $15</b> — and know the exact payback, <b>before you say yes.</b></p>
+      <h2 class="hero-h">Short before payday? There are people who <span class="accent">want to help.</span></h2>
+      <p class="hero-sub">Borrow <b>$15</b>, pay back <b>$16.50 in 30 days.</b> You see it before you say yes.</p>
 
       <!-- The money-moment phone moved into the steps pin below as beat 01
            (Fruitful correction 07-12: their explainer is a pinned scroll and
@@ -1950,8 +2023,8 @@
              one DOM node or the other is visible at a given width. -->
         <div class="steps-intro">
           <p class="label">When payday feels far away</p>
-          <h2 class="hero-h">Sudden expense? There are people who <span class="accent">want to help.</span></h2>
-          <p class="hero-sub">Borrow small — <b>from $15</b> — and know the exact payback, <b>before you say yes.</b></p>
+          <h2 class="hero-h">Short before payday? There are people who <span class="accent">want to help.</span></h2>
+          <p class="hero-sub">Borrow <b>$15</b>, pay back <b>$16.50 in 30 days.</b> You see it before you say yes.</p>
         </div>
         <div class="story-screens">
 
@@ -1970,13 +2043,13 @@
                         <!-- "Pay back" not "Get back" (George 07-12): get-back read like
                              money coming TO you — this chip is what you owe. -->
                         <div class="k">Pay back</div>
-                        <div class="v">$18</div>
-                        <span class="peso" data-peso="18">≈ ₱1,020</span>
+                        <div class="v">$16.50</div>
+                        <span class="peso" data-peso="16.5">≈ ₱941</span>
                       </div>
                       <div class="chip">
                         <div class="k">Due</div>
-                        <div class="v">Jul 30</div>
-                        <span class="peso">in 2 weeks</span>
+                        <div class="v">30 days</div>
+                        <span class="peso">one date, set up front</span>
                       </div>
                     </div>
                     <span class="card-cta">Continue with $15</span>
@@ -2084,13 +2157,13 @@
         <!-- One constant-height caption slot (all captions stacked, crossfaded)
              — the no-reflow half of the gap fix -->
         <div class="story-caps">
-          <span class="is-active">What you need and why — 30 seconds, no documents. That’s the whole application.</span>
-          <span>Not a company. Not an algorithm. Funders read your request and choose to help — usually within a few hours.</span>
+          <span class="is-active">A few questions, proof of income and a short video call — the first time only.</span>
+          <span>Not a company. Not an algorithm. Funders read your request and choose to help — usually within hours.</span>
           <!-- Provider names in TEXT only, never logos; both verified against
                the app's real withdraw picker (src/views/withdraw/Withdraw.tsx) -->
           <span>$15 lands ready to spend — move it to pesos through GCash, PDAX, or Coins.ph.</span>
           <!-- No numeric "+$5 every time" promise; "unlocks more" is the safe claim -->
-          <span>Pay back $18 on Jul 30, on time — your next loan unlocks $10 more.</span>
+          <span>Pay back $16.50 in 30 days, on time — your next loan unlocks $10 more.</span>
         </div>
         <!-- Desktop-only (≥1024px) pin closer: on mobile this CTA + USDC
              disclosure live in the standalone .sec-deal section below the
@@ -2105,7 +2178,7 @@
           <ul class="deal-list">
             <li><span class="ok">✓</span><span>Funds arrive as <b>USDC</b> — a digital dollar built to stay worth $1. <a href="#faq-usdc">What’s USDC?</a></span></li>
           </ul>
-          <a class="cta" href="/request-board"><span class="btn-label">Ask for what you need <span class="arrow">→</span></span></a>
+          <a class="cta" data-start href="/request-board"><span class="btn-label">Ask for what you need <span class="arrow">→</span></span></a>
           <p class="reassure">Start tiny, stress-free — your first loan is $15.</p>
         </div>
       </div>
@@ -2119,14 +2192,14 @@
            above, which folds this same content into the steps pin instead. -->
       <div class="deal-panel compact">
         <ul class="deal-list">
-          <li><span class="ok">✓</span><span>You’d give back <b>$18 on Jul 30</b> — shown before you confirm.</span></li>
+          <li><span class="ok">✓</span><span>You’d give back <b>$16.50 in 30 days</b> — shown before you confirm.</span></li>
           <!-- "No APR, no growing fees" checkmark removed 07-12 (panel got step 4;
                George: drop one line) — the claim lives on in story beats 3-5. -->
           <!-- UX critique 2026-07-11: USDC disclosed up front, not FAQ-only -->
           <li><span class="ok">✓</span><span>Funds arrive as <b>USDC</b> — a digital dollar built to stay worth $1. <a href="#faq-usdc">What’s USDC?</a></span></li>
         </ul>
         <div class="hero-cta-block">
-          <a class="cta" href="/request-board"><span class="btn-label">Ask for what you need <span class="arrow">→</span></span></a>
+          <a class="cta" data-start href="/request-board"><span class="btn-label">Ask for what you need <span class="arrow">→</span></span></a>
           <p class="reassure">Start tiny, stress-free — your first loan is $15.</p>
         </div>
       </div>
@@ -2177,10 +2250,10 @@
                 <img class="tile-obj" src="/landing/assets/icons/magnifier-coin.png" alt="" style="width:48px; top:2px" />
                 <div class="mini" style="padding-top:38px">
                   <div class="k">The whole deal</div>
-                  <div class="big">$15 → $18</div>
-                  <div class="tiny">set the moment you ask — it never grows</div>
+                  <div class="big">$15 → $16.50</div>
+                  <div class="tiny">the same for everyone — it never grows</div>
                   <div class="row" style="margin-top:10px"><span class="when">You ask</span><span class="amt">$15</span></div>
-                  <div class="row"><span class="when">You pay back</span><span class="amt">$18</span></div>
+                  <div class="row"><span class="when">You pay back</span><span class="amt">$16.50</span></div>
                   <div class="row"><span class="when">High APRs</span><span class="amt">none</span></div>
                 </div>
               </div>
@@ -2197,12 +2270,12 @@
                      now a labeled ledger shows time passing while the amount stays frozen. -->
                 <div class="mini" style="padding-top:40px">
                   <div class="k">Due date</div>
-                  <div class="big">Jul 30</div>
-                  <div class="tiny">set when you ask — it never moves</div>
+                  <div class="big">30 days</div>
+                  <div class="tiny">one date, set when you ask — it never moves</div>
                   <div class="k" style="margin-top:14px">What you owe</div>
-                  <div class="row" style="margin-top:6px"><span class="when">today</span><span class="amt">$18</span></div>
-                  <div class="row"><span class="when">next week</span><span class="amt">$18</span></div>
-                  <div class="row"><span class="when">on Jul 30</span><span class="amt">$18</span></div>
+                  <div class="row" style="margin-top:6px"><span class="when">today</span><span class="amt">$16.50</span></div>
+                  <div class="row"><span class="when">next week</span><span class="amt">$16.50</span></div>
+                  <div class="row"><span class="when">on day 30</span><span class="amt">$16.50</span></div>
                 </div>
               </div>
             </div>
@@ -2242,9 +2315,9 @@
         </ol>
         <!-- One constant-height caption slot — the no-reflow half of the gap fix -->
         <div class="story-caps">
-          <span class="is-active">Other apps’ numbers grow every week. Yours is set the moment you ask — $18, and it stays $18.</span>
+          <span class="is-active">Other apps’ numbers grow every week. Yours is set the moment you ask — $16.50, and it stays $16.50.</span>
           <span>The due date doesn’t move, and neither does the price — nothing is added while you sleep.</span>
-          <span>The extra $3 goes to the person who funded you — not to us. Our side adds nothing: no service fee, no processing fee, no hidden charges.</span>
+          <span>The extra $1.50 goes to the person who funded you — not to us. Our side adds nothing: no service fee, no processing fee, no hidden charges.</span>
         </div>
       </div>
     </div>
@@ -2256,111 +2329,9 @@
        audio stripped (autoplay is muted anyway). Baked-in phone chrome (status bar,
        browser bar) left UNCROPPED — it reads as a real recording, which is the point.
        Plays only while on screen (IO); data-saver & reduced-motion users get tap-to-play. -->
-  <section class="sec-demo">
-    <div class="wrap reveal">
-      <!-- heading BEFORE the video (UX pass 07-13): tell people what they're
-           looking at before it plays. label/h2/lead wrapped in .demo-copy
-           (2026-07-13) so desktop's 2-col grid treats them as ONE item — three
-           separately-placed items each auto-spanned their own implicit grid
-           row against the video's grid-row:1/4 span, and the extra height got
-           distributed BETWEEN the text rows instead of staying below them,
-           stretching the whole left column into visible gaps (George
-           screenshot). One wrapper + align-items:center centers the block as
-           a unit instead. -->
-      <div class="demo-copy">
-        <p class="label">Real demo</p>
-        <h2 class="sec-h">Watch a real loan <span class="accent">happen.</span></h2>
-        <p class="sec-lead">Set your terms, get funded, repay — recorded on the real app, start to finish.</p>
-      </div>
-      <div class="demo-phone" style="margin-top:28px">
-        <video class="demo-video" src="/landing/assets/demo/loan-demo-2.mp4"
-               poster="/landing/assets/demo/loan-demo-2-poster.jpg"
-               muted loop playsinline preload="none"
-               aria-label="Screen recording of a real Moodeng loan: browse requests, fund a borrower, and repay on the real app"></video>
-      </div>
-    </div>
-  </section>
+  <!-- The "Watch a real loan happen" recording was removed 2026-11-28: it shows the old request
+       form and old terms ($15 → $17, pick your own date). Put it back with a new recording. -->
 
-  <!-- ============= SHAPE YOUR ASK (DESKTOP-ONLY, v3 2026-07-13) =============
-       Interactive playground: reason chips + thank-you picker + due-date
-       picker rebuild the moment-card live. Mirrors the app's REAL flow (the
-       borrower sets their own terms — src request form has Set Repayment /
-       Set Repayment Date); no promo formula invented. First loan honestly
-       locked at $15. display:none below 1024px — this module doesn't exist
-       on mobile. -->
-  <section class="sec-build" aria-label="Shape your first ask">
-    <div class="wrap reveal">
-      <p class="label">Try it right here</p>
-      <h2 class="sec-h">Your ask, <span class="accent">your terms.</span></h2>
-      <p class="sec-lead">Other apps hand you their numbers. Here you write the ask — what it’s for, what you’ll give back as a thank-you, and when. Go ahead, shape one:</p>
-      <div class="build-controls">
-        <div class="build-group">
-          <span class="bg-label">What’s it for?</span>
-          <div class="build-chips" id="buildReasonChips">
-            <button type="button" class="on" data-emoji="🏥" data-reason="Medicine · can’t wait for payday">Medicine</button>
-            <button type="button" data-emoji="📚" data-reason="School fee · enrollment week">School fee</button>
-            <button type="button" data-emoji="🔧" data-reason="Repair · it broke at the worst time">A repair</button>
-            <button type="button" data-emoji="🧺" data-reason="Store stock · the supplier run">Store stock</button>
-            <button type="button" data-emoji="💡" data-reason="Bills · due before payday">Bills</button>
-          </div>
-        </div>
-        <div class="build-group">
-          <span class="bg-label">Your thank-you to the funder</span>
-          <div class="build-chips" id="buildPayChips">
-            <button type="button" data-pay="16">+ $1 · pay back $16</button>
-            <button type="button" class="on" data-pay="18">+ $3 · pay back $18</button>
-            <button type="button" data-pay="20">+ $5 · pay back $20</button>
-          </div>
-        </div>
-        <div class="build-group">
-          <span class="bg-label">When can you pay it back?</span>
-          <div class="build-chips" id="buildDueChips">
-            <button type="button" class="on" data-weeks="2">In 2 weeks</button>
-            <button type="button" data-weeks="3">In 3 weeks</button>
-            <button type="button" data-weeks="4">In a month</button>
-          </div>
-        </div>
-        <span class="build-amount">First loan: <b>$15</b> — that part’s fixed. Trust starts small, on purpose.</span>
-        <p class="build-note">Every choice on this card is yours in the real app too. <b>Funders read your terms and decide</b> — nothing is set by a formula, and nothing changes after you ask.</p>
-      </div>
-      <div class="build-stage">
-        <div class="stage">
-          <div class="stage-panel">
-            <div class="phone">
-              <div class="phone-head"><span class="back">‹</span> Your ask</div>
-              <div class="inner">
-                <div class="reason"><span class="emoji" id="buildEmoji">🏥</span><span id="buildReason">Medicine · can’t wait for payday</span></div>
-                <div class="statement">Real people can fund you <span class="amt-pill">$15</span></div>
-                <div class="terms-row">
-                  <div class="chip">
-                    <div class="k">Pay back</div>
-                    <div class="v" id="buildPay">$18</div>
-                    <span class="peso" id="buildPeso" data-peso="18">≈ ₱1,026</span>
-                  </div>
-                  <div class="chip">
-                    <div class="k">Due</div>
-                    <div class="v" id="buildDue">in 2 weeks</div>
-                    <span class="peso" id="buildDueHint">in 2 weeks</span>
-                  </div>
-                </div>
-                <span class="card-cta">Continue with $15</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="ladder-strip">
-          <span class="bg-label">Repay on time and it grows</span>
-          <div class="ladder" aria-label="Credit limit ladder: 15, 25, 35, then 45 dollars and up">
-            <div class="ladder-step"><div class="ladder-bar" style="height:28%"></div><span class="ladder-amt">$15</span></div>
-            <div class="ladder-step"><div class="ladder-bar" style="height:48%"></div><span class="ladder-amt">$25</span></div>
-            <div class="ladder-step"><div class="ladder-bar" style="height:72%"></div><span class="ladder-amt">$35</span></div>
-            <div class="ladder-step is-goal"><div class="ladder-bar" style="height:100%"></div><span class="ladder-amt">$45+</span></div>
-          </div>
-          <p class="ladder-cap">Every on-time repayment raises your limit — the record is yours.</p>
-        </div>
-      </div>
-    </div>
-  </section>
 
   <!-- ============= TRUST Q3: HOW WE TREAT YOU (DARK) ============= -->
   <section class="sec-dark">
@@ -2425,7 +2396,7 @@
             <div class="tile-inner">
               <div class="bubble">
                 <span class="from">Moodeng</span>
-                Hi! Your $18 is due Jul 30. If it’s a hard week, message us — we’ll figure it out together.
+                Hi! Your $16.50 is due in 3 days. If it’s a hard week, message us — we’ll figure it out together.
               </div>
             </div>
           </div>
@@ -2446,7 +2417,7 @@
             <div class="tile-inner">
               <img class="tile-obj" src="/icons/check-3d.png" alt="" style="height:54px; top:-32px" loading="lazy" />
               <div class="mini" style="padding-top:32px">
-                <div class="k">One quick ID check</div>
+                <div class="k">One ID check</div>
                 <div class="big">One real person</div>
                 <div class="tiny">funders see the ✓, never your documents</div>
               </div>
@@ -2455,7 +2426,7 @@
           <!-- reframed as a promise (UX pass 07-13) so all 4 cards share the
                "We never…" rhythm — was "You prove you're real once." -->
           <h3 class="tile-h">We <span class="accent">never</span> make you prove yourself twice.</h3>
-          <p class="tile-cap">Do it once and you’re done — funders trust you fast.</p>
+          <p class="tile-cap">Your ID, a few questions and a short call — the first time. Funders never see your documents.</p>
         </div>
 
       </div>
@@ -2496,22 +2467,16 @@
   <section class="sec-stars">
     <div class="wrap reveal">
       <h2 class="sec-h stars-h">You’re building your credit.<br>We’re building <span class="accent">our reputation.</span></h2>
-      <div class="stars-scene">
-        <img class="stars-hippo" src="/landing/assets/hippos/hippo-stars.png" alt="" />
-        <div class="stars-right">
-          <div class="stars-row" role="img" aria-label="Five empty stars — Moodeng has no rating yet">
-            <svg viewBox="0 0 24 24" class="star" aria-hidden="true"><path d="M12 2.6l2.85 5.9 6.5.9-4.7 4.55 1.12 6.45L12 19.3l-5.79 3.1 1.12-6.45-4.7-4.55 6.5-.9z"/></svg>
-            <svg viewBox="0 0 24 24" class="star" aria-hidden="true"><path d="M12 2.6l2.85 5.9 6.5.9-4.7 4.55 1.12 6.45L12 19.3l-5.79 3.1 1.12-6.45-4.7-4.55 6.5-.9z"/></svg>
-            <svg viewBox="0 0 24 24" class="star" aria-hidden="true"><path d="M12 2.6l2.85 5.9 6.5.9-4.7 4.55 1.12 6.45L12 19.3l-5.79 3.1 1.12-6.45-4.7-4.55 6.5-.9z"/></svg>
-            <svg viewBox="0 0 24 24" class="star" aria-hidden="true"><path d="M12 2.6l2.85 5.9 6.5.9-4.7 4.55 1.12 6.45L12 19.3l-5.79 3.1 1.12-6.45-4.7-4.55 6.5-.9z"/></svg>
-            <svg viewBox="0 0 24 24" class="star" aria-hidden="true"><path d="M12 2.6l2.85 5.9 6.5.9-4.7 4.55 1.12 6.45L12 19.3l-5.79 3.1 1.12-6.45-4.7-4.55 6.5-.9z"/></svg>
-          </div>
-          <!-- sub sits right under the stars, beside the hippo, so the row and
-               the caption read as one block (was centred far below, leaving a
-               big gap next to the tall hippo — George 2026-07-14). -->
-          <p class="stars-sub">We’re new, so these are still empty. <b>Only real borrowers get to fill them.</b></p>
-        </div>
+      <!-- Real numbers instead of five empty stars (George, 2026-11-28). Counted from the loans
+           table on 2026-11-28: funded, non-test, non-refunded loans. Update them by hand; keep the
+           "as of" line honest. -->
+      <div class="proof-nums">
+        <div><b>99</b><span>loans funded</span></div>
+        <div><b>57</b><span>people funded</span></div>
+        <div><b>42 of 43</b><span>loans due so far, paid back</span></div>
+        <div><b>22 min</b><span>typical wait to get funded</span></div>
       </div>
+      <p class="stars-sub" style="margin-top:16px">Small numbers, but real ones. <b>As of November 2026.</b></p>
     </div>
   </section>
 
@@ -2522,12 +2487,22 @@
       <p class="rating-sub" style="margin-top:14px">No paid actors. No stock photos. Real borrowers, on camera.</p>
       <div class="vidrow">
         <a class="vid" href="https://youtube.com/shorts/2ZmuK7Vq40k" target="_blank" rel="noreferrer">
-          <img src="https://i.ytimg.com/vi/2ZmuK7Vq40k/hqdefault.jpg" alt="Borrower video testimonial" loading="lazy" />
+          <img src="https://i.ytimg.com/vi/2ZmuK7Vq40k/oar2.jpg" alt="Borrower video testimonial" loading="lazy" style="transform: scale(1.32); transform-origin: 50% 88%" />
           <span class="play"><span>▶</span></span>
           <span class="tag">Real borrower</span>
         </a>
         <a class="vid" href="https://youtube.com/shorts/t8dnE2h4mNk" target="_blank" rel="noreferrer">
-          <img src="https://i.ytimg.com/vi/t8dnE2h4mNk/hqdefault.jpg" alt="Borrower video testimonial" loading="lazy" />
+          <img src="https://i.ytimg.com/vi/t8dnE2h4mNk/oar2.jpg" alt="Borrower video testimonial" loading="lazy" />
+          <span class="play"><span>▶</span></span>
+          <span class="tag">Real borrower</span>
+        </a>
+        <a class="vid" href="https://youtube.com/shorts/DRAVbsiSPrA" target="_blank" rel="noreferrer">
+          <img src="https://i.ytimg.com/vi/DRAVbsiSPrA/oar2.jpg" alt="Borrower video testimonial" loading="lazy" />
+          <span class="play"><span>▶</span></span>
+          <span class="tag">Real borrower</span>
+        </a>
+        <a class="vid" href="https://youtube.com/shorts/tJ4PtoiQOpU" target="_blank" rel="noreferrer">
+          <img src="https://i.ytimg.com/vi/tJ4PtoiQOpU/oar2.jpg" alt="Borrower video testimonial" loading="lazy" />
           <span class="play"><span>▶</span></span>
           <span class="tag">Real borrower</span>
         </a>
@@ -2608,7 +2583,7 @@
         <div class="honesty-row">
           <span class="h-ic"><img src="/landing/assets/icons/safe-moon.png" alt="" loading="lazy" /></span>
           <span class="h-q">Will the number grow while I sleep?</span>
-          <span class="h-a"><b>Here: never.</b> $18 today is $18 on the due date. No rollover, no overnight penalty.</span>
+          <span class="h-a"><b>Here: never.</b> $16.50 today is $16.50 on the due date. No rollover, no overnight penalty.</span>
         </div>
         <div class="honesty-row">
           <span class="h-ic"><img src="/landing/assets/icons/phone-shield.png" alt="" loading="lazy" /></span>
@@ -2642,6 +2617,14 @@
       <h3 class="tile-h">Questions people ask <span class="accent">us.</span></h3>
       <div class="faq-list">
         <details>
+          <summary>What do I need to get a loan?</summary>
+          <p class="a">A job or steady income, a Facebook account, and a valid ID. The first time, you answer a few questions, show proof of income (like a payslip), and join a short video call with our team. Not everyone is approved. If you are, you can ask for your first $15 right away.</p>
+        </details>
+        <details>
+          <summary>How fast is it?</summary>
+          <p class="a">Most people who are approved get their money the same day they sign up. It is not instant: the questions and the call come first.</p>
+        </details>
+        <details>
           <summary>What happens if I can’t pay on time?</summary>
           <p class="a">Message us — a real person answers, and we’ll figure it out together. What we <b>never</b> do: call your contacts, add surprise charges, or shame you.</p>
         </details>
@@ -2651,7 +2634,7 @@
         </details>
         <details>
           <summary>If you don’t charge fees, how do you make money?</summary>
-          <p class="a">The extra you pay back — like $3 on a $15 loan — goes to the <b>person who funded you</b>, as their thank-you for helping. Moodeng adds nothing on top of it: no service fee, no processing fee, no cut of your loan. That’s the whole model, and it’s on the screen before you say yes.</p>
+          <p class="a">The extra you pay back — $1.50 on a $15 loan — goes to the <b>person who funded you</b>, as their thank-you for helping. Moodeng adds nothing on top of it: no service fee, no processing fee, no cut of your loan. That’s the whole model, and it’s on the screen before you say yes.</p>
         </details>
         <details>
           <summary>Is this legit? Who’s behind Moodeng?</summary>
@@ -2680,7 +2663,7 @@
       <!-- hippo OFF for now (George 2026-07-05: all mascots off until placement is decided)
       <img class="hippo" src="/landing/assets/hippos/party.png" alt="" /> -->
       <h2 class="sec-h">Next time you’re short, you have somewhere to <span class="accent">turn.</span></h2>
-      <a class="cta" href="/request-board"><span class="btn-label">Start with your first small loan <span class="arrow">→</span></span></a>
+      <a class="cta" data-start href="/request-board"><span class="btn-label">Start with your first small loan <span class="arrow">→</span></span></a>
       <!-- UX critique 2026-07-11 + density pass: one line only under a CTA. The hero
            carries the fragment facts; down here the single human closer stays. -->
       <p class="reassure">Real people read your request and choose to help — usually within a few hours. You’ll know the moment someone says yes.</p>
@@ -2731,88 +2714,6 @@
 
 <script>
   if (document.documentElement.classList.contains("mobile-professional")) {
-    var facesTrack = document.querySelector(".faces-track");
-    if (facesTrack) {
-      facesTrack.innerHTML = `
-        <article class="face-card">
-          <div class="face-photo">
-            <img src="/landing/assets/life/school-fee.jpg" alt="Illustrative scene of a mother reviewing school papers at home" width="1086" height="1448" />
-            <span class="face-pill">$15</span>
-          </div>
-          <p class="face-cap">School fees this week</p>
-        </article>
-        <article class="face-card">
-          <div class="face-photo">
-            <img src="/landing/assets/life/rider-helmet.jpg" alt="Illustrative scene of a delivery rider fastening a protective helmet beside a scooter" width="1086" height="1448" loading="lazy" />
-            <span class="face-pill">$20</span>
-          </div>
-          <p class="face-cap">A safer helmet for work</p>
-        </article>
-        <article class="face-card">
-          <div class="face-photo">
-            <img src="/landing/assets/life/enrollment.jpg" alt="Illustrative scene of a student preparing enrollment papers in a campus office" width="1086" height="1448" loading="lazy" />
-            <span class="face-pill">$20</span>
-          </div>
-          <p class="face-cap">Enrollment before payday</p>
-        </article>
-        <article class="face-card">
-          <div class="face-photo">
-            <img src="/landing/assets/life/repair-shop.jpg" alt="Illustrative scene of a repair-shop owner working at a tool bench" width="1086" height="1448" loading="lazy" />
-            <span class="face-pill">$40</span>
-          </div>
-          <p class="face-cap">A repair that cannot wait</p>
-        </article>
-        <article class="face-card">
-          <div class="face-photo">
-            <img src="/landing/assets/life/store-restock.jpg" alt="Illustrative scene of a neighborhood shop owner restocking shelves at dawn" width="1086" height="1448" loading="lazy" />
-            <span class="face-pill">$60+</span>
-          </div>
-          <p class="face-cap">Stock for the next market day</p>
-        </article>
-      `;
-
-    }
-
-    document.querySelectorAll(".face-pill").forEach(function (pill) {
-      pill.childNodes.forEach(function (node) {
-        if (node.nodeType === Node.TEXT_NODE) node.textContent = node.textContent.replace("+ ", "");
-      });
-    });
-
-    var professionalCaptions = [
-      "School fees this week",
-      "A safer helmet for work",
-      "Enrollment before payday",
-      "A repair that cannot wait",
-      "Stock for the next market day"
-    ];
-
-    document.querySelectorAll(".face-cap").forEach(function (caption, index) {
-      caption.textContent = professionalCaptions[index % professionalCaptions.length];
-    });
-
-    // Keep the archived mobile page intact, but let the professional mobile
-    // route show the actual product for step 01 instead of an invented card.
-    var firstAskScreen = document.querySelector(".sec-steps .story-screen");
-    if (firstAskScreen) {
-      firstAskScreen.classList.add("story-screen-product", "story-screen-product-ask");
-      firstAskScreen.innerHTML = `
-        <div class="stage">
-          <div class="stage-panel product-stage">
-            <div class="product-shot-viewport">
-              <img
-                src="/landing/assets/app/step1-request-form-hd.png"
-                alt="Moodeng's Set Your Own Terms screen showing the loan amount, repayment amount, repayment date, and reason for borrowing"
-                width="853"
-                height="1844"
-                decoding="async"
-              />
-            </div>
-          </div>
-        </div>
-      `;
-    }
-
     var drawerPanel = document.querySelector("#drawer .drawer-panel");
     if (drawerPanel) {
       drawerPanel.innerHTML = `
@@ -3256,6 +3157,8 @@
   })();
 </script>
 <script src="/landing/first-touch.js?v=20261018-1" defer></script>
+<script src="/landing/start-links.js?v=20261128-1" defer></script>
+<script src="/landing/video-lightbox.js?v=20261128-1" defer></script>
 <script src="/landing/continue-banner.js?v=20261030-2" defer></script>
 <script src="/landing/open-in-browser.js?v=20261018-7" defer></script>
 <script src="https://web-iota-sage-38.vercel.app/widget.js" data-launcher="hidden" data-title="Moodeng Support" data-accent="#16a34a" defer></script>
