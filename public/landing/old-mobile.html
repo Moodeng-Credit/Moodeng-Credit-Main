@@ -2289,30 +2289,8 @@
        audio stripped (autoplay is muted anyway). Baked-in phone chrome (status bar,
        browser bar) left UNCROPPED — it reads as a real recording, which is the point.
        Plays only while on screen (IO); data-saver & reduced-motion users get tap-to-play. -->
-  <section class="sec-demo">
-    <div class="wrap reveal">
-      <!-- heading BEFORE the video (UX pass 07-13): tell people what they're
-           looking at before it plays. label/h2/lead wrapped in .demo-copy
-           (2026-07-13) so desktop's 2-col grid treats them as ONE item — three
-           separately-placed items each auto-spanned their own implicit grid
-           row against the video's grid-row:1/4 span, and the extra height got
-           distributed BETWEEN the text rows instead of staying below them,
-           stretching the whole left column into visible gaps (George
-           screenshot). One wrapper + align-items:center centers the block as
-           a unit instead. -->
-      <div class="demo-copy">
-        <p class="label">Real demo</p>
-        <h2 class="sec-h">Watch a real loan <span class="accent">happen.</span></h2>
-        <p class="sec-lead">Ask, get funded, repay — recorded on the real app, start to finish.</p>
-      </div>
-      <div class="demo-phone" style="margin-top:28px">
-        <video class="demo-video" src="/landing/assets/demo/loan-demo-2.mp4"
-               poster="/landing/assets/demo/loan-demo-2-poster.jpg"
-               muted loop playsinline preload="none"
-               aria-label="Screen recording of a real Moodeng loan: browse requests, fund a borrower, and repay on the real app"></video>
-      </div>
-    </div>
-  </section>
+  <!-- The "Watch a real loan happen" recording was removed 2026-11-28: it shows the old request
+       form and old terms ($15 → $17, pick your own date). Put it back with a new recording. -->
 
 
   <!-- ============= TRUST Q3: HOW WE TREAT YOU (DARK) ============= -->
@@ -3146,6 +3124,7 @@
 </script>
 <script src="/landing/first-touch.js?v=20261018-1" defer></script>
 <script src="/landing/start-links.js?v=20261128-1" defer></script>
+<script src="/landing/video-lightbox.js?v=20261128-1" defer></script>
 <script src="/landing/continue-banner.js?v=20261030-2" defer></script>
 <script src="/landing/open-in-browser.js?v=20261018-7" defer></script>
 <script src="https://web-iota-sage-38.vercel.app/widget.js" data-launcher="hidden" data-title="Moodeng Support" data-accent="#16a34a" defer></script>
