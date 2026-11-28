@@ -3352,9 +3352,10 @@ export interface AdminCallFace {
    proof?: { label: string; url: string; image: boolean }[];
 }
 
-// Storage links are signed for an hour; keep each person's for 45 min so pictures don't reload on
-// every list refresh, and only ask the server for people we don't have yet.
-const FACE_TTL_MS = 45 * 60_000;
+// Storage links are signed for an hour; keep each person's for 25 min so pictures don't reload on
+// every list refresh, and only ask the server for people we don't have yet. Screens ask again every
+// 26 min (CallFaces), so a link on screen is never older than about 51 min.
+const FACE_TTL_MS = 25 * 60_000;
 const callFaceCache = new Map<string, { at: number; face: AdminCallFace }>();
 
 export async function getAdminCallFaces(userIds: string[]): Promise<Record<string, AdminCallFace>> {

@@ -66,3 +66,74 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+/* Admin → Calls, soft-teal look (preview: /admin/calls?look=teal). The Calls screen's colors are
+   CSS variables; without this wrapper every class falls back to the purple admin look. */
+.calls-teal {
+   background: linear-gradient(135deg, #0b2a33 0%, #0d3a45 45%, #0f5563 100%);
+   --ct-card: #123f4a;
+   --ct-deep: #0e3640;
+   --ct-soft: #18505c;
+   --ct-line: #1d5562;
+   --ct-line2: #2a6c7a;
+   --ct-pill: #5fd6dd;
+   --ct-pill-hover: #7fe2e8;
+   --ct-pill-ink: #06343c;
+   --ct-ink: #eefbfc;
+   --ct-dim: #9fc6cc;
+   --ct-soft-ink: #bdf1f4;
+   --ct-faint: #7fa9b0;
+   --ct-gold-text: #ffd166;
+   --ct-gold-ink: #4a3600;
+   --ct-link: #9be7ff;
+   color: var(--ct-ink);
+}
+.calls-teal.calls-teal-light {
+   background: linear-gradient(135deg, #fde9e4 0%, #e6f6f7 30%, #bfe9ec 70%, #8fd8dc 100%);
+   --ct-card: #ffffff;
+   --ct-deep: #eef9fa;
+   --ct-soft: #e3f5f6;
+   --ct-line: #d3e9ec;
+   --ct-line2: #b9dde1;
+   --ct-pill: #0b677a;
+   --ct-pill-hover: #0e7d93;
+   --ct-pill-ink: #ffffff;
+   --ct-ink: #1d2b30;
+   --ct-dim: #5f7479;
+   --ct-soft-ink: #0b677a;
+   --ct-faint: #8aa0a5;
+   --ct-gold-text: #a86a00;
+   --ct-gold-ink: #4a3600;
+   --ct-good: #0f7a4d;
+   --ct-warn: #a85f00;
+   --ct-bad: #c0312b;
+   --ct-link: #0b6fa8;
+}
+.calls-teal [data-flip],
+.calls-teal aside {
+   box-shadow: 0 10px 30px rgba(11, 103, 122, 0.1);
+}
+/* Dark status tints read as stains on white cards: light versions. */
+.calls-teal-light .bg-emerald-950\/30,
+.calls-teal-light .bg-emerald-950\/50,
+.calls-teal-light .bg-emerald-950\/60 {
+   background-color: #e4f7ee;
+}
+.calls-teal-light .bg-amber-950\/60 {
+   background-color: #fff4dc;
+}
+.calls-teal-light .bg-red-950\/60 {
+   background-color: #fdeaea;
+}
+.calls-teal-light .hover\:bg-emerald-950:hover {
+   background-color: #e4f7ee;
+}
+.calls-teal-light .hover\:bg-red-950:hover {
+   background-color: #fdeaea;
+}
+.calls-teal-light .bg-amber-400\/20 {
+   background-color: #ffe9b8;
+}
+.calls-teal-light .bg-black\/30 {
+   background-color: #eef9fa;
+}
