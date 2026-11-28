@@ -1740,17 +1740,24 @@
   html.mobile-professional .accent { font-family: inherit; font-style: normal; font-weight: inherit; letter-spacing: inherit; color: inherit; }
   html.mobile-professional .label { font-size: 14px; font-weight: 700; letter-spacing: 0; text-transform: none; color: var(--text-muted); }
   html.mobile-professional .rating-sub { color: var(--text-muted); }
+  /* Less black after the first screen (George, 2026-11-28): the promise section and the
+     closing section are light; only the first screen, header and footer stay dark. */
+  html.mobile-professional .sec-dark { background: var(--lavender-bg); }
   html.mobile-professional .sec-dark .label,
-  html.mobile-professional .sec-dark .sec-lead { color: rgba(255, 249, 236, 0.7); }
+  html.mobile-professional .sec-dark .sec-lead,
+  html.mobile-professional .sec-dark .tile-cap { color: var(--text-soft); }
+  html.mobile-professional .sec-dark .sec-h,
+  html.mobile-professional .sec-dark .tile-h,
   html.mobile-professional .sec-dark .sec-h .accent,
-  html.mobile-professional .sec-dark .tile-h .accent { color: #FFD43B; }
-  html.mobile-professional .sec-dark .tile-panel.night { background: #211E25; border-color: rgba(255, 249, 236, 0.18); }
-  html.mobile-professional .sec-dark .tile-cap { color: rgba(255, 249, 236, 0.65); }
-  html.mobile-professional .dark-dots button.on::after { background: #FFD43B; }
+  html.mobile-professional .sec-dark .tile-h .accent { color: var(--heading); }
+  html.mobile-professional .sec-dark .tile-panel.night { background: #fff; border-color: var(--lavender-border); }
+  html.mobile-professional .dark-dots button::after { background: var(--lavender-border); }
+  html.mobile-professional .dark-dots button.on::after { background: var(--heading); }
   html.mobile-professional .f-cols h4 { color: rgba(255, 249, 236, 0.6); font-size: 13px; letter-spacing: 0; text-transform: none; }
-  html.mobile-professional .sec-final { background: #141216; border-top: 0; }
-  html.mobile-professional .sec-final .sec-h { color: #FFF9EC; }
-  html.mobile-professional .sec-final .reassure { color: rgba(255, 249, 236, 0.65); }
+  html.mobile-professional .sec-final { background: #FFD43B; border-top: 0; }
+  html.mobile-professional .sec-final .sec-h { color: #141216; }
+  html.mobile-professional .sec-final .reassure { color: rgba(20, 18, 22, 0.75); }
+  html.mobile-professional .sec-final .cta { background: #141216; color: #FFF9EC; border-color: #141216; box-shadow: none; }
   html.mobile-professional .stage-panel,
   html.mobile-professional .stage-panel.dark { background: var(--panel); box-shadow: none; }
   html.mobile-professional .vid { box-shadow: none; border-radius: 0; border: 1.5px solid var(--heading); }

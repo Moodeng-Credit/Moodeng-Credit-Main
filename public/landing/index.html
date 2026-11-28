@@ -110,6 +110,22 @@
          html[data-landing-version='2'] #main-content > .fact-strip.numbers-strip,
          html[data-landing-version='2'] #main-content > .life-section { display: block; }
          html[data-landing-version='2'] .numbers-strip .fact-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+         /* MAKE-style app block */
+         .ask-section.app-show, html[data-landing-version] #main-content > .ask-section.app-show { padding-block: 84px 96px; }
+         .app-show-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 48px; align-items: center; }
+         @media (min-width: 900px) { .app-show-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+         .app-show-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; font-weight: 600; }
+         .app-show-list li { display: flex; gap: 10px; align-items: baseline; }
+         .app-show-list li::before { content: '✓'; flex: none; font-weight: 900; }
+         .button.app-show-button { border: 0; background: #ffd43b; color: #141216; }
+         .app-show-phones { position: relative; display: flex; justify-content: center; align-items: flex-start; min-height: 600px; }
+         .app-phone { margin: 0; overflow: hidden; border: 10px solid #141216; border-radius: 40px; background: #fff; box-shadow: 0 30px 60px rgb(20 18 22 / 0.18); }
+         .app-phone img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top; }
+         .app-phone-a { width: 290px; height: 580px; transform: rotate(-4deg); z-index: 2; }
+         .app-phone-b { width: 250px; height: 500px; margin: 90px 0 0 -40px; transform: rotate(5deg); background: #fff8ec; }
+         .app-phone-b img { object-fit: contain; object-position: top; }
+         /* Less black after the first screen (George, 2026-11-28): these two sections are light now. */
+         .deal-section, .final-cta { --night-text: var(--ink-soft); background: var(--canvas); color: var(--ink); }
          .display em, .section-title em, .page-title em { color: inherit; font-family: inherit; font-style: normal; font-weight: inherit; letter-spacing: inherit; }
          .eyebrow { color: var(--muted); font-size: 1rem; font-weight: 700; letter-spacing: 0; text-transform: none; }
          html[data-landing-version='2'] #main-content > .hero-home { background: #141216; color: #fff9ec; }
@@ -374,114 +390,29 @@
             </div>
          </section>
 
-         <section class="ask-section" aria-label="Try Moodeng">
-            <div class="container">
-               <section class="ask-playground" aria-labelledby="ask-builder-title" aria-describedby="ask-builder-note">
-                  <div class="ask-shell">
-                     <header class="ask-topbar">
-                        <div class="ask-topbar-copy">
-                           <div class="ask-title-lockup">
-                              <img src="/landing/assets/brand/moodeng-logo-small.png" alt="" width="36" height="36" />
-                              <span><small>Try it here</small><strong id="ask-builder-title">See your first loan</strong></span>
-                           </div>
-                           <p class="ask-topbar-note">Pick what it is for. The deal is the same for everyone.</p>
-                        </div>
-                        <span class="ask-fixed"><b>$15</b> fixed</span>
-                     </header>
-
-                     <div class="ask-workspace">
-                        <div class="ask-controls">
-                           <fieldset class="ask-choice" data-ask-group>
-                              <legend><span>1</span> What is it for?</legend>
-                              <div class="ask-chips">
-                                 <button
-                                    class="ask-chip"
-                                    type="button"
-                                    aria-pressed="true"
-                                    data-ask-reason="Medicine before payday"
-                                    data-ask-icon="#icon-medical"
-                                 >
-                                    <svg class="site-icon" aria-hidden="true"><use href="#icon-medical"></use></svg><span>Medicine</span>
-                                 </button>
-                                 <button
-                                    class="ask-chip"
-                                    type="button"
-                                    aria-pressed="false"
-                                    data-ask-reason="Bills due before payday"
-                                    data-ask-icon="#icon-bill"
-                                 >
-                                    <svg class="site-icon" aria-hidden="true"><use href="#icon-bill"></use></svg><span>Bills</span>
-                                 </button>
-                                 <button
-                                    class="ask-chip"
-                                    type="button"
-                                    aria-pressed="false"
-                                    data-ask-reason="A repair that cannot wait"
-                                    data-ask-icon="#icon-repair"
-                                 >
-                                    <svg class="site-icon" aria-hidden="true"><use href="#icon-repair"></use></svg><span>A repair</span>
-                                 </button>
-                                 <button
-                                    class="ask-chip"
-                                    type="button"
-                                    aria-pressed="false"
-                                    data-ask-reason="Stock for the next selling day"
-                                    data-ask-icon="#icon-store"
-                                 >
-                                    <svg class="site-icon" aria-hidden="true"><use href="#icon-store"></use></svg><span>Store stock</span>
-                                 </button>
-                              </div>
-                           </fieldset>
-
-                           <!-- Fixed terms since 2026-11-25 (src/lib/loanPricing.ts): 10% for 30 days, nothing to choose. -->
-                           <fieldset class="ask-choice">
-                              <legend><span>2</span> The deal</legend>
-                              <p style="margin: 0">Pay back <b>$16.50</b> in <b>30 days</b>. The extra $1.50 goes to the person who funds you.</p>
-                           </fieldset>
-
-                           <fieldset class="ask-choice">
-                              <legend><span>3</span> What you need</legend>
-                              <p style="margin: 0">A job or income, Facebook, and a valid ID. The first time: a few questions and a short video call.</p>
-                           </fieldset>
-                        </div>
-
-                        <div class="ask-preview" aria-live="polite">
-                           <p class="ask-preview-kicker">Your ask</p>
-                           <div class="ask-preview-reason">
-                              <span class="ask-preview-icon" aria-hidden="true"
-                                 ><svg class="site-icon"><use data-ask-preview-icon href="#icon-medical"></use></svg></span
-                              >
-                              <span data-ask-preview-reason>Medicine before payday</span>
-                           </div>
-                           <p class="ask-preview-title">Real people can fund your <strong>$15</strong></p>
-                           <dl class="ask-terms">
-                              <div>
-                                 <dt>You receive</dt>
-                                 <dd>$15</dd>
-                              </div>
-                              <div>
-                                 <dt>Pay back</dt>
-                                 <dd data-ask-preview-payback>$16.50</dd>
-                              </div>
-                              <div>
-                                 <dt>Due</dt>
-                                 <dd data-ask-preview-due>In 30 days</dd>
-                              </div>
-                              <div class="ask-fee">
-                                 <dt>Moodeng fee</dt>
-                                 <dd>$0</dd>
-                              </div>
-                           </dl>
-                           <a class="button ask-continue" data-start href="/request-board"
-                              >Get your first loan <span class="arrow" aria-hidden="true">→</span></a
-                           >
-                           <p class="ask-disclosure" id="ask-builder-note">
-                              Interactive example. You choose the terms. Funders decide whether to help.
-                           </p>
-                        </div>
-                     </div>
-                  </div>
-               </section>
+         <!-- The app, shown the way MAKE by KBank shows theirs: copy on one side, real screens on the other.
+              Replaces the "See your first loan" widget (2026-11-28). Screens are real app screenshots. -->
+         <section class="ask-section app-show" aria-labelledby="app-show-title">
+            <div class="container app-show-grid">
+               <div class="app-show-copy stack-md">
+                  <p class="eyebrow">In the app</p>
+                  <h2 class="section-title" id="app-show-title">Your whole loan on one screen.</h2>
+                  <p class="lead">Type $15. See $16.50 and the date before you send. That is the whole form.</p>
+                  <ul class="app-show-list">
+                     <li>We never ask for your contacts, photos or messages</li>
+                     <li>A real person answers you on Messenger</li>
+                     <li>Pay on time and your limit goes up</li>
+                  </ul>
+                  <a class="button app-show-button" data-start href="/request-board">Get your first loan <span class="arrow" aria-hidden="true">→</span></a>
+               </div>
+               <div class="app-show-phones" aria-hidden="false">
+                  <figure class="app-phone app-phone-a">
+                     <img src="/landing/assets/app/real-loan-terms.png" alt="The Moodeng loan form: borrow 15, you pay back 16.50, with the due date" width="780" height="1458" loading="lazy" />
+                  </figure>
+                  <figure class="app-phone app-phone-b">
+                     <img src="/landing/assets/app/real-paid.png" alt="The Moodeng app after repaying: You are paid, new limit" width="750" height="700" loading="lazy" />
+                  </figure>
+               </div>
             </div>
          </section>
 
@@ -604,39 +535,39 @@
 
                         <article class="deal-panel deal-panel-product" data-deal-panel>
                            <div class="deal-product-copy">
-                              <p class="deal-panel-label">What funders see</p>
-                              <h3>A person reads the same deal.</h3>
-                              <p class="deal-product-note">Your purpose, amount, expected return, timing, and repayment record appear together.</p>
+                              <p class="deal-panel-label">After you ask</p>
+                              <h3>Real people read your request.</h3>
+                              <p class="deal-product-note">We pass it to our lenders. One of them chooses to fund it.</p>
                               <span class="deal-state-pill"><i aria-hidden="true"></i> Funding is never guaranteed</span>
                            </div>
                            <figure class="deal-product-shot deal-product-shot-board">
                               <img
-                                 src="/landing/assets/app/example-board.png"
-                                 alt="Example of the Moodeng request board: what each request asks for, pays back, and when"
+                                 src="/landing/assets/app/real-request-sent-screen.png"
+                                 alt="The Moodeng app after you ask: Request sent, with the team who passes it to lenders"
                                  width="853"
                                  height="1844"
                                  loading="lazy"
                               />
-                              <figcaption>Example request board</figcaption>
+                              <figcaption>From the app</figcaption>
                            </figure>
                         </article>
 
                         <article class="deal-panel deal-panel-product" data-deal-panel>
                            <div class="deal-product-copy">
                               <p class="deal-panel-label">Cash out your way</p>
-                              <h3>Choose a route to pesos.</h3>
+                              <h3>Send it to your GCash.</h3>
                               <p class="deal-product-note">GCash, PDAX, Binance or Moneybees. You pick the app you already use.</p>
                               <span class="deal-state-pill"><i aria-hidden="true"></i> Provider terms are shown before you continue</span>
                            </div>
-                           <figure class="deal-product-shot deal-product-shot-routes">
+                           <figure class="deal-product-shot deal-product-shot-sent">
                               <img
-                                 src="/landing/assets/app/example-cashout-routes.png"
-                                 alt="Example of the Moodeng cash-out screen showing GCash, PDAX and Binance"
+                                 src="/landing/assets/app/real-sent-screen-wide.png"
+                                 alt="The Moodeng app: Sent, 15 USDC to GCrypto, lands in a few minutes"
                                  width="956"
                                  height="1645"
                                  loading="lazy"
                               />
-                              <figcaption>Example cash-out screen</figcaption>
+                              <figcaption>From the app</figcaption>
                            </figure>
                         </article>
 
@@ -655,13 +586,13 @@
                            </div>
                            <figure class="deal-product-shot deal-product-shot-repay">
                               <img
-                                 src="/landing/assets/app/example-repay.png"
-                                 alt="Example of the Moodeng repay screen: pay $16.50, then a bigger next loan"
+                                 src="/landing/assets/app/real-paid-screen.png"
+                                 alt="The Moodeng app after repaying: You are paid, with a new higher limit"
                                  width="853"
                                  height="1844"
                                  loading="lazy"
                               />
-                              <figcaption>Example repay screen</figcaption>
+                              <figcaption>From the app</figcaption>
                            </figure>
                         </article>
                      </div>
@@ -699,14 +630,14 @@
                      <figure class="deal-mobile-scene">
                         <div class="deal-mobile-device">
                            <img
-                              src="/landing/assets/app/example-board.png"
+                              src="/landing/assets/app/real-request-sent-screen.png"
                               alt="The current Moodeng funding board showing open requests"
                               width="853"
                               height="1844"
                               loading="lazy"
                            />
                         </div>
-                        <figcaption>Example request board. Funding is not guaranteed.</figcaption>
+                        <figcaption>From the app. Funding is not guaranteed.</figcaption>
                      </figure>
                   </li>
                   <li data-deal-step>
@@ -718,14 +649,14 @@
                      <figure class="deal-mobile-scene">
                         <div class="deal-mobile-device">
                            <img
-                              src="/landing/assets/app/example-cashout.png"
-                              alt="Example of the Moodeng cash-out screen: $15 to GCash"
+                              src="/landing/assets/app/real-sent-screen.png"
+                              alt="The Moodeng app: Sent, 15 USDC to GCrypto, lands in a few minutes"
                               width="853"
                               height="1844"
                               loading="lazy"
                            />
                         </div>
-                        <figcaption>Example cash-out screen</figcaption>
+                        <figcaption>From the app</figcaption>
                      </figure>
                   </li>
                   <li data-deal-step>
@@ -736,7 +667,7 @@
                      <figure class="deal-mobile-scene">
                         <div class="deal-mobile-device">
                            <img
-                              src="/landing/assets/app/example-repay.png"
+                              src="/landing/assets/app/real-paid-screen.png"
                               alt="The current Moodeng repayment screen"
                               width="853"
                               height="1844"
@@ -748,7 +679,7 @@
                            ><span><b>$25</b><small>More history</small></span><i aria-hidden="true"></i
                            ><span><b>$35+</b><small>Longer record</small></span>
                         </div>
-                        <figcaption>Example repay screen.</figcaption>
+                        <figcaption>From the app.</figcaption>
                      </figure>
                   </li>
                </ul>
