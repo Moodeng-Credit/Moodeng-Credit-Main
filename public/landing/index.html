@@ -126,7 +126,9 @@
             background: none; color: #fff9ec; padding: 8px 0 0; font-size: 0.95rem; font-weight: 400; white-space: nowrap; box-shadow: none;
          }
          html[data-landing-version='2'] .hero-home .tilt-hero-video a { display: block; width: 100%; height: 100%; }
-         html[data-landing-version='2'] .hero-home .tilt-hero-video img { object-fit: cover; object-position: 50% 30%; }
+         /* Phone videos are tall: keep these two slots portrait so the whole face shows. */
+         html[data-landing-version='2'] .hero-home .tilt-hero-video { width: clamp(150px, 12.5vw, 184px); }
+         html[data-landing-version='2'] .hero-home .tilt-hero-video img { object-fit: cover; object-position: 50% 40%; }
          html[data-landing-version='2'] .hero-home .tilt-hero-video .tilt-hero-amount { pointer-events: none; }
          html[data-landing-version='2'] .hero-home .tilt-hero-photo figcaption b { font-weight: 800; }
          html[data-landing-version='2'] .hero-home .tilt-hero-photo figcaption i { font-family: Georgia, 'Times New Roman', serif; }
@@ -323,8 +325,8 @@
                </figure>
                <figure class="tilt-hero-photo tilt-hero-photo-repair tilt-hero-video">
                   <!-- A frame from a real borrower's own video (same videos as the Borrower stories section). -->
-                  <a href="https://youtube.com/shorts/2ZmuK7Vq40k" target="_blank" rel="noreferrer" aria-label="Watch a real borrower's story on YouTube">
-                     <img src="https://i.ytimg.com/vi/2ZmuK7Vq40k/oar2.jpg" alt="A real Moodeng borrower talking to the camera" width="405" height="720" />
+                  <a href="https://youtube.com/shorts/DRAVbsiSPrA" target="_blank" rel="noreferrer" aria-label="Watch a real borrower's story on YouTube">
+                     <img src="https://i.ytimg.com/vi/DRAVbsiSPrA/oar2.jpg" alt="A real Moodeng borrower talking to the camera" width="405" height="720" />
                   </a>
                   <span class="tilt-hero-amount"
                      ><span class="tilt-hero-amount-icon" aria-hidden="true"
@@ -335,8 +337,8 @@
                </figure>
                <figure class="tilt-hero-photo tilt-hero-photo-stock tilt-hero-video">
                   <!-- A frame from a real borrower's own video (same videos as the Borrower stories section). -->
-                  <a href="https://youtube.com/shorts/t8dnE2h4mNk" target="_blank" rel="noreferrer" aria-label="Watch a real borrower's story on YouTube">
-                     <img src="https://i.ytimg.com/vi/t8dnE2h4mNk/oar2.jpg" alt="A real Moodeng borrower talking to the camera" width="405" height="720" />
+                  <a href="https://youtube.com/shorts/tJ4PtoiQOpU" target="_blank" rel="noreferrer" aria-label="Watch a real borrower's story on YouTube">
+                     <img src="https://i.ytimg.com/vi/tJ4PtoiQOpU/oar2.jpg" alt="A real Moodeng borrower talking to the camera" width="405" height="720" />
                   </a>
                   <span class="tilt-hero-amount"
                      ><span class="tilt-hero-amount-icon" aria-hidden="true"
@@ -831,7 +833,8 @@
                         aria-label="Watch a real borrower story on YouTube"
                      >
                         <img
-                           src="https://i.ytimg.com/vi/2ZmuK7Vq40k/hqdefault.jpg"
+                           src="https://i.ytimg.com/vi/2ZmuK7Vq40k/oar2.jpg"
+                           style="transform: scale(1.32); transform-origin: 50% 88%"
                            alt="Moodeng borrower sharing their experience"
                            loading="lazy"
                         />
@@ -845,10 +848,30 @@
                         aria-label="Watch another real borrower story on YouTube"
                      >
                         <img
-                           src="https://i.ytimg.com/vi/t8dnE2h4mNk/hqdefault.jpg"
+                           src="https://i.ytimg.com/vi/t8dnE2h4mNk/oar2.jpg"
                            alt="Moodeng borrower explaining their loan experience"
                            loading="lazy"
                         />
+                        <span class="play" aria-hidden="true">▶</span><span class="label">Real borrower</span>
+                     </a>
+                     <a
+                        class="video-card"
+                        href="https://youtube.com/shorts/DRAVbsiSPrA"
+                        target="_blank"
+                        rel="noreferrer"
+                        aria-label="Watch a real borrower story on YouTube"
+                     >
+                        <img src="https://i.ytimg.com/vi/DRAVbsiSPrA/oar2.jpg" alt="A single mom sharing how a friend recommended Moodeng" loading="lazy" />
+                        <span class="play" aria-hidden="true">▶</span><span class="label">Real borrower</span>
+                     </a>
+                     <a
+                        class="video-card"
+                        href="https://youtube.com/shorts/tJ4PtoiQOpU"
+                        target="_blank"
+                        rel="noreferrer"
+                        aria-label="Watch a real borrower story on YouTube"
+                     >
+                        <img src="https://i.ytimg.com/vi/tJ4PtoiQOpU/oar2.jpg" alt="A borrower describing her experience with another lending app" loading="lazy" />
                         <span class="play" aria-hidden="true">▶</span><span class="label">Real borrower</span>
                      </a>
                   </div>
