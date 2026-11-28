@@ -16,7 +16,7 @@ type SupabaseClient = any;
 export const BOOK_CALL_URL = CONNECT_URL;
 
 // The taps people miss on the way: the goal sentence, "I'll be ready ✓", then Continue.
-const HOW_TO = 'Type what the loan is for, tap "Next: book your call", tap "I\'ll be ready ✓", then pick a time and tap Continue.';
+export const HOW_TO = 'Type what the loan is for, tap "Next: book your call", tap "I\'ll be ready ✓", then pick a time and tap Continue.';
 
 export type BookCallKind = 'good_fit' | 'reminder';
 

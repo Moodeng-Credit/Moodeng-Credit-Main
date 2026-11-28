@@ -8,6 +8,7 @@ import { collectGateDigest, formatGateDigest } from '../_shared/gateDigest.ts';
 import { runBookCallNudges } from '../_shared/bookCallNudge.ts';
 import { runPrescreenStartNudges } from '../_shared/prescreenStartNudge.ts';
 import { cancelUpcomingCall } from '../_shared/callCancel.ts';
+import { cancelAndOfferRebook } from '../_shared/callRebook.ts';
 import { approveUser, BORROWER_COLUMNS, decideRejectFollowUp, getAdminChatId, ghostUser, notifyAdminsOfRequest, notifyBorrower, PAGE_INBOX_URL, rejectUser, REQUEST_COLUMNS, shortId, SITE_URL, unghostUser, who } from '../_shared/loanAccess.ts';
 import { needsPreKycGate } from '../_shared/preKycGate.ts';
 import { isIdStep, loadIdStatus, notifyIdNextStep, sendIdTelegram } from '../_shared/idTrack.ts';
@@ -408,6 +409,14 @@ serve(async (req) => {
       }
       if (body.action === 'id_step') return await idStep(req, svc, body);
       if (body.action === 'cancel_rejected_calls') return await cancelRejectedCalls(req, svc);
+      if (body.action === 'rebook_call') {
+         // Cancel their booked call and send the booking link again (they picked the wrong time).
+         // offer: false = cancel only, nothing sent to them.
+         if (!(await isInternalRequest(svc, req))) return json({ ok: false, error: 'unauthorized' }, 401);
+         if (typeof body.user_id !== 'string') return json({ ok: false, error: 'user_id required' }, 400);
+         const by = typeof body.by === 'string' && body.by.trim() ? body.by.trim().slice(0, 60) : 'team';
+         return json(await cancelAndOfferRebook(svc, body.user_id, by, { offer: body.offer !== false }));
+      }
       if (body.action === 'reject_user') {
          if (!(await isInternalRequest(svc, req))) return json({ ok: false, error: 'unauthorized' }, 401);
          if (typeof body.user_id !== 'string') return json({ ok: false, error: 'user_id required' }, 400);
