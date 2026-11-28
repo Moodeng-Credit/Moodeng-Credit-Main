@@ -660,7 +660,7 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
                               onClick={() => jumpTo(entry.row)}
                               className={`flex w-full items-baseline gap-2 rounded-lg px-2 py-1.5 text-left hover:bg-[#2a1453] ${entry.state === 'now' ? 'bg-emerald-950/50' : entry.state === 'next' ? 'bg-[#2a1453]' : ''}`}
                            >
-                              <span className={`w-[4.25rem] shrink-0 text-sm font-black tabular-nums ${done ? 'text-[#6f6385]' : 'text-white'}`}>
+                              <span className={`w-[4.75rem] shrink-0 whitespace-nowrap text-sm font-black tabular-nums ${done ? 'text-[#6f6385]' : 'text-white'}`}>
                                  {formatClock(entry.startMs)}
                               </span>
                               <span className="min-w-0 flex-1">
@@ -737,7 +737,7 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
             <p className="mt-1 text-base text-[#a89bb8]">Who you meet next, and one tap to get ready. The list moves by itself.</p>
          </div>
          {banners}
-         <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_19rem] xl:items-start">
+         <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-start">
             <div className="xl:col-start-2 xl:row-start-1">{scheduleCard}</div>
             <div ref={lineRef} className="min-w-0 space-y-5 xl:col-start-1 xl:row-start-1">
                <div className="flex flex-wrap items-center gap-2">
