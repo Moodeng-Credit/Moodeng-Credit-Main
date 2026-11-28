@@ -1722,33 +1722,57 @@
   }
   .cta:hover, html.mobile-professional .cta:hover { box-shadow: 0 14px 30px rgba(214, 158, 0, 0.45); }
 
-  /* First screen: the deal, the steps, what you need (2026-11-28). */
-  .hero-eyebrow { margin: 0 0 12px; }
-  html.mobile-professional .hero-copy { padding-top: 26px; }
-  html.mobile-professional .hero-top h1 { max-width: 11ch; font-size: clamp(2.3rem, 10.5vw, 2.9rem); }
-  .hero-deal {
-    display: grid; grid-template-columns: 1fr 1.25fr 1fr; gap: 8px;
-    margin: 20px auto 0; max-width: 380px;
+  /* First screen (2026-11-28): the deal, the steps and what you need, in the look George asked
+     for (Tilt's home page + the Figma reference board): near-black, big cream headline, yellow
+     button, a row of three numbers, and straight-edged portraits with a "+ $" tag and a
+     "Cash for …" caption. */
+  html.mobile-professional .hero-top { background: #141216; }
+  html.mobile-professional .hero-copy { padding-top: 30px; text-align: center; }
+  .hero-eyebrow, html.mobile-professional .hero-eyebrow {
+    margin: 0 0 12px; font-size: 15px; font-weight: 700; letter-spacing: 0;
+    text-transform: none; color: #FFD43B;
   }
-  .hero-deal > div {
-    display: flex; flex-direction: column; align-items: center; gap: 2px;
-    padding: 10px 4px 9px; border-radius: 16px;
-    background: #fff; border: 1px solid var(--lavender-border);
+  html.mobile-professional .hero-top h1 {
+    max-width: 9ch; margin: 0 auto; color: #FFF9EC;
+    font-size: clamp(2.6rem, 12vw, 3.2rem); line-height: 0.96; letter-spacing: -0.04em;
   }
-  .hero-deal .k { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
-  .hero-deal b { font-family: var(--display); font-size: 22px; line-height: 1.1; color: var(--heading); }
-  .hero-deal .peso { font-size: 12px; font-weight: 600; color: var(--text-muted); }
-  .hero-top .cta, html.mobile-professional .hero-top .cta { margin-top: 18px; }
-  .hero-steps {
-    list-style: none; margin: 16px auto 0; max-width: 300px; text-align: left;
-    display: grid; gap: 7px;
+  .hero-top h1 .accent, html.mobile-professional .hero-top h1 .accent {
+    font-family: inherit; font-style: normal; font-weight: inherit; letter-spacing: inherit; color: inherit;
   }
-  .hero-steps li { display: flex; align-items: center; gap: 10px; font-size: 14.5px; font-weight: 650; color: var(--heading); }
-  .hero-steps li span {
-    flex: none; width: 22px; height: 22px; border-radius: 50%;
+  .hero-top .cta, html.mobile-professional .hero-top .cta {
+    display: flex; width: 100%; justify-content: center; margin-top: 22px;
+    border: 0; box-shadow: none;
+  }
+  .hero-signin-note { margin: 12px 0 0; font-size: 13.5px; font-weight: 600; color: rgba(255, 249, 236, 0.7); }
+  .hero-signin-note a { color: #FFD43B; text-decoration: underline; text-underline-offset: 2px; }
+  .hero-deal { display: grid; grid-template-columns: 1fr 1.2fr 1fr; gap: 6px; margin: 22px 0 0; }
+  .hero-deal > div { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+  .hero-deal b { font-family: var(--display); font-size: 23px; line-height: 1.1; color: #FFF9EC; }
+  .hero-deal .k { font-size: 12.5px; font-weight: 600; color: rgba(255, 249, 236, 0.7); }
+  .hero-deal .peso { font-size: 11.5px; font-weight: 600; color: rgba(255, 249, 236, 0.5); }
+  .hero-steps { list-style: none; width: fit-content; margin: 22px auto 0; display: grid; gap: 7px; text-align: left; }
+  .hero-steps li { display: flex; align-items: baseline; gap: 8px; font-size: 15px; font-weight: 600; color: #FFF9EC; }
+  .hero-steps li span { flex: none; font-weight: 800; color: #FFD43B; }
+  .hero-steps li span::after { content: "."; }
+  html.mobile-professional .hero-top .reassure { max-width: none; margin: 12px 0 0; font-size: 13px; color: rgba(255, 249, 236, 0.6); }
+  html.mobile-professional .sec-faces { padding: 30px 0 40px; }
+  html.mobile-professional .face-photo {
+    border: 1.5px solid #FFF9EC; border-radius: 0; background: #26222b; box-shadow: none;
+  }
+  html.mobile-professional .face-pill {
+    left: 50%; bottom: 14px; transform: translateX(-50%);
+    display: inline-flex; align-items: center; justify-items: initial; gap: 7px; min-width: 0;
+    border: 0; border-radius: 999px; background: #fff; padding: 5px 14px 5px 5px;
+    color: #141216; font-size: 15px; font-weight: 800; line-height: 1; white-space: nowrap; box-shadow: none;
+  }
+  html.mobile-professional .face-pill::before { content: none; }
+  html.mobile-professional .face-pill .ic {
     display: inline-flex; align-items: center; justify-content: center;
-    background: var(--deep); color: #fff; font-size: 12px; font-weight: 800;
+    width: 26px; height: 26px; border-radius: 50%; background: #FFD43B;
   }
+  html.mobile-professional .face-cap { max-width: none; margin: 10px 2px 0; color: #FFF9EC; font-size: 15px; font-weight: 400; letter-spacing: 0; }
+  html.mobile-professional .face-cap b { font-weight: 800; }
+  html.mobile-professional .face-cap i { font-family: var(--serif); font-style: italic; font-weight: 500; }
 </style>
 <!-- wireboard tag -->
 <script type="text/javascript">
@@ -1857,17 +1881,18 @@
              are all here. Terms match the app's fixed terms (src/lib/loanPricing.ts): 10%, 30 days. -->
         <p class="label hero-eyebrow">Salary delayed? Bill due?</p>
         <h1>Small loans that <span class="accent">treat you right.</span></h1>
+        <a class="cta" data-start href="/request-board"><span class="btn-label">Get your first loan <span class="arrow">→</span></span></a>
+        <p class="hero-signin-note">Already have an account? <a href="/sign-in">Sign in</a></p>
         <div class="hero-deal" aria-label="Your first loan">
-          <div><span class="k">You get</span><b>$15</b><span class="peso" data-peso="15">≈ ₱855</span></div>
-          <div><span class="k">You pay back</span><b>$16.50</b><span class="peso" data-peso="16.5">≈ ₱941</span></div>
-          <div><span class="k">When</span><b>30 days</b><span class="peso">one date</span></div>
+          <div><b>$15</b><span class="k">You get</span><span class="peso" data-peso="15">≈ ₱855</span></div>
+          <div><b>$16.50</b><span class="k">You pay back</span><span class="peso" data-peso="16.5">≈ ₱941</span></div>
+          <div><b>30 days</b><span class="k">To pay</span></div>
         </div>
         <!-- Word-weight pass 2026-07-12 (George: hero heavier than Tilt's ~13 words):
              CTA 6→4 words but keeps the "first loan" positioning (no generic
              "Get started" — labels stay concrete); reassure 3 fragments→2 —
              "no paperwork" cut here because the steps strip below carries it.
              Earlier critique (07-11) still applies: fragments only, no prose. -->
-        <a class="cta" data-start href="/request-board"><span class="btn-label">Get your first loan <span class="arrow">→</span></span></a>
         <ol class="hero-steps">
           <li><span>1</span>Answer a few questions</li>
           <li><span>2</span>Short video call</li>
@@ -1888,7 +1913,7 @@
           <img src="/landing/assets/faces/seamstress.jpg" alt="Illustrative portrait: a seamstress working at her machine by a window" />
           <span class="face-pill"><span class="ic"><img src="/landing/assets/icons/coins-gold.png" alt="" /></span>+ $15</span>
         </div>
-        <p class="face-cap"><b>Cash</b> <i>for a school fee</i></p>
+        <p class="face-cap"><b>Cash</b> <i>for the electric bill</i></p>
       </div>
       <div class="face-card">
         <div class="face-photo">
@@ -1896,13 +1921,6 @@
           <span class="face-pill"><span class="ic"><img src="/landing/assets/icons/helmet.png" alt="" /></span>+ $30</span>
         </div>
         <p class="face-cap"><b>Cash</b> <i>for a new helmet</i></p>
-      </div>
-      <div class="face-card">
-        <div class="face-photo">
-          <img src="/landing/assets/faces/student.jpg" alt="Illustrative portrait: a college student holding her notebooks in a corridor" loading="lazy" />
-          <span class="face-pill"><span class="ic"><img src="/landing/assets/icons/grad-cap.png" alt="" /></span>+ $20</span>
-        </div>
-        <p class="face-cap"><b>Cash</b> <i>for enrollment week</i></p>
       </div>
       <div class="face-card">
         <div class="face-photo">
@@ -2702,88 +2720,6 @@
 
 <script>
   if (document.documentElement.classList.contains("mobile-professional")) {
-    var facesTrack = document.querySelector(".faces-track");
-    if (facesTrack) {
-      facesTrack.innerHTML = `
-        <article class="face-card">
-          <div class="face-photo">
-            <img src="/landing/assets/life/school-fee.jpg" alt="Illustrative scene of a mother reviewing school papers at home" width="1086" height="1448" />
-            <span class="face-pill">$15</span>
-          </div>
-          <p class="face-cap">School fees this week</p>
-        </article>
-        <article class="face-card">
-          <div class="face-photo">
-            <img src="/landing/assets/life/rider-helmet.jpg" alt="Illustrative scene of a delivery rider fastening a protective helmet beside a scooter" width="1086" height="1448" loading="lazy" />
-            <span class="face-pill">$20</span>
-          </div>
-          <p class="face-cap">A safer helmet for work</p>
-        </article>
-        <article class="face-card">
-          <div class="face-photo">
-            <img src="/landing/assets/life/enrollment.jpg" alt="Illustrative scene of a student preparing enrollment papers in a campus office" width="1086" height="1448" loading="lazy" />
-            <span class="face-pill">$20</span>
-          </div>
-          <p class="face-cap">Enrollment before payday</p>
-        </article>
-        <article class="face-card">
-          <div class="face-photo">
-            <img src="/landing/assets/life/repair-shop.jpg" alt="Illustrative scene of a repair-shop owner working at a tool bench" width="1086" height="1448" loading="lazy" />
-            <span class="face-pill">$40</span>
-          </div>
-          <p class="face-cap">A repair that cannot wait</p>
-        </article>
-        <article class="face-card">
-          <div class="face-photo">
-            <img src="/landing/assets/life/store-restock.jpg" alt="Illustrative scene of a neighborhood shop owner restocking shelves at dawn" width="1086" height="1448" loading="lazy" />
-            <span class="face-pill">$60+</span>
-          </div>
-          <p class="face-cap">Stock for the next market day</p>
-        </article>
-      `;
-
-    }
-
-    document.querySelectorAll(".face-pill").forEach(function (pill) {
-      pill.childNodes.forEach(function (node) {
-        if (node.nodeType === Node.TEXT_NODE) node.textContent = node.textContent.replace("+ ", "");
-      });
-    });
-
-    var professionalCaptions = [
-      "School fees this week",
-      "A safer helmet for work",
-      "Enrollment before payday",
-      "A repair that cannot wait",
-      "Stock for the next market day"
-    ];
-
-    document.querySelectorAll(".face-cap").forEach(function (caption, index) {
-      caption.textContent = professionalCaptions[index % professionalCaptions.length];
-    });
-
-    // Keep the archived mobile page intact, but let the professional mobile
-    // route show the actual product for step 01 instead of an invented card.
-    var firstAskScreen = document.querySelector(".sec-steps .story-screen");
-    if (firstAskScreen) {
-      firstAskScreen.classList.add("story-screen-product", "story-screen-product-ask");
-      firstAskScreen.innerHTML = `
-        <div class="stage">
-          <div class="stage-panel product-stage">
-            <div class="product-shot-viewport">
-              <img
-                src="/landing/assets/app/step1-request-form-hd.png"
-                alt="Moodeng's Set Your Own Terms screen showing the loan amount, repayment amount, repayment date, and reason for borrowing"
-                width="853"
-                height="1844"
-                decoding="async"
-              />
-            </div>
-          </div>
-        </div>
-      `;
-    }
-
     var drawerPanel = document.querySelector("#drawer .drawer-panel");
     if (drawerPanel) {
       drawerPanel.innerHTML = `

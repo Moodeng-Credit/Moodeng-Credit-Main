@@ -90,6 +90,44 @@
       </script>
       <link rel="icon" type="image/png" href="/landing/assets/brand/moodeng-logo-small.png" />
       <link rel="stylesheet" href="/landing/site.css?v=20260717-hero-note-1" />
+      <style>
+         /* First screen (2026-11-28) in the look George asked for (Tilt's home page + the Figma
+            reference board): near-black, big cream headline, yellow button, a row of three
+            numbers, straight-edged portraits with a "+$" tag and a "Cash for …" caption. */
+         html[data-landing-version='2'] #main-content > .hero-home { background: #141216; color: #fff9ec; }
+         html[data-landing-version='2'] .hero-home .display { color: #fff9ec; }
+         .hero-home .display em { color: inherit; font-family: inherit; font-style: normal; font-weight: inherit; letter-spacing: inherit; }
+         .hero-home .eyebrow { font-size: 1.1rem; font-weight: 700; letter-spacing: 0; text-transform: none; }
+         html[data-landing-version='2'] .hero-home .eyebrow { color: #ffd43b; }
+         html[data-landing-version='2'] .hero-copy .lead { color: rgb(255 249 236 / 0.78); }
+         html[data-landing-version='2'] .hero-home .version-two-actions .button {
+            border: 0; background: #ffd43b; color: #141216; box-shadow: none;
+            letter-spacing: 0.03em; text-transform: uppercase;
+         }
+         html[data-landing-version='2'] .hero-home .version-two-actions .hero-note { color: rgb(255 249 236 / 0.7); font-size: 0.9rem; }
+         .hero-home .hero-note a { color: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
+         html[data-landing-version='2'] .hero-home .hero-note a { color: #ffd43b; }
+         .hero-facts { display: flex; justify-content: center; gap: 40px; margin: 28px 0 0; padding: 0; list-style: none; }
+         .hero-facts li { display: grid; gap: 2px; text-align: left; }
+         .hero-facts b { font-size: 1.35rem; font-weight: 800; line-height: 1.1; }
+         .hero-facts span { font-size: 0.85rem; opacity: 0.7; }
+         html:not([data-landing-version='2']) .hero-facts { justify-content: flex-start; gap: 24px; }
+         html[data-landing-version='2'] .hero-home .tilt-hero-photo {
+            --hero-photo-rotate: 0deg; border: 1.5px solid #fff9ec; border-radius: 0; background: #26222b; box-shadow: none;
+         }
+         html[data-landing-version='2'] .hero-home .tilt-hero-photo img { border-radius: 0; }
+         html[data-landing-version='2'] .hero-home .tilt-hero-photo .tilt-hero-amount {
+            top: auto; right: 0; bottom: 14px; left: 0; width: max-content; margin-inline: auto; min-height: 0;
+            border: 0; background: #fff; color: #141216; padding: 5px 14px 5px 5px; box-shadow: none; backdrop-filter: none;
+         }
+         html[data-landing-version='2'] .hero-home .tilt-hero-amount-icon { width: 26px; height: 26px; border-radius: 50%; background: #ffd43b; color: #141216; }
+         html[data-landing-version='2'] .hero-home .tilt-hero-photo figcaption {
+            top: 100%; right: auto; bottom: auto; left: 0; display: block; min-height: 0; border-radius: 0;
+            background: none; color: #fff9ec; padding: 8px 0 0; font-size: 0.95rem; font-weight: 400; white-space: nowrap; box-shadow: none;
+         }
+         html[data-landing-version='2'] .hero-home .tilt-hero-photo figcaption b { font-weight: 800; }
+         html[data-landing-version='2'] .hero-home .tilt-hero-photo figcaption i { font-family: Georgia, 'Times New Roman', serif; }
+      </style>
       <!-- wireboard tag -->
       <script type="text/javascript">
          ;(function (w, i, r, e, b, oar, d) {
@@ -131,6 +169,10 @@
          <symbol id="icon-school" viewBox="0 0 24 24">
             <path d="m3 9 9-4 9 4-9 4-9-4Z" />
             <path d="M7 11v4.2c2.8 2.2 7.2 2.2 10 0V11M20 10v5" />
+         </symbol>
+         <symbol id="icon-bill" viewBox="0 0 24 24">
+            <path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Z" />
+            <path d="M9 8h6M9 12h6" />
          </symbol>
          <symbol id="icon-helmet" viewBox="0 0 24 24">
             <path d="M5 14v-2a7 7 0 0 1 14 0v2H5Z" />
@@ -231,73 +273,75 @@
                <div class="hero-copy stack-lg">
                   <p class="eyebrow">Salary delayed? Bill due?</p>
                   <h1 class="display">Small loans that <em>treat you right.</em></h1>
-                  <p class="lead">Your first loan is $15. Pay back $16.50 in 30 days. Moodeng adds $0.</p>
-                  <p style="margin: 0; font-weight: 650">A few questions → a short video call → money, usually the same day.</p>
+                  <p class="lead">A few questions, a short video call, and money usually the same day.</p>
                   <a class="text-link hero-walkthrough hero-walkthrough-v1" href="/how-it-works"
                      >See how Moodeng works <span aria-hidden="true">→</span></a
                   >
                   <div class="version-two-actions">
                      <a class="button" data-start href="/request-board">Get your first loan <span class="arrow" aria-hidden="true">→</span></a>
-                     <a class="text-link hero-walkthrough hero-walkthrough-v2" href="/how-it-works"
-                        >See how Moodeng works <span aria-hidden="true">→</span></a
-                     >
+                     <p class="hero-note">Already have an account? <a href="/sign-in">Sign in</a></p>
                   </div>
+                  <ul class="hero-facts" aria-label="Your first loan">
+                     <li><b>$15</b><span>First loan</span></li>
+                     <li><b>$16.50</b><span>Pay back in 30 days</span></li>
+                     <li><b>$0</b><span>Moodeng fees</span></li>
+                  </ul>
                </div>
                <figure class="tilt-hero-photo tilt-hero-photo-school">
                   <img
-                     src="/landing/assets/life/school-fee.jpg"
-                     alt="Illustrative scene of a mother reviewing school enrollment papers at home"
-                     width="1086"
-                     height="1448"
+                     src="/landing/assets/faces/sari-sari.jpg"
+                     alt="Portrait of a sari-sari store owner at her counter"
+                     width="720"
+                     height="960"
                   />
-                  <span class="tilt-hero-amount" aria-label="Illustrative school-fee request: 15 dollars"
+                  <span class="tilt-hero-amount" aria-label="Illustrative bills request: 15 dollars"
                      ><span class="tilt-hero-amount-icon" aria-hidden="true"
-                        ><svg class="site-icon" focusable="false"><use href="#icon-school"></use></svg></span
-                     ><span><small>Helped with</small>$15</span></span
+                        ><svg class="site-icon" focusable="false"><use href="#icon-bill"></use></svg></span
+                     ><span>+$15</span></span
                   >
-                  <figcaption><span aria-hidden="true">●</span> School fee</figcaption>
+                  <figcaption><b>Cash</b> <i>for the electric bill</i></figcaption>
                </figure>
                <figure class="tilt-hero-photo tilt-hero-photo-rider">
                   <img
-                     src="/landing/assets/life/rider-helmet.jpg"
-                     alt="Illustrative scene of a delivery rider fastening a protective helmet beside a scooter"
-                     width="1086"
-                     height="1448"
+                     src="/landing/assets/faces/rider.jpg"
+                     alt="Portrait of a delivery rider holding his helmet"
+                     width="720"
+                     height="960"
                   />
                   <span class="tilt-hero-amount" aria-label="Illustrative safer-helmet request: 20 dollars"
                      ><span class="tilt-hero-amount-icon" aria-hidden="true"
                         ><svg class="site-icon" focusable="false"><use href="#icon-helmet"></use></svg></span
-                     ><span><small>Helped with</small>$20</span></span
+                     ><span>+$20</span></span
                   >
-                  <figcaption><span aria-hidden="true">●</span> Safer helmet</figcaption>
+                  <figcaption><b>Cash</b> <i>for a new helmet</i></figcaption>
                </figure>
                <figure class="tilt-hero-photo tilt-hero-photo-repair">
                   <img
-                     src="/landing/assets/life/repair-shop.jpg"
-                     alt="Illustrative scene of a repair-shop owner testing a tool at the workbench"
-                     width="1086"
-                     height="1448"
+                     src="/landing/assets/faces/mechanic.jpg"
+                     alt="Portrait of a mechanic in his workshop"
+                     width="720"
+                     height="960"
                   />
                   <span class="tilt-hero-amount" aria-label="Illustrative work-repair request: 40 dollars"
                      ><span class="tilt-hero-amount-icon" aria-hidden="true"
                         ><svg class="site-icon" focusable="false"><use href="#icon-repair"></use></svg></span
-                     ><span><small>Helped with</small>$40</span></span
+                     ><span>+$40</span></span
                   >
-                  <figcaption><span aria-hidden="true">●</span> Work repair</figcaption>
+                  <figcaption><b>Cash</b> <i>for a work repair</i></figcaption>
                </figure>
                <figure class="tilt-hero-photo tilt-hero-photo-stock">
                   <img
-                     src="/landing/assets/life/store-restock.jpg"
-                     alt="Illustrative scene of a neighborhood shop owner restocking shelves at dawn"
-                     width="1086"
-                     height="1448"
+                     src="/landing/assets/faces/vendor.jpg"
+                     alt="Portrait of a market vendor at his stall"
+                     width="720"
+                     height="960"
                   />
                   <span class="tilt-hero-amount" aria-label="Illustrative store-stock request: 60 dollars or more"
                      ><span class="tilt-hero-amount-icon" aria-hidden="true"
                         ><svg class="site-icon" focusable="false"><use href="#icon-store"></use></svg></span
-                     ><span><small>Helped with</small>$60+</span></span
+                     ><span>+$60</span></span
                   >
-                  <figcaption><span aria-hidden="true">●</span> Store stock</figcaption>
+                  <figcaption><b>Cash</b> <i>to restock the stall</i></figcaption>
                </figure>
             </div>
          </section>
@@ -335,10 +379,10 @@
                                     class="ask-chip"
                                     type="button"
                                     aria-pressed="false"
-                                    data-ask-reason="A school fee due this week"
-                                    data-ask-icon="#icon-school"
+                                    data-ask-reason="Bills due before payday"
+                                    data-ask-icon="#icon-bill"
                                  >
-                                    <svg class="site-icon" aria-hidden="true"><use href="#icon-school"></use></svg><span>School fee</span>
+                                    <svg class="site-icon" aria-hidden="true"><use href="#icon-bill"></use></svg><span>Bills</span>
                                  </button>
                                  <button
                                     class="ask-chip"
@@ -446,7 +490,7 @@
                      <h2 class="section-title wide" id="life-heading">Life does not wait for <em>payday.</em></h2>
                   </div>
                   <p class="lead">
-                     A repair, medicine, a school fee, or stock for tomorrow. Moodeng gives a small request a clear place to be seen by
+                     A bill, a repair, medicine, or stock for tomorrow. Moodeng gives a small request a clear place to be seen by
                      people who can help.
                   </p>
                </div>
@@ -454,12 +498,12 @@
                   <figure class="portrait reveal">
                      <img
                         src="/landing/assets/life/school-fee.jpg"
-                        alt="Illustrative scene of a mother reviewing school enrollment papers at home"
+                        alt="Illustrative scene of a mother going through household bills at home"
                         loading="lazy"
                         width="1086"
                         height="1448"
                      />
-                     <figcaption><span>Illustrative moment</span>A school fee due before payday</figcaption>
+                     <figcaption><span>Illustrative moment</span>Bills due before payday</figcaption>
                   </figure>
                   <figure class="portrait reveal">
                      <img
@@ -470,16 +514,6 @@
                         height="1448"
                      />
                      <figcaption><span>Illustrative moment</span>A safer helmet for the next shift</figcaption>
-                  </figure>
-                  <figure class="portrait reveal">
-                     <img
-                        src="/landing/assets/life/enrollment.jpg"
-                        alt="Illustrative scene of a university student checking enrollment papers at a campus counter"
-                        loading="lazy"
-                        width="1086"
-                        height="1448"
-                     />
-                     <figcaption><span>Illustrative moment</span>Enrollment week arrived early</figcaption>
                   </figure>
                   <figure class="portrait reveal">
                      <img
