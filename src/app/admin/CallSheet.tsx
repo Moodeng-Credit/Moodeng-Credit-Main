@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { type AdminCallApprovalRow, recheckAdminCallForm, rejectAdminUser, sendAdminCallFacebookSteps } from '@/app/admin/adminSupabase';
+import { FaceStrip, useCallFaces } from '@/app/admin/CallFaces';
 import IndonesiaContactCard from '@/app/admin/IndonesiaContactCard';
 import SocialHandlesLine from '@/app/admin/SocialHandlesLine';
 import { type CheckField, currentVerdict, type FormCheck, tallyCheck } from '@/app/admin/callFormCheck';
@@ -703,6 +704,7 @@ export default function CallSheet({ row, onClose }: { row: AdminCallApprovalRow;
    );
 
    const name = profile?.displayName || profile?.username || row.name;
+   const face = useCallFaces([row.userId])[row.userId];
    const sheetUsername = profile?.username || row.username;
    const sheetFacebook = profile?.facebookName || row.facebookName;
    // Title shows every name they go by, so the team can match them to Facebook / Messenger.
@@ -805,6 +807,10 @@ export default function CallSheet({ row, onClose }: { row: AdminCallApprovalRow;
 
          <div className="mx-auto max-w-[1100px] px-5 pb-10 pt-3">
             {error ? <p className="mb-2 rounded-md bg-[#fde8e8] p-2 text-[13px] font-semibold text-[#b42318]">{error}</p> : null}
+            {/* What they look like: profile picture, pre-screening intro video, the photos they took. */}
+            <div className="mb-3">
+               <FaceStrip face={face} light />
+            </div>
             {!profile && !error ? <p className="mt-6 text-[#7a7a7a]">Loading…</p> : null}
 
             {profile ? (

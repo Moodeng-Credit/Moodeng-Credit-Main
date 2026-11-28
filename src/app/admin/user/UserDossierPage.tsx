@@ -7,6 +7,8 @@ import { Link, useParams } from 'react-router-dom';
 import { Bar, BarChart, Cell, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 import { BorrowerTimeline } from '@/app/admin/AdminHistory';
+import type { AdminCallFace } from '@/app/admin/adminSupabase';
+import { FaceStrip, FaceThumb, useCallFaces } from '@/app/admin/CallFaces';
 import ProofHistory from '@/app/admin/ProofHistory';
 import { AdminLiveProvider } from '@/app/admin/useAdminLive';
 import LadderRow from '@/app/admin/user/LadderRow';
@@ -150,7 +152,7 @@ function Photo({ label, url }: { label: string; url: string }) {
    );
 }
 
-function Header({ d, selfie }: { d: Dossier; selfie: string | null }) {
+function Header({ d, selfie, face }: { d: Dossier; selfie: string | null; face?: AdminCallFace }) {
    const u = d.user;
    const kyc = d.kyc[0];
    const sheetName = d.call_screenings[0]?.answers?.fullName;
@@ -188,9 +190,7 @@ function Header({ d, selfie }: { d: Dossier; selfie: string | null }) {
                   <img src={selfie} alt="Selfie" className="h-24 w-24 rounded-full border-4 border-[#8336f0] object-cover" />
                </a>
             ) : (
-               <div className="grid h-24 w-24 place-items-center rounded-full bg-[#8336f0] text-4xl font-black text-white">
-                  {u.username.charAt(0).toUpperCase()}
-               </div>
+               <FaceThumb face={face} name={u.display_name || u.username} size="lg" />
             )}
             <div className="min-w-0 flex-1">
                <h1 className="break-words text-3xl font-black text-white">{realName || u.display_name || u.username}</h1>
@@ -906,6 +906,7 @@ function DossierBody({ userId }: { userId: string }) {
    }, [load, userId]);
 
    const stats = useMemo(() => (d ? loanStats(d.loans) : null), [d]);
+   const face = useCallFaces([userId])[userId];
    const selfie = media?.flatMap((m) => m.photos).find((p) => p.label === 'Selfie' || p.label === 'Liveness')?.url ?? null;
 
    if (error) return <p className="rounded-2xl bg-red-950/40 p-4 font-bold text-red-200">{error}</p>;
@@ -915,7 +916,13 @@ function DossierBody({ userId }: { userId: string }) {
    const u = d.user;
    return (
       <div className="space-y-5">
-         <Header d={d} selfie={selfie} />
+         <Header d={d} selfie={selfie} face={face} />
+         {face && (face.avatar || face.clip || face.photos.length) ? (
+            <section className="rounded-3xl border border-[#2a1453] bg-[#1c0a3a] p-5">
+               <h2 className="mb-3 text-sm font-black uppercase tracking-wide text-[#a89bb8]">What they look like</h2>
+               <FaceStrip face={face} />
+            </section>
+         ) : null}
          <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-7">
             <Kpi label="Credit limit" value={usd(u.cs)} note={d.loan_cap ? `cap ${usd(d.loan_cap.cap_usd)}` : undefined} />
             <Kpi label="Borrowed" value={usd(stats.borrowed)} note={`${stats.count} loans · biggest ${usd(stats.biggest)}`} />

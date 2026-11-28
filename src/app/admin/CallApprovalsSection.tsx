@@ -18,6 +18,7 @@ import {
    relativeStart,
    type ScheduleState
 } from '@/app/admin/callApprovalsModel';
+import { FaceStrip, FaceThumb, useCallFaces } from '@/app/admin/CallFaces';
 import CallSheet from '@/app/admin/CallSheet';
 import { type AdminIndoProfile, fetchIndonesiaProfiles, telegramUrl, whatsappChatUrl } from '@/app/admin/indonesiaAdmin';
 import IndonesiaBadge from '@/components/IndonesiaBadge';
@@ -215,6 +216,12 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
    }, [rows, now, query]);
 
    const line = useMemo(() => buildCallLine(groups, now), [groups, now]);
+   // Faces for everyone still ahead or waiting (not the 30 days of finished calls). Full screen only.
+   const faceIds = useMemo(
+      () => (variant === 'full' ? [...groups.needsDecision, ...groups.upcoming].map((r) => r.userId) : []),
+      [groups.needsDecision, groups.upcoming, variant]
+   );
+   const faces = useCallFaces(faceIds);
    // The schedule ignores the search box: it is the whole day, finished calls included.
    const dayStart = localDayStart(now, dayOffset);
    const schedule = useMemo(() => buildDaySchedule(rows ?? [], now, dayStart, localDayStart(now, dayOffset + 1)), [rows, now, dayStart, dayOffset]);
@@ -464,11 +471,19 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
                </span>
                {movedNote(row)}
             </div>
-            <p className="mt-3 flex flex-wrap items-center gap-2 break-words text-3xl font-black text-white">
-               {nameLink(row, 'text-white no-underline')}
-               {indo.has(row.userId) ? <IndonesiaBadge /> : null}
-            </p>
-            <div className="mt-1">{renderDetails(row)}</div>
+            <div className="mt-3 flex items-start gap-4">
+               <FaceThumb face={faces[row.userId]} name={shortName(row.name)} size="lg" />
+               <div className="min-w-0 flex-1">
+                  <p className="flex flex-wrap items-center gap-2 break-words text-3xl font-black text-white">
+                     {nameLink(row, 'text-white no-underline')}
+                     {indo.has(row.userId) ? <IndonesiaBadge /> : null}
+                  </p>
+                  <div className="mt-1">{renderDetails(row)}</div>
+               </div>
+            </div>
+            <div className="mt-3">
+               <FaceStrip face={faces[row.userId]} />
+            </div>
             <div className="mt-4 flex flex-wrap items-center gap-2">
                {prepButtons(row, true)}
                {kind === 'next' ? (
@@ -509,6 +524,7 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
                      </span>
                   ) : null}
                   <span className="flex min-w-0 flex-wrap items-center gap-2 break-words text-lg font-black text-white">
+                     {variant === 'full' && tab === 'upcoming' ? <FaceThumb face={faces[row.userId]} name={shortName(row.name)} /> : null}
                      {nameLink(row, 'text-white underline decoration-[#8336f0] decoration-2 underline-offset-4')}
                      {indo.has(row.userId) ? <IndonesiaBadge /> : null}
                   </span>

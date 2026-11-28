@@ -13,7 +13,9 @@ const api = vi.hoisted(() => ({ rows: [] as unknown[], decide: vi.fn() }));
 
 vi.mock('@/app/admin/adminSupabase', () => ({
    getAdminCallApprovals: async () => api.rows,
-   decideAdminCall: api.decide
+   decideAdminCall: api.decide,
+   getAdminCallFaces: async (ids: string[]) =>
+      Object.fromEntries(ids.map((id) => [id, { avatar: id === 'next' ? 'https://example.com/next.jpg' : null, clip: null, photos: [] }]))
 }));
 vi.mock('@/app/admin/indonesiaAdmin', () => ({
    fetchIndonesiaProfiles: async () => new Map(),
@@ -84,6 +86,9 @@ describe('CallApprovalsSection (Calls screen)', () => {
       expect(card('live').textContent).toContain('Live Leo');
       expect(card('live').textContent).toContain('Showed up');
       expect(card('next').textContent).toContain('Up next');
+      // Their picture when we have one, their initial when we don't.
+      expect(card('next').querySelector('img')?.getAttribute('src')).toBe('https://example.com/next.jpg');
+      expect(card('later').querySelector('img')).toBeNull();
       // The next call keeps its decision buttons folded away until asked for.
       expect(card('next').textContent).not.toContain('Showed up');
       // Later calls are one line: short name only, no email.
