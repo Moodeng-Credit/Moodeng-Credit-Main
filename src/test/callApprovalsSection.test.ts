@@ -80,6 +80,21 @@ afterEach(() => {
 });
 
 describe('CallApprovalsSection (Calls screen)', () => {
+   it('shows one host\'s calls when picked, and remembers it', async () => {
+      api.rows = (api.rows as AdminCallApprovalRow[]).map((r) => (r.userId === 'next' ? { ...r, host: 'george' } : r));
+      await mount();
+      expect(order()).toEqual(['live', 'next', 'later']);
+      const george = Array.from(host.querySelectorAll('[role="group"] button')).find((b) => b.textContent === 'george') as HTMLButtonElement;
+      await act(async () => {
+         george.click();
+      });
+      expect(order()).toEqual(['next']);
+      expect(card('next').textContent).toContain('Up next');
+      expect((host.querySelector('aside') as HTMLElement).textContent).toContain('1 call · 1 to go');
+      expect(window.localStorage.getItem('moodeng_admin_calls_host')).toBe('george');
+      window.localStorage.removeItem('moodeng_admin_calls_host');
+   });
+
    it('shows the call on now, then the next one, then the rest', async () => {
       await mount();
       expect(order()).toEqual(['live', 'next', 'later']);
