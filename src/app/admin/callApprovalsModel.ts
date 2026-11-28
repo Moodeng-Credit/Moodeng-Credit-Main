@@ -76,15 +76,15 @@ export const relativeStart = (iso: string | null, now: number): string => {
 // The same groups, laid out like an assembly line: who is on a call right now, who is up next, who
 // comes after. Calls move along it by themselves as time passes or a borrower changes their time.
 
-// A started call counts as "on now" for this long. Rows carry no call length, so this is a generous
-// cover for a 15-minute slot that starts late; after it the call is just waiting for its decision.
-export const LIVE_WINDOW_MIN = 30;
+// A started call counts as "on now" for this long: a 15-minute slot plus a little for a late start.
+// After it the call is just waiting for its decision, so back-to-back calls don't pile up as "on now".
+export const LIVE_WINDOW_MIN = 20;
 
-// On a call right now: undecided, and it started in the last LIVE_WINDOW_MIN (or starts in the next NOW_WINDOW_MIN).
+// On a call right now: undecided, started, and not longer than LIVE_WINDOW_MIN ago.
 export const isLiveNow = (row: AdminCallApprovalRow, now: number): boolean => {
    if (isApprovalRequest(row) || row.outcome || row.loanAccessStatus === 'rejected') return false;
    const start = startMs(row);
-   return !Number.isNaN(start) && start <= now + NOW_WINDOW_MIN * 60000 && start > now - LIVE_WINDOW_MIN * 60000;
+   return !Number.isNaN(start) && start <= now && start > now - LIVE_WINDOW_MIN * 60000;
 };
 
 export interface CallLine {
@@ -98,12 +98,17 @@ export interface CallLine {
    later: AdminCallApprovalRow[];
 }
 
-export const buildCallLine = (groups: CallApprovalGroups, now: number): CallLine => ({
-   onNow: groups.needsDecision.filter((r) => isLiveNow(r, now)),
-   waiting: groups.needsDecision.filter((r) => !isLiveNow(r, now)),
-   upNext: groups.upcoming[0] ?? null,
-   later: groups.upcoming.slice(1)
-});
+export const buildCallLine = (groups: CallApprovalGroups, now: number): CallLine => {
+   // Calls about to start sit under "needs a decision" in the groups; on the line they are still ahead.
+   const notStarted = (r: AdminCallApprovalRow) => !isApprovalRequest(r) && startMs(r) > now;
+   const ahead = [...groups.needsDecision.filter(notStarted), ...groups.upcoming];
+   return {
+      onNow: groups.needsDecision.filter((r) => isLiveNow(r, now)),
+      waiting: groups.needsDecision.filter((r) => !isLiveNow(r, now) && !notStarted(r)),
+      upNext: ahead[0] ?? null,
+      later: ahead.slice(1)
+   };
+};
 
 // Where one call stands on a day's schedule.
 export type ScheduleState = CallResult | 'now' | 'next' | 'waiting' | 'upcoming';
@@ -117,7 +122,7 @@ export interface ScheduleEntry {
 // Every call that starts in [dayStart, dayEnd), earliest first, with where it stands at `now`.
 // Pass the whole list (not a searched one) so finished calls and the real "next" call are right.
 export const buildDaySchedule = (rows: AdminCallApprovalRow[], now: number, dayStart: number, dayEnd: number): ScheduleEntry[] => {
-   const nextId = groupCallApprovals(rows, now).upcoming[0]?.userId ?? null;
+   const nextId = buildCallLine(groupCallApprovals(rows, now), now).upNext?.userId ?? null;
    const entries: ScheduleEntry[] = [];
    for (const row of rows) {
       if (isApprovalRequest(row)) continue;

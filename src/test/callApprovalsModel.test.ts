@@ -101,10 +101,22 @@ describe('buildCallLine', () => {
          row({ userId: 'ask', request: { id: 'r1', kind: 'approval', reason: null, createdAt: at(-5) } })
       ];
       const line = buildCallLine(groupCallApprovals(rows, NOW), NOW);
-      expect(line.onNow.map((r) => r.userId)).toEqual(['live', 'soon']);
+      expect(line.onNow.map((r) => r.userId)).toEqual(['live']);
       expect(line.waiting.map((r) => r.userId).sort()).toEqual(['ask', 'old']);
-      expect(line.upNext?.userId).toBe('next');
-      expect(line.later.map((r) => r.userId)).toEqual(['after']);
+      expect(line.upNext?.userId).toBe('soon');
+      expect(line.later.map((r) => r.userId)).toEqual(['next', 'after']);
+   });
+
+   it('keeps back-to-back calls from piling up as on now', () => {
+      const rows = [row({ userId: 'a', callStartsAt: at(0) }), row({ userId: 'b', callStartsAt: at(15) }), row({ userId: 'c', callStartsAt: at(30) })];
+      const lineAt = (min: number) => {
+         const t = NOW + min * 60000;
+         const line = buildCallLine(groupCallApprovals(rows, t), t);
+         return [line.onNow.map((r) => r.userId), line.waiting.map((r) => r.userId), line.upNext?.userId ?? null, line.later.map((r) => r.userId)];
+      };
+      expect(lineAt(5)).toEqual([['a'], [], 'b', ['c']]);
+      expect(lineAt(20)).toEqual([['b'], ['a'], 'c', []]);
+      expect(lineAt(-30)).toEqual([[], [], 'a', ['b', 'c']]);
    });
 
    it('moves a call up the line when its time changes', () => {
