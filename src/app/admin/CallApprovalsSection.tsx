@@ -35,7 +35,7 @@ const CLOCK_MS = 15000;
 const MOVED_NOTE_MS = 3 * 60000;
 const DAY_MS = 24 * 3600000;
 // The soft-teal look (preview). /admin/calls?look=teal turns it on for this computer (teal-light and
-// teal-dark force a mode; plain teal follows the app's light/dark setting), ?look=off turns it off.
+// teal-dark pick the mode; plain teal is dark, like the rest of the admin), ?look=off turns it off.
 // Only the full Calls screen wears it: colors are CSS variables set by the .calls-teal wrapper
 // (globals.css) and every class falls back to the purple admin look without it.
 const LOOK_KEY = 'moodeng_admin_calls_look';
@@ -55,8 +55,8 @@ const readLook = (): string => {
 };
 const lookClass = (look: string): string => {
    if (!look) return '';
-   const light = look === 'teal-light' || (look === 'teal' && !document.documentElement.classList.contains('dark'));
-   return `calls-teal ${light ? 'calls-teal-light' : ''} rounded-[28px] p-4 sm:p-6`;
+   // The admin shell is dark only, so plain 'teal' is the dark version; light is asked for by name.
+   return `calls-teal ${look === 'teal-light' ? 'calls-teal-light' : ''} rounded-[28px] p-4 sm:p-6`;
 };
 
 // "My calls": show one host's calls only. Remembered on this computer.
