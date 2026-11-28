@@ -14,6 +14,7 @@ const api = vi.hoisted(() => ({ rows: [] as unknown[], decide: vi.fn() }));
 vi.mock('@/app/admin/adminSupabase', () => ({
    getAdminCallApprovals: async () => api.rows,
    decideAdminCall: api.decide,
+   rejectAdminUser: vi.fn(),
    getAdminCallFaces: async (ids: string[]) =>
       Object.fromEntries(ids.map((id) => [id, { avatar: id === 'next' ? 'https://example.com/next.jpg' : null, clip: null, photos: [] }]))
 }));
@@ -107,8 +108,10 @@ describe('CallApprovalsSection (Calls screen)', () => {
       expect(card('later').querySelector('img')).toBeNull();
       // The brief is written for the people at the top only.
       expect(Array.from(host.querySelectorAll('[data-brief]')).map((el) => el.getAttribute('data-brief'))).toEqual(['live', 'next']);
-      // The next call keeps its decision buttons folded away until asked for.
-      expect(card('next').textContent).not.toContain('Showed up');
+      // The next call shows its decision buttons and a way to the full profile without opening anything.
+      expect(card('next').textContent).toContain('Showed up');
+      expect(card('next').textContent).toContain('Reject');
+      expect(Array.from(card('next').querySelectorAll('a[href="/admin/user/next"]')).some((a) => a.textContent?.includes('Full profile'))).toBe(true);
       // Later calls are one line: short name only, no email.
       expect(card('later').textContent).toContain('Later Lina');
       expect(card('later').textContent).not.toContain('later@example.com');
