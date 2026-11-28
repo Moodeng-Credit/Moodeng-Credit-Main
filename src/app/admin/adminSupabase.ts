@@ -3348,6 +3348,8 @@ export interface AdminCallFace {
    avatar: string | null;
    clip: string | null;
    photos: { label: string; url: string }[];
+   /** Proof of income they sent (payslips, statements); image=false for PDFs and other files. */
+   proof?: { label: string; url: string; image: boolean }[];
 }
 
 // Storage links are signed for an hour; keep each person's for 45 min so pictures don't reload on

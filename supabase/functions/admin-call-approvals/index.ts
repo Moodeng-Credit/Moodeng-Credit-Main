@@ -181,13 +181,15 @@ serve(async (req) => {
       if (body.action === 'faces') {
          const ids = [...new Set((Array.isArray(body.userIds) ? body.userIds : []).filter((v): v is string => typeof v === 'string' && UUID_RE.test(v)))].slice(0, 40);
          if (!ids.length) return json({ faces: {} });
-         const [{ data: screens, error: screensError }, avatars] = await Promise.all([
+         const [{ data: screens, error: screensError }, { data: docs }, avatars] = await Promise.all([
             svc
                .from('pre_screenings')
-               .select('user_id, answers, created_at')
+               .select('user_id, answers, income_files, created_at')
                .in('user_id', ids)
                .is('files_removed_at', null)
                .order('created_at', { ascending: false }),
+            // Proof of income they sent (payslips, bank statements, Messenger photos), newest first.
+            svc.from('income_documents').select('user_id, files, doc_type, created_at').in('user_id', ids).order('created_at', { ascending: false }).limit(200),
             Promise.all(
                ids.map((id) =>
                   svc.auth.admin.getUserById(id).then(
@@ -200,6 +202,28 @@ serve(async (req) => {
          if (screensError) throw new Error(screensError.message);
          // Newest pre-screening per person.
          const media = new Map<string, { clip: string | null; photos: { label: string; path: string }[] }>();
+         // Proof files per person: [bucket, path, label, mime]. Up to 8 each, newest first.
+         type ProofFile = { bucket: 'income-docs' | 'pre-screenings'; path: string; label: string; mime: string | null };
+         const proof = new Map<string, ProofFile[]>();
+         const addProof = (userId: string, file: ProofFile) => {
+            const list = proof.get(userId) ?? [];
+            if (list.length < 8 && !list.some((f) => f.path === file.path)) list.push(file);
+            proof.set(userId, list);
+         };
+         const fileList = (value: unknown) =>
+            (Array.isArray(value) ? value : []).filter(
+               (f): f is { path: string; name?: string; mime?: string } => Boolean(f) && typeof (f as { path?: unknown }).path === 'string'
+            );
+         for (const doc of (docs ?? []) as { user_id: string; files: unknown; doc_type: string | null }[]) {
+            for (const f of fileList(doc.files)) {
+               addProof(doc.user_id, { bucket: 'income-docs', path: f.path, label: (doc.doc_type || 'Proof').replace(/_/g, ' '), mime: f.mime ?? null });
+            }
+         }
+         for (const row of (screens ?? []) as { user_id: string; income_files: unknown }[]) {
+            for (const f of fileList(row.income_files)) {
+               addProof(row.user_id, { bucket: 'pre-screenings', path: f.path, label: 'Pre-screen proof', mime: f.mime ?? null });
+            }
+         }
          for (const row of (screens ?? []) as { user_id: string; answers: unknown }[]) {
             if (media.has(row.user_id)) continue;
             const entry = { clip: null as string | null, photos: [] as { label: string; path: string }[] };
@@ -212,14 +236,25 @@ serve(async (req) => {
             }
             media.set(row.user_id, entry);
          }
-         const paths = [...media.values()].flatMap((m) => [...(m.clip ? [m.clip] : []), ...m.photos.map((ph) => ph.path)]);
+         const allProof = [...proof.values()].flat();
+         const paths = [
+            ...[...media.values()].flatMap((m) => [...(m.clip ? [m.clip] : []), ...m.photos.map((ph) => ph.path)]),
+            ...allProof.filter((f) => f.bucket === 'pre-screenings').map((f) => f.path)
+         ];
+         const docPaths = allProof.filter((f) => f.bucket === 'income-docs').map((f) => f.path);
          const signedByPath = new Map<string, string>();
-         if (paths.length) {
-            const { data: signed } = await svc.storage.from('pre-screenings').createSignedUrls(paths, 3600);
-            for (const item of signed ?? []) if (item.path && item.signedUrl) signedByPath.set(item.path, item.signedUrl);
-         }
+         const signedDocs = new Map<string, string>();
+         const [screenSigned, docSigned] = await Promise.all([
+            paths.length ? svc.storage.from('pre-screenings').createSignedUrls(paths, 3600) : Promise.resolve({ data: [] }),
+            docPaths.length ? svc.storage.from('income-docs').createSignedUrls(docPaths, 3600) : Promise.resolve({ data: [] })
+         ]);
+         for (const item of screenSigned.data ?? []) if (item.path && item.signedUrl) signedByPath.set(item.path, item.signedUrl);
+         for (const item of docSigned.data ?? []) if (item.path && item.signedUrl) signedDocs.set(item.path, item.signedUrl);
          const avatarById = new Map(avatars);
-         const faces: Record<string, { avatar: string | null; clip: string | null; photos: { label: string; url: string }[] }> = {};
+         const faces: Record<
+            string,
+            { avatar: string | null; clip: string | null; photos: { label: string; url: string }[]; proof: { label: string; url: string; image: boolean }[] }
+         > = {};
          for (const id of ids) {
             const m = media.get(id);
             faces[id] = {
@@ -228,6 +263,11 @@ serve(async (req) => {
                photos: (m?.photos ?? []).flatMap((ph) => {
                   const url = signedByPath.get(ph.path);
                   return url ? [{ label: ph.label, url }] : [];
+               }),
+               proof: (proof.get(id) ?? []).flatMap((f) => {
+                  const url = (f.bucket === 'income-docs' ? signedDocs : signedByPath).get(f.path);
+                  const image = f.mime ? f.mime.startsWith('image/') : /\.(jpe?g|png|webp|gif|heic)$/i.test(f.path);
+                  return url ? [{ label: f.label, url, image }] : [];
                })
             };
          }
