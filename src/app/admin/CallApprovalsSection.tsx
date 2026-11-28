@@ -5,7 +5,13 @@ import { Link } from 'react-router-dom';
 
 import { useAdminLiveReload } from '@/app/admin/useAdminLive';
 
-import { type AdminCallApprovalRow, type AdminCallDecision, decideAdminCall, getAdminCallApprovals } from '@/app/admin/adminSupabase';
+import {
+   type AdminCallApprovalRow,
+   type AdminCallDecision,
+   decideAdminCall,
+   getAdminCallApprovals,
+   rejectAdminUser
+} from '@/app/admin/adminSupabase';
 import {
    buildCallLine,
    buildDaySchedule,
@@ -332,6 +338,22 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
       }
    };
 
+   // Reject someone who has no open call request (same message and call cancel as Telegram's Reject).
+   const rejectDirect = async (row: AdminCallApprovalRow) => {
+      if (!window.confirm(`Reject ${row.name}? Their call is cancelled and they're told they can't borrow.`)) return;
+      setBusyId(row.userId);
+      setNotice(null);
+      try {
+         const result = await rejectAdminUser(row.userId);
+         setNotice({ ok: result.ok, text: result.summary });
+         await load();
+      } catch (err) {
+         setNotice({ ok: false, text: err instanceof Error ? err.message : 'Could not save the decision.' });
+      } finally {
+         setBusyId(null);
+      }
+   };
+
    const renderActions = (row: AdminCallApprovalRow) => {
       const busy = busyId === row.userId;
       const base = 'rounded-xl px-4 py-2 text-sm font-black disabled:opacity-50';
@@ -389,22 +411,23 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
             >
                ❌ No-show
             </button>
-            {row.request ? (
-               <button
+            {/* With a call request it is decided like the Telegram card; without one they are rejected directly. */}
+            <button
                   type="button"
                   disabled={busy}
                   onClick={() =>
-                     decide(
-                        row,
-                        { requestId: row.request!.id, decision: 'rejected' },
-                        `Reject ${row.name}? Their call is cancelled and they're told they can't borrow.`
-                     )
+                     row.request
+                        ? decide(
+                             row,
+                             { requestId: row.request.id, decision: 'rejected' },
+                             `Reject ${row.name}? Their call is cancelled and they're told they can't borrow.`
+                          )
+                        : rejectDirect(row)
                   }
                   className={`${base} border border-red-800 text-[color:var(--ct-bad,#fca5a5)] hover:bg-red-950`}
                >
                   🚫 Reject
                </button>
-            ) : null}
          </>
       );
    };
@@ -501,7 +524,6 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
 
    // The big card at the top: the call that is on now, or the next one.
    const renderHero = (row: AdminCallApprovalRow, kind: 'now' | 'next') => {
-      const open = kind === 'now' || openId === row.userId;
       return (
          <div
             key={row.userId}
@@ -540,17 +562,18 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
             </div>
             <div className="mt-4 flex flex-wrap items-center gap-2">
                {prepButtons(row, true)}
-               {kind === 'next' ? (
-                  <button
-                     type="button"
-                     onClick={() => setOpenId(open ? null : row.userId)}
-                     className="rounded-xl px-3 py-3 text-sm font-black text-[color:var(--ct-soft-ink,#c9a7ff)] hover:text-[color:var(--ct-ink,#fff)]"
-                  >
-                     {open ? 'Hide decision ▴' : 'Decide now ▾'}
-                  </button>
-               ) : null}
+               <Link
+                  to={`/admin/user/${row.userId}`}
+                  className="rounded-xl border border-[color:var(--ct-line2,#3d1f6e)] px-5 py-3 text-base font-black text-[color:var(--ct-ink,#fff)] no-underline hover:bg-[var(--ct-soft,#2a1453)]"
+               >
+                  👤 Full profile
+               </Link>
             </div>
-            {open ? <div className="mt-3 flex flex-wrap gap-2 border-t border-[color:var(--ct-line,#2a1453)] pt-3">{renderActions(row)}</div> : null}
+            {/* The decision is always one tap away, on now or up next: no need to open anything first. */}
+            <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-[color:var(--ct-line,#2a1453)] pt-3">
+               <span className="mr-1 text-xs font-black uppercase tracking-wide text-[color:var(--ct-dim,#a89bb8)]">Decide</span>
+               {renderActions(row)}
+            </div>
          </div>
       );
    };
