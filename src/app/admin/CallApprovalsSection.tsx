@@ -34,6 +34,31 @@ const CLOCK_MS = 15000;
 // "Time changed" stays on a card this long after a borrower moves their call.
 const MOVED_NOTE_MS = 3 * 60000;
 const DAY_MS = 24 * 3600000;
+// The soft-teal look (preview). /admin/calls?look=teal turns it on for this computer (teal-light and
+// teal-dark pick the mode; plain teal is dark, like the rest of the admin), ?look=off turns it off.
+// Only the full Calls screen wears it: colors are CSS variables set by the .calls-teal wrapper
+// (globals.css) and every class falls back to the purple admin look without it.
+const LOOK_KEY = 'moodeng_admin_calls_look';
+const LOOKS = ['teal', 'teal-light', 'teal-dark'];
+const readLook = (): string => {
+   try {
+      const fromLink = new URLSearchParams(window.location.search).get('look');
+      if (fromLink) {
+         if (LOOKS.includes(fromLink)) window.localStorage.setItem(LOOK_KEY, fromLink);
+         else window.localStorage.removeItem(LOOK_KEY);
+      }
+      const saved = window.localStorage.getItem(LOOK_KEY) ?? '';
+      return LOOKS.includes(saved) ? saved : '';
+   } catch {
+      return '';
+   }
+};
+const lookClass = (look: string): string => {
+   if (!look) return '';
+   // The admin shell is dark only, so plain 'teal' is the dark version; light is asked for by name.
+   return `calls-teal ${look === 'teal-light' ? 'calls-teal-light' : ''} rounded-[28px] p-4 sm:p-6`;
+};
+
 // "My calls": show one host's calls only. Remembered on this computer.
 const HOST_KEY = 'moodeng_admin_calls_host';
 const readSavedHost = () => {
@@ -62,14 +87,14 @@ const dayLabel = (dayStart: number, now: number) => {
 };
 
 const SCHEDULE_MARK: Record<ScheduleState, { icon: string; label: string; color: string }> = {
-   approved: { icon: '✅', label: 'Approved', color: 'text-emerald-300' },
-   no_show: { icon: '❌', label: 'No-show', color: 'text-amber-300' },
-   rejected: { icon: '🚫', label: 'Rejected', color: 'text-red-300' },
-   unmarked: { icon: '❔', label: 'Not marked', color: 'text-[#a89bb8]' },
-   now: { icon: '🟢', label: 'On now', color: 'text-emerald-300' },
-   next: { icon: '⏭', label: 'Up next', color: 'text-[#ffd166]' },
-   waiting: { icon: '⏳', label: 'Decide', color: 'text-amber-300' },
-   upcoming: { icon: '', label: '', color: 'text-[#a89bb8]' }
+   approved: { icon: '✅', label: 'Approved', color: 'text-[color:var(--ct-good,#6ee7b7)]' },
+   no_show: { icon: '❌', label: 'No-show', color: 'text-[color:var(--ct-warn,#fcd34d)]' },
+   rejected: { icon: '🚫', label: 'Rejected', color: 'text-[color:var(--ct-bad,#fca5a5)]' },
+   unmarked: { icon: '❔', label: 'Not marked', color: 'text-[color:var(--ct-dim,#a89bb8)]' },
+   now: { icon: '🟢', label: 'On now', color: 'text-[color:var(--ct-good,#6ee7b7)]' },
+   next: { icon: '⏭', label: 'Up next', color: 'text-[color:var(--ct-gold-text,#ffd166)]' },
+   waiting: { icon: '⏳', label: 'Decide', color: 'text-[color:var(--ct-warn,#fcd34d)]' },
+   upcoming: { icon: '', label: '', color: 'text-[color:var(--ct-dim,#a89bb8)]' }
 };
 
 // Cards slide to their new place when the order changes (a call starts, ends or is moved), so the eye
@@ -116,10 +141,10 @@ const RESULT_LABEL: Record<CallResult, string> = {
    unmarked: '❔ Not marked'
 };
 const RESULT_COLOR: Record<CallResult, string> = {
-   approved: 'text-emerald-300',
-   no_show: 'text-amber-300',
-   rejected: 'text-red-300',
-   unmarked: 'text-[#a89bb8]'
+   approved: 'text-[color:var(--ct-good,#6ee7b7)]',
+   no_show: 'text-[color:var(--ct-warn,#fcd34d)]',
+   rejected: 'text-[color:var(--ct-bad,#fca5a5)]',
+   unmarked: 'text-[color:var(--ct-dim,#a89bb8)]'
 };
 const RESULT_TABS: { id: ResultFilter; label: string }[] = [
    { id: 'approved', label: '✅ Approved' },
@@ -156,6 +181,7 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
    const [openId, setOpenId] = useState<string | null>(null);
    // Which day the schedule on the right shows (0 = today).
    const [dayOffset, setDayOffset] = useState(0);
+   const look = useMemo(() => (variant === 'full' ? lookClass(readLook()) : ''), [variant]);
    // '' = everyone's calls, else one host's (people asking for access without a call always show).
    const [hostFilter, setHostFilter] = useState(readSavedHost);
    const pickHost = (host: string) => {
@@ -325,7 +351,7 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
                   type="button"
                   disabled={busy}
                   onClick={() => decide(row, { requestId, decision: 'rejected' }, `Reject ${row.name}? They'll be told they can't borrow.`)}
-                  className={`${base} border border-[#3d1f6e] text-white hover:bg-[#2a1453]`}
+                  className={`${base} border border-[color:var(--ct-line2,#3d1f6e)] text-[color:var(--ct-ink,#fff)] hover:bg-[var(--ct-soft,#2a1453)]`}
                >
                   Reject
                </button>
@@ -339,7 +365,7 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
                type="button"
                disabled={busy}
                onClick={() => decide(row, { userId: row.userId, decision: 'attended' })}
-               className={`${base} border border-emerald-700 text-emerald-300 hover:bg-emerald-950`}
+               className={`${base} border border-emerald-700 text-[color:var(--ct-good,#6ee7b7)] hover:bg-emerald-950`}
             >
                Actually showed up — approve
             </button>
@@ -359,7 +385,7 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
                type="button"
                disabled={busy}
                onClick={() => decide(row, { userId: row.userId, decision: 'no_show' }, `Mark ${row.name} a no-show? They'll be asked to book again.`)}
-               className={`${base} border border-[#3d1f6e] text-white hover:bg-[#2a1453]`}
+               className={`${base} border border-[color:var(--ct-line2,#3d1f6e)] text-[color:var(--ct-ink,#fff)] hover:bg-[var(--ct-soft,#2a1453)]`}
             >
                ❌ No-show
             </button>
@@ -374,7 +400,7 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
                         `Reject ${row.name}? Their call is cancelled and they're told they can't borrow.`
                      )
                   }
-                  className={`${base} border border-red-800 text-red-300 hover:bg-red-950`}
+                  className={`${base} border border-red-800 text-[color:var(--ct-bad,#fca5a5)] hover:bg-red-950`}
                >
                   🚫 Reject
                </button>
@@ -385,19 +411,19 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
 
    const callTimeLine = (row: AdminCallApprovalRow, withDate: boolean) =>
       row.callStartsAt ? (
-         <p className="mt-0.5 text-sm font-bold text-[#c9a7ff]">
+         <p className="mt-0.5 text-sm font-bold text-[color:var(--ct-soft-ink,#c9a7ff)]">
             {withDate ? formatCallDate(row.callStartsAt) : `${formatCallTime(row.callStartsAt)} · ${relativeStart(row.callStartsAt, now)}`}
             {row.host ? ` · with ${row.host}` : ''}
          </p>
       ) : (
-         <p className="mt-0.5 text-sm font-bold text-[#c9a7ff]">Asked for access (no call)</p>
+         <p className="mt-0.5 text-sm font-bold text-[color:var(--ct-soft-ink,#c9a7ff)]">Asked for access (no call)</p>
       );
 
    const movedNote = (row: AdminCallApprovalRow) => {
       const m = moved[row.userId];
       if (!m || now - m.at > MOVED_NOTE_MS) return null;
       return (
-         <span className="rounded-full bg-amber-400/20 px-2.5 py-0.5 text-xs font-black text-amber-200">
+         <span className="rounded-full bg-amber-400/20 px-2.5 py-0.5 text-xs font-black text-[color:var(--ct-warn,#fde68a)]">
             🔄 Time changed · was {formatCallTime(m.from)}
          </span>
       );
@@ -412,29 +438,29 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
       return (
          <>
             {extra || row.facebookName ? (
-               <p className="break-words text-sm text-[#c9bde0]">
+               <p className="break-words text-sm text-[color:var(--ct-soft-ink,#c9bde0)]">
                   {[extra || (row.username ? `@${row.username}` : null), row.facebookName ? `FB: ${row.facebookName}` : null].filter(Boolean).join(' · ')}
                </p>
             ) : null}
             {p ? (
                <p className="mt-0.5 flex flex-wrap gap-x-3 text-sm font-bold">
                   {wa ? (
-                     <a className="text-emerald-300 underline" href={wa} rel="noopener noreferrer" target="_blank">
+                     <a className="text-[color:var(--ct-good,#6ee7b7)] underline" href={wa} rel="noopener noreferrer" target="_blank">
                         Chat on WhatsApp
                      </a>
                   ) : null}
                   {tg ? (
-                     <a className="text-sky-300 underline" href={tg} rel="noopener noreferrer" target="_blank">
+                     <a className="text-[color:var(--ct-link,#7dd3fc)] underline" href={tg} rel="noopener noreferrer" target="_blank">
                         @{p.telegramUsername?.replace(/^@/, '')}
                      </a>
                   ) : null}
-                  <span className="text-[#a89bb8]">
+                  <span className="text-[color:var(--ct-dim,#a89bb8)]">
                      KYC {p.kyc} · income doc {p.incomeDoc ?? 'none'}
                   </span>
                </p>
             ) : null}
-            {row.attendance ? <p className="mt-1 text-sm text-[#a89bb8]">{row.attendance}</p> : null}
-            {row.request?.reason ? <p className="mt-1 break-words text-sm text-[#a89bb8]">“{row.request.reason}”</p> : null}
+            {row.attendance ? <p className="mt-1 text-sm text-[color:var(--ct-dim,#a89bb8)]">{row.attendance}</p> : null}
+            {row.request?.reason ? <p className="mt-1 break-words text-sm text-[color:var(--ct-dim,#a89bb8)]">“{row.request.reason}”</p> : null}
             {row.outcome || row.loanAccessStatus === 'rejected' ? (
                <p className={`mt-1 text-sm font-black ${RESULT_COLOR[callResult(row)]}`}>
                   {RESULT_LABEL[callResult(row)]}
@@ -446,7 +472,7 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
    };
 
    const nameLink = (row: AdminCallApprovalRow, className: string) => (
-      <Link to={`/admin/user/${row.userId}`} title="Open everything about this person" className={`${className} hover:text-[#c9a7ff]`}>
+      <Link to={`/admin/user/${row.userId}`} title="Open everything about this person" className={`${className} hover:text-[color:var(--ct-soft-ink,#c9a7ff)]`}>
          {shortName(row.name)}
       </Link>
    );
@@ -456,7 +482,7 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
          <button
             type="button"
             onClick={() => setSheetRow(row)}
-            className={`rounded-xl font-black text-white ${big ? 'bg-[#8336f0] px-5 py-3 text-base hover:bg-[#9450f5]' : 'border border-[#8336f0] px-3.5 py-2 text-sm hover:bg-[#2a1453]'}`}
+            className={`rounded-xl font-black ${big ? 'bg-[var(--ct-pill,#8336f0)] px-5 py-3 text-base text-[color:var(--ct-pill-ink,#fff)] hover:bg-[var(--ct-pill-hover,#9450f5)]' : 'border border-[color:var(--ct-pill,#8336f0)] px-3.5 py-2 text-sm text-[color:var(--ct-ink,#fff)] hover:bg-[var(--ct-soft,#2a1453)]'}`}
          >
             📋 {big ? 'Get ready — call sheet' : 'Call sheet'}
          </button>
@@ -465,7 +491,7 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
                href={row.joinUrl}
                target="_blank"
                rel="noreferrer"
-               className={`rounded-xl border border-[#3d1f6e] font-black text-white no-underline hover:bg-[#2a1453] ${big ? 'px-5 py-3 text-base' : 'px-3.5 py-2 text-sm'}`}
+               className={`rounded-xl border border-[color:var(--ct-line2,#3d1f6e)] font-black text-[color:var(--ct-ink,#fff)] no-underline hover:bg-[var(--ct-soft,#2a1453)] ${big ? 'px-5 py-3 text-base' : 'px-3.5 py-2 text-sm'}`}
             >
                🎥 Join call
             </a>
@@ -481,16 +507,16 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
             key={row.userId}
             id={`call-${row.userId}`}
             data-flip={row.userId}
-            className={`rounded-3xl border-2 p-5 sm:p-6 ${kind === 'now' ? 'border-emerald-500 bg-emerald-950/30' : 'border-[#8336f0] bg-[#1c0a3a]'}`}
+            className={`rounded-3xl border-2 p-5 sm:p-6 ${kind === 'now' ? 'border-emerald-500 bg-emerald-950/30' : 'border-[color:var(--ct-pill,#8336f0)] bg-[var(--ct-card,#1c0a3a)]'}`}
          >
             <div className="flex flex-wrap items-center gap-2">
                <span
-                  className={`rounded-full px-3 py-1 text-xs font-black uppercase tracking-wide ${kind === 'now' ? 'bg-emerald-500 text-[#06281a]' : 'bg-[#ffd166] text-[#2a1453]'}`}
+                  className={`rounded-full px-3 py-1 text-xs font-black uppercase tracking-wide ${kind === 'now' ? 'bg-emerald-500 text-[#06281a]' : 'bg-[#ffd166] text-[color:var(--ct-gold-ink,#2a1453)]'}`}
                >
                   {kind === 'now' ? '🟢 On now' : '⏭ Up next'}
                </span>
-               <span className="text-lg font-black text-white">{relativeStart(row.callStartsAt, now)}</span>
-               <span className="text-base font-bold text-[#c9a7ff]">
+               <span className="text-lg font-black text-[color:var(--ct-ink,#fff)]">{relativeStart(row.callStartsAt, now)}</span>
+               <span className="text-base font-bold text-[color:var(--ct-soft-ink,#c9a7ff)]">
                   {formatCallTime(row.callStartsAt)}
                   {row.host ? ` · with ${row.host}` : ''}
                </span>
@@ -499,8 +525,8 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
             <div className="mt-3 flex items-start gap-4">
                <FaceThumb face={faces[row.userId]} name={shortName(row.name)} size="lg" />
                <div className="min-w-0 flex-1">
-                  <p className="flex flex-wrap items-center gap-2 break-words text-3xl font-black text-white">
-                     {nameLink(row, 'text-white no-underline')}
+                  <p className="flex flex-wrap items-center gap-2 break-words text-3xl font-black text-[color:var(--ct-ink,#fff)]">
+                     {nameLink(row, 'text-[color:var(--ct-ink,#fff)] no-underline')}
                      {indo.has(row.userId) ? <IndonesiaBadge /> : null}
                   </p>
                   <div className="mt-1">{renderDetails(row)}</div>
@@ -518,13 +544,13 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
                   <button
                      type="button"
                      onClick={() => setOpenId(open ? null : row.userId)}
-                     className="rounded-xl px-3 py-3 text-sm font-black text-[#c9a7ff] hover:text-white"
+                     className="rounded-xl px-3 py-3 text-sm font-black text-[color:var(--ct-soft-ink,#c9a7ff)] hover:text-[color:var(--ct-ink,#fff)]"
                   >
                      {open ? 'Hide decision ▴' : 'Decide now ▾'}
                   </button>
                ) : null}
             </div>
-            {open ? <div className="mt-3 flex flex-wrap gap-2 border-t border-[#2a1453] pt-3">{renderActions(row)}</div> : null}
+            {open ? <div className="mt-3 flex flex-wrap gap-2 border-t border-[color:var(--ct-line,#2a1453)] pt-3">{renderActions(row)}</div> : null}
          </div>
       );
    };
@@ -540,24 +566,24 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
             key={row.userId}
             id={`call-${row.userId}`}
             data-flip={row.userId}
-            className={`rounded-2xl border bg-[#1c0a3a] ${open ? 'p-4' : 'px-4 py-2.5'} ${live ? 'border-emerald-600' : 'border-[#2a1453]'}`}
+            className={`rounded-2xl border bg-[var(--ct-card,#1c0a3a)] ${open ? 'p-4' : 'px-4 py-2.5'} ${live ? 'border-emerald-600' : 'border-[color:var(--ct-line,#2a1453)]'}`}
          >
             <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
                <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1">
                   {mode === 'line' && row.callStartsAt ? (
-                     <span className="w-[5.5rem] shrink-0 text-base font-black tabular-nums text-white">
+                     <span className="w-[5.5rem] shrink-0 text-base font-black tabular-nums text-[color:var(--ct-ink,#fff)]">
                         {finished
                            ? new Date(row.callStartsAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
                            : formatClock(Date.parse(row.callStartsAt))}
                      </span>
                   ) : null}
-                  <span className="flex min-w-0 flex-wrap items-center gap-2 break-words text-lg font-black text-white">
+                  <span className="flex min-w-0 flex-wrap items-center gap-2 break-words text-lg font-black text-[color:var(--ct-ink,#fff)]">
                      {variant === 'full' && tab === 'upcoming' ? <FaceThumb face={faces[row.userId]} name={shortName(row.name)} /> : null}
-                     {nameLink(row, 'text-white underline decoration-[#8336f0] decoration-2 underline-offset-4')}
+                     {nameLink(row, 'text-[color:var(--ct-ink,#fff)] underline decoration-[color:var(--ct-pill,#8336f0)] decoration-2 underline-offset-4')}
                      {indo.has(row.userId) ? <IndonesiaBadge /> : null}
                   </span>
                   {mode === 'line' ? (
-                     <span className="text-sm font-bold text-[#a89bb8]">
+                     <span className="text-sm font-bold text-[color:var(--ct-dim,#a89bb8)]">
                         {finished ? (
                            <span className={RESULT_COLOR[callResult(row)]}>{RESULT_LABEL[callResult(row)]}</span>
                         ) : (
@@ -576,7 +602,7 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
                         aria-expanded={open}
                         aria-label={open ? 'Show less' : 'Show more'}
                         onClick={() => setOpenId(open ? null : row.userId)}
-                        className="rounded-xl border border-[#3d1f6e] px-3 py-2 text-sm font-black text-[#c9bde0] hover:bg-[#2a1453]"
+                        className="rounded-xl border border-[color:var(--ct-line2,#3d1f6e)] px-3 py-2 text-sm font-black text-[color:var(--ct-soft-ink,#c9bde0)] hover:bg-[var(--ct-soft,#2a1453)]"
                      >
                         {open ? '▴' : '▾'}
                      </button>
@@ -598,8 +624,8 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
    };
 
    const heading = (title: string, count: number) => (
-      <h3 className="text-sm font-black uppercase tracking-wide text-[#a89bb8]">
-         {title} <span className="text-[#6f6385]">{count}</span>
+      <h3 className="text-sm font-black uppercase tracking-wide text-[color:var(--ct-dim,#a89bb8)]">
+         {title} <span className="text-[color:var(--ct-faint,#6f6385)]">{count}</span>
       </h3>
    );
 
@@ -627,23 +653,23 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
    };
 
    const scheduleCard = (
-      <aside className="rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-4 xl:sticky xl:top-4">
+      <aside className="rounded-2xl border border-[color:var(--ct-line,#2a1453)] bg-[var(--ct-card,#1c0a3a)] p-4 xl:sticky xl:top-4">
          <div className="flex items-center justify-between gap-2">
             <button
                type="button"
                aria-label="Day before"
                disabled={dayOffset <= -7}
                onClick={() => setDayOffset((d) => d - 1)}
-               className="rounded-lg border border-[#3d1f6e] px-2.5 py-1 text-sm font-black text-white hover:bg-[#2a1453] disabled:opacity-40"
+               className="rounded-lg border border-[color:var(--ct-line2,#3d1f6e)] px-2.5 py-1 text-sm font-black text-[color:var(--ct-ink,#fff)] hover:bg-[var(--ct-soft,#2a1453)] disabled:opacity-40"
             >
                ‹
             </button>
             <div className="text-center">
-               <p className="text-base font-black text-white">{dayLabel(dayStart, now)}</p>
-               <p className="text-xs text-[#a89bb8]">
+               <p className="text-base font-black text-[color:var(--ct-ink,#fff)]">{dayLabel(dayStart, now)}</p>
+               <p className="text-xs text-[color:var(--ct-dim,#a89bb8)]">
                   {new Date(dayStart).toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' })}
                   {dayOffset !== 0 ? (
-                     <button type="button" onClick={() => setDayOffset(0)} className="ml-2 font-black text-[#c9a7ff] hover:text-white">
+                     <button type="button" onClick={() => setDayOffset(0)} className="ml-2 font-black text-[color:var(--ct-soft-ink,#c9a7ff)] hover:text-[color:var(--ct-ink,#fff)]">
                         Back to today
                      </button>
                   ) : null}
@@ -654,14 +680,14 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
                aria-label="Day after"
                disabled={dayOffset >= 13}
                onClick={() => setDayOffset((d) => d + 1)}
-               className="rounded-lg border border-[#3d1f6e] px-2.5 py-1 text-sm font-black text-white hover:bg-[#2a1453] disabled:opacity-40"
+               className="rounded-lg border border-[color:var(--ct-line2,#3d1f6e)] px-2.5 py-1 text-sm font-black text-[color:var(--ct-ink,#fff)] hover:bg-[var(--ct-soft,#2a1453)] disabled:opacity-40"
             >
                ›
             </button>
          </div>
          {schedule.length ? (
             <>
-               <p className="mt-2 text-center text-xs font-bold text-[#a89bb8]">
+               <p className="mt-2 text-center text-xs font-bold text-[color:var(--ct-dim,#a89bb8)]">
                   {schedule.length} {schedule.length === 1 ? 'call' : 'calls'} ·{' '}
                   {schedule.filter((e) => e.state === 'now' || e.state === 'next' || e.state === 'upcoming').length} to go
                </p>
@@ -673,7 +699,7 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
                      return (
                         <li key={entry.row.userId}>
                            {nowLine ? (
-                              <div className="my-1.5 flex items-center gap-2 text-[11px] font-black uppercase text-[#ffd166]">
+                              <div className="my-1.5 flex items-center gap-2 text-[11px] font-black uppercase text-[color:var(--ct-gold-text,#ffd166)]">
                                  <span className="h-px flex-1 bg-[#ffd166]/60" />
                                  Now {formatClock(now)}
                                  <span className="h-px flex-1 bg-[#ffd166]/60" />
@@ -682,13 +708,13 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
                            <button
                               type="button"
                               onClick={() => jumpTo(entry.row)}
-                              className={`flex w-full items-baseline gap-2 rounded-lg px-2 py-1.5 text-left hover:bg-[#2a1453] ${entry.state === 'now' ? 'bg-emerald-950/50' : entry.state === 'next' ? 'bg-[#2a1453]' : ''}`}
+                              className={`flex w-full items-baseline gap-2 rounded-lg px-2 py-1.5 text-left hover:bg-[var(--ct-soft,#2a1453)] ${entry.state === 'now' ? 'bg-emerald-950/50' : entry.state === 'next' ? 'bg-[var(--ct-soft,#2a1453)]' : ''}`}
                            >
-                              <span className={`w-[4.75rem] shrink-0 whitespace-nowrap text-sm font-black tabular-nums ${done ? 'text-[#6f6385]' : 'text-white'}`}>
+                              <span className={`w-[4.75rem] shrink-0 whitespace-nowrap text-sm font-black tabular-nums ${done ? 'text-[color:var(--ct-faint,#6f6385)]' : 'text-[color:var(--ct-ink,#fff)]'}`}>
                                  {formatClock(entry.startMs)}
                               </span>
                               <span className="min-w-0 flex-1">
-                                 <span className={`block truncate text-sm font-bold ${done ? 'text-[#a89bb8]' : 'text-white'}`}>{shortName(entry.row.name)}</span>
+                                 <span className={`block truncate text-sm font-bold ${done ? 'text-[color:var(--ct-dim,#a89bb8)]' : 'text-[color:var(--ct-ink,#fff)]'}`}>{shortName(entry.row.name)}</span>
                                  <span className={`block text-xs font-bold ${mark.color}`}>
                                     {[mark.icon && `${mark.icon} ${mark.label}`, entry.row.host].filter(Boolean).join(' · ')}
                                  </span>
@@ -700,7 +726,7 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
                </ol>
             </>
          ) : (
-            <p className="mt-4 text-center text-sm text-[#a89bb8]">{rows ? 'No calls this day.' : 'Loading…'}</p>
+            <p className="mt-4 text-center text-sm text-[color:var(--ct-dim,#a89bb8)]">{rows ? 'No calls this day.' : 'Loading…'}</p>
          )}
       </aside>
    );
@@ -709,13 +735,13 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
       <>
          {notice ? (
             <p
-               className={`rounded-2xl border p-4 text-base font-bold ${notice.ok ? 'border-emerald-900 bg-emerald-950/60 text-emerald-300' : 'border-amber-900 bg-amber-950/60 text-amber-300'}`}
+               className={`rounded-2xl border p-4 text-base font-bold ${notice.ok ? 'border-emerald-900 bg-emerald-950/60 text-[color:var(--ct-good,#6ee7b7)]' : 'border-amber-900 bg-amber-950/60 text-[color:var(--ct-warn,#fcd34d)]'}`}
             >
                {notice.text}
             </p>
          ) : null}
-         {error ? <p className="rounded-2xl border border-red-900 bg-red-950/60 p-4 text-base font-bold text-red-300">{error}</p> : null}
-         {!rows && !error ? <p className="text-lg text-[#a89bb8]">Loading calls…</p> : null}
+         {error ? <p className="rounded-2xl border border-red-900 bg-red-950/60 p-4 text-base font-bold text-[color:var(--ct-bad,#fca5a5)]">{error}</p> : null}
+         {!rows && !error ? <p className="text-lg text-[color:var(--ct-dim,#a89bb8)]">Loading calls…</p> : null}
       </>
    );
 
@@ -728,14 +754,14 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
             <div className="flex flex-wrap items-end justify-between gap-3">
                <div>
                   <h2 className="break-words text-2xl font-black sm:text-3xl">
-                     Waiting for approval {rows ? <span className="text-[#a89bb8]">{groups.needsDecision.length}</span> : null}
+                     Waiting for approval {rows ? <span className="text-[color:var(--ct-dim,#a89bb8)]">{groups.needsDecision.length}</span> : null}
                   </h2>
-                  <p className="mt-1.5 max-w-3xl text-base text-[#a89bb8]">
+                  <p className="mt-1.5 max-w-3xl text-base text-[color:var(--ct-dim,#a89bb8)]">
                      New borrowers who had their call (or asked for access) and need your ✅ before they can apply.
                   </p>
                </div>
                {onOpenCalls ? (
-                  <button type="button" onClick={onOpenCalls} className="text-sm font-black text-[#c9a7ff] hover:text-white">
+                  <button type="button" onClick={onOpenCalls} className="text-sm font-black text-[color:var(--ct-soft-ink,#c9a7ff)] hover:text-[color:var(--ct-ink,#fff)]">
                      All calls →
                   </button>
                ) : null}
@@ -745,7 +771,7 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
                groups.needsDecision.length ? (
                   <ul className="space-y-3">{groups.needsDecision.map((r) => renderRow(r))}</ul>
                ) : (
-                  <p className="text-base text-[#a89bb8]">Nobody is waiting. 🎉</p>
+                  <p className="text-base text-[color:var(--ct-dim,#a89bb8)]">Nobody is waiting. 🎉</p>
                )
             ) : null}
          </section>
@@ -754,11 +780,11 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
 
    const noCalls = !line.onNow.length && !line.upNext;
    return (
-      <section className="space-y-5">
+      <section className={`space-y-5 ${look}`}>
          {sheet}
          <div>
             <h2 className="break-words text-2xl font-black sm:text-3xl">Calls</h2>
-            <p className="mt-1 text-base text-[#a89bb8]">Who you meet next, and one tap to get ready. The list moves by itself.</p>
+            <p className="mt-1 text-base text-[color:var(--ct-dim,#a89bb8)]">Who you meet next, and one tap to get ready. The list moves by itself.</p>
          </div>
          {banners}
          <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-start">
@@ -773,7 +799,7 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
                            role="tab"
                            aria-selected={tab === id}
                            onClick={() => setTab(id)}
-                           className={`rounded-full px-3.5 py-1.5 text-sm font-black ${tab === id ? 'bg-[#8336f0] text-white' : 'border border-[#3d1f6e] text-[#c9bde0] hover:bg-[#2a1453]'}`}
+                           className={`rounded-full px-3.5 py-1.5 text-sm font-black ${tab === id ? 'bg-[var(--ct-pill,#8336f0)] text-[color:var(--ct-pill-ink,#fff)]' : 'border border-[color:var(--ct-line2,#3d1f6e)] text-[color:var(--ct-soft-ink,#c9bde0)] hover:bg-[var(--ct-soft,#2a1453)]'}`}
                         >
                            {label}{' '}
                            {rows ? (
@@ -785,14 +811,14 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
                      ))}
                   </div>
                   {hosts.length > 1 ? (
-                     <div className="ml-auto flex overflow-hidden rounded-full border border-[#3d1f6e]" role="group" aria-label="Whose calls">
+                     <div className="ml-auto flex overflow-hidden rounded-full border border-[color:var(--ct-line2,#3d1f6e)]" role="group" aria-label="Whose calls">
                         {['', ...hosts].map((host) => (
                            <button
                               key={host || 'all'}
                               type="button"
                               aria-pressed={activeHost === host}
                               onClick={() => pickHost(host)}
-                              className={`px-3 py-1.5 text-sm font-black capitalize ${activeHost === host ? 'bg-[#ffd166] text-[#2a1453]' : 'text-[#c9bde0] hover:bg-[#2a1453]'}`}
+                              className={`px-3 py-1.5 text-sm font-black capitalize ${activeHost === host ? 'bg-[#ffd166] text-[color:var(--ct-gold-ink,#2a1453)]' : 'text-[color:var(--ct-soft-ink,#c9bde0)] hover:bg-[var(--ct-soft,#2a1453)]'}`}
                            >
                               {host || 'Everyone'}
                            </button>
@@ -804,7 +830,7 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
                      value={query}
                      onChange={(e) => setQuery(e.target.value)}
                      placeholder="Search a name"
-                     className={`${hosts.length > 1 ? '' : 'ml-auto '}w-full max-w-[14rem] rounded-full border border-[#3d1f6e] bg-[#1c0a3a] px-4 py-1.5 text-sm text-white placeholder:text-[#a89bb8]`}
+                     className={`${hosts.length > 1 ? '' : 'ml-auto '}w-full max-w-[14rem] rounded-full border border-[color:var(--ct-line2,#3d1f6e)] bg-[var(--ct-card,#1c0a3a)] px-4 py-1.5 text-sm text-[color:var(--ct-ink,#fff)] placeholder:text-[color:var(--ct-dim,#a89bb8)]`}
                   />
                </div>
                {rows && tab === 'upcoming' ? (
@@ -812,7 +838,7 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
                      {line.onNow.map((r) => renderHero(r, 'now'))}
                      {line.upNext ? renderHero(line.upNext, 'next') : null}
                      {noCalls && !line.waiting.length ? (
-                        <p className="rounded-2xl border border-[#2a1453] bg-[#1c0a3a] p-5 text-base text-[#a89bb8]">
+                        <p className="rounded-2xl border border-[color:var(--ct-line,#2a1453)] bg-[var(--ct-card,#1c0a3a)] p-5 text-base text-[color:var(--ct-dim,#a89bb8)]">
                            {query ? 'No match.' : 'No calls booked in the next 2 weeks. 🎉'}
                         </p>
                      ) : null}
@@ -833,13 +859,13 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
                {rows && tab !== 'upcoming' ? (
                   <div className="space-y-3">
                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <p className="text-sm text-[#a89bb8]">
+                        <p className="text-sm text-[color:var(--ct-dim,#a89bb8)]">
                            Last 30 days{tab === 'all' && resultCounts.unmarked ? ` · ${resultCounts.unmarked} never marked` : ''}
                         </p>
                         <button
                            type="button"
                            onClick={() => setNewestFirst((v) => !v)}
-                           className="rounded-full border border-[#8336f0] px-3.5 py-1.5 text-sm font-black text-white hover:bg-[#2a1453]"
+                           className="rounded-full border border-[color:var(--ct-pill,#8336f0)] px-3.5 py-1.5 text-sm font-black text-[color:var(--ct-ink,#fff)] hover:bg-[var(--ct-soft,#2a1453)]"
                         >
                            {newestFirst ? '↓ Newest first' : '↑ Oldest first'}
                         </button>
@@ -847,7 +873,7 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
                      {completedShown.length ? (
                         <ul className="space-y-2">{completedShown.map((r) => renderRow(r, 'line'))}</ul>
                      ) : (
-                        <p className="text-base text-[#a89bb8]">{query ? 'No match.' : 'None in the last 30 days.'}</p>
+                        <p className="text-base text-[color:var(--ct-dim,#a89bb8)]">{query ? 'No match.' : 'None in the last 30 days.'}</p>
                      )}
                   </div>
                ) : null}

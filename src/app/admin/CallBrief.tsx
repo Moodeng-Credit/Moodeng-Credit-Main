@@ -43,7 +43,7 @@ export default function CallBriefCard({ userId, auto = true, light = false }: Ca
 
    const tone = light
       ? { box: 'border-[#e3e3e3] bg-[#faf9ff]', title: 'text-[#6b55f7]', text: 'text-[#1f1f1f]', dim: 'text-[#7a7a7a]', button: 'border-[#6b55f7] text-[#6b55f7]' }
-      : { box: 'border-[#3d1f6e] bg-[#160830]', title: 'text-[#ffd166]', text: 'text-white', dim: 'text-[#a89bb8]', button: 'border-[#8336f0] text-[#c9a7ff]' };
+      : { box: 'border-[color:var(--ct-line2,#3d1f6e)] bg-[var(--ct-deep,#160830)]', title: 'text-[color:var(--ct-gold-text,#ffd166)]', text: 'text-[color:var(--ct-ink,#fff)]', dim: 'text-[color:var(--ct-dim,#a89bb8)]', button: 'border-[color:var(--ct-pill,#8336f0)] text-[color:var(--ct-soft-ink,#c9a7ff)]' };
    const button = `rounded-lg border px-2.5 py-1 text-xs font-black ${tone.button}`;
 
    const list = (title: string, icon: string, items: string[]) =>

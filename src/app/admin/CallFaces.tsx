@@ -7,10 +7,18 @@ import { type AdminCallFace, getAdminCallFaces } from '@/app/admin/adminSupabase
 // The borrower's face for the host: sign-in profile picture, the pre-screening intro video and the
 // photos they took there. Used on the Calls list, the call sheet and the account page.
 
+const FACE_REFRESH_MS = 26 * 60_000;
+
 /** Faces for these people. Quiet on failure: the page just shows initials. */
 export function useCallFaces(userIds: string[]): Record<string, AdminCallFace> {
    const [faces, setFaces] = useState<Record<string, AdminCallFace>>({});
    const key = [...new Set(userIds)].sort().join(',');
+   // Storage links last an hour: ask again before they run out, so a tab left open keeps its pictures.
+   const [round, setRound] = useState(0);
+   useEffect(() => {
+      const timer = window.setInterval(() => setRound((n) => n + 1), FACE_REFRESH_MS);
+      return () => window.clearInterval(timer);
+   }, []);
    useEffect(() => {
       if (!key) return;
       let cancelled = false;
@@ -22,7 +30,7 @@ export function useCallFaces(userIds: string[]): Record<string, AdminCallFace> {
       return () => {
          cancelled = true;
       };
-   }, [key]);
+   }, [key, round]);
    return faces;
 }
 
@@ -31,7 +39,7 @@ const SIZES = { sm: 'h-10 w-10 text-base', md: 'h-14 w-14 text-xl', lg: 'h-24 w-
 /** Round face: profile picture, else a still from their intro video, else their initial. */
 export function FaceThumb({ face, name, size = 'sm' }: { face?: AdminCallFace | null; name: string; size?: keyof typeof SIZES }) {
    const [avatarBroken, setAvatarBroken] = useState(false);
-   const box = `${SIZES[size]} shrink-0 overflow-hidden rounded-full border-2 border-[#8336f0] bg-[#2a1453]`;
+   const box = `${SIZES[size]} shrink-0 overflow-hidden rounded-full border-2 border-[color:var(--ct-pill,#8336f0)] bg-[var(--ct-soft,#2a1453)]`;
    if (face?.avatar && !avatarBroken) {
       return <img src={face.avatar} alt="" loading="lazy" referrerPolicy="no-referrer" onError={() => setAvatarBroken(true)} className={`${box} object-cover`} />;
    }
@@ -40,7 +48,7 @@ export function FaceThumb({ face, name, size = 'sm' }: { face?: AdminCallFace | 
       return <video src={`${face.clip}#t=0.5`} muted playsInline preload="metadata" tabIndex={-1} aria-hidden="true" className={`${box} object-cover`} />;
    }
    return (
-      <span aria-hidden="true" className={`${box} grid place-items-center font-black text-white`}>
+      <span aria-hidden="true" className={`${box} grid place-items-center font-black text-[color:var(--ct-ink,#fff)]`}>
          {(name.trim().charAt(0) || '?').toUpperCase()}
       </span>
    );
@@ -53,8 +61,8 @@ export function FaceStrip({ face, light = false }: { face?: AdminCallFace | null
    const avatar = face.avatar && !avatarBroken ? face.avatar : null;
    const proof = face.proof ?? [];
    if (!avatar && !face.clip && !face.photos.length && !proof.length) return null;
-   const tile = `h-28 w-24 rounded-xl border object-cover ${light ? 'border-[#e3e3e3] bg-[#f5f5f5]' : 'border-[#2a1453] bg-black/30'}`;
-   const caption = `mt-1 text-center text-[11px] font-black uppercase ${light ? 'text-[#6b6b6b]' : 'text-[#a89bb8]'}`;
+   const tile = `h-28 w-24 rounded-xl border object-cover ${light ? 'border-[#e3e3e3] bg-[#f5f5f5]' : 'border-[color:var(--ct-line,#2a1453)] bg-black/30'}`;
+   const caption = `mt-1 text-center text-[11px] font-black uppercase ${light ? 'text-[#6b6b6b]' : 'text-[color:var(--ct-dim,#a89bb8)]'}`;
    return (
       <div className="flex flex-wrap gap-3">
          {avatar ? (
@@ -75,7 +83,7 @@ export function FaceStrip({ face, light = false }: { face?: AdminCallFace | null
                <p className={caption}>{photo.label}</p>
             </a>
          ))}
-         {proof.length ? <span aria-hidden="true" className={`mx-1 w-px self-stretch ${light ? 'bg-[#e3e3e3]' : 'bg-[#2a1453]'}`} /> : null}
+         {proof.length ? <span aria-hidden="true" className={`mx-1 w-px self-stretch ${light ? 'bg-[#e3e3e3]' : 'bg-[var(--ct-soft,#2a1453)]'}`} /> : null}
          {proof.map((file) => (
             <a key={file.url} href={file.url} target="_blank" rel="noreferrer" title="Open full size" className="block no-underline">
                {file.image ? (
