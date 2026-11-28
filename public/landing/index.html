@@ -105,6 +105,11 @@
          .ask-section, .dignity-section,
          html[data-landing-version] #main-content > .ask-section, html[data-landing-version] #main-content > .dignity-section { background: var(--canvas); }
          .final-cta .button.light, a.button.light { border: 0; background: #ffd43b; color: #141216; }
+         /* The wide layout hides the first-loan facts strip and the everyday-moments photos; the
+            real-numbers strip and the photos are shown on it. */
+         html[data-landing-version='2'] #main-content > .fact-strip.numbers-strip,
+         html[data-landing-version='2'] #main-content > .life-section { display: block; }
+         html[data-landing-version='2'] .numbers-strip .fact-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
          .display em, .section-title em, .page-title em { color: inherit; font-family: inherit; font-style: normal; font-weight: inherit; letter-spacing: inherit; }
          .eyebrow { color: var(--muted); font-size: 1rem; font-weight: 700; letter-spacing: 0; text-transform: none; }
          html[data-landing-version='2'] #main-content > .hero-home { background: #141216; color: #fff9ec; }
@@ -513,41 +518,41 @@
                <div class="portrait-rail" aria-label="Illustrative borrower moments">
                   <figure class="portrait reveal">
                      <img
-                        src="/landing/assets/life/school-fee.jpg"
-                        alt="Illustrative scene of a mother going through household bills at home"
+                        src="/landing/assets/life/moment-bills.jpg"
+                        alt="Illustration: hands holding an electricity bill and a few peso notes at a kitchen table"
                         loading="lazy"
-                        width="1086"
-                        height="1448"
+                        width="896"
+                        height="1200"
                      />
                      <figcaption><span>Illustrative moment</span>Bills due before payday</figcaption>
                   </figure>
                   <figure class="portrait reveal">
                      <img
-                        src="/landing/assets/life/rider-helmet.jpg"
-                        alt="Illustrative scene of a delivery rider fastening a protective helmet beside a scooter"
+                        src="/landing/assets/life/moment-helmet.jpg"
+                        alt="Illustration: a worn helmet on a parked delivery scooter"
                         loading="lazy"
-                        width="1086"
-                        height="1448"
+                        width="896"
+                        height="1200"
                      />
                      <figcaption><span>Illustrative moment</span>A safer helmet for the next shift</figcaption>
                   </figure>
                   <figure class="portrait reveal">
                      <img
-                        src="/landing/assets/life/repair-shop.jpg"
-                        alt="Illustrative scene of a repair-shop owner testing a tool at the workbench"
+                        src="/landing/assets/life/moment-repair.jpg"
+                        alt="Illustration: hands repairing a fan motor at a workbench"
                         loading="lazy"
-                        width="1086"
-                        height="1448"
+                        width="896"
+                        height="1200"
                      />
                      <figcaption><span>Illustrative moment</span>A tool that keeps the work moving</figcaption>
                   </figure>
                   <figure class="portrait reveal">
                      <img
-                        src="/landing/assets/life/store-restock.jpg"
-                        alt="Illustrative scene of a neighborhood shop owner restocking shelves at dawn"
+                        src="/landing/assets/life/moment-restock.jpg"
+                        alt="Illustration: hands restocking the shelves of a sari-sari store"
                         loading="lazy"
-                        width="1086"
-                        height="1448"
+                        width="896"
+                        height="1200"
                      />
                      <figcaption><span>Illustrative moment</span>Restock today, sell tomorrow</figcaption>
                   </figure>
@@ -574,7 +579,7 @@
 
                   <div class="deal-visual-stage" aria-live="polite">
                      <div class="deal-stage-head">
-                        <span>Inside the current product</span>
+                        <span>How it looks in the app</span>
                      </div>
 
                      <div class="deal-panel-stack">
@@ -599,13 +604,13 @@
                            </div>
                            <figure class="deal-product-shot deal-product-shot-board">
                               <img
-                                 src="/landing/assets/app/step2-board-cards-hd.png"
-                                 alt="The current Moodeng funding board showing request amounts, expected returns, and due dates"
+                                 src="/landing/assets/app/example-board.png"
+                                 alt="Example of the Moodeng request board: what each request asks for, pays back, and when"
                                  width="853"
                                  height="1844"
                                  loading="lazy"
                               />
-                              <figcaption>Current funding board</figcaption>
+                              <figcaption>Example request board</figcaption>
                            </figure>
                         </article>
 
@@ -613,25 +618,25 @@
                            <div class="deal-product-copy">
                               <p class="deal-panel-label">Cash out your way</p>
                               <h3>Choose a route to pesos.</h3>
-                              <p class="deal-product-note">PDAX, GCrypto, Binance, Moneybees, or Coins.ph (temporarily paused) — every available route stays visible in Moodeng. Moneybees is an external handoff.</p>
+                              <p class="deal-product-note">GCash, PDAX, Binance or Moneybees. You pick the app you already use.</p>
                               <span class="deal-state-pill"><i aria-hidden="true"></i> Provider terms are shown before you continue</span>
                            </div>
                            <figure class="deal-product-shot deal-product-shot-routes">
                               <img
-                                 src="/landing/assets/app/cashout-product-routes-hd.png"
-                                 alt="The Moodeng cash-out selector showing Coins.ph, GCrypto, PDAX, and Binance"
+                                 src="/landing/assets/app/example-cashout-routes.png"
+                                 alt="Example of the Moodeng cash-out screen showing GCash, PDAX and Binance"
                                  width="956"
                                  height="1645"
                                  loading="lazy"
                               />
-                              <figcaption>Current cash-out selector</figcaption>
+                              <figcaption>Example cash-out screen</figcaption>
                            </figure>
                         </article>
 
                         <article class="deal-panel deal-panel-product" data-deal-panel>
                            <div class="deal-product-copy">
                               <p class="deal-panel-label">Repay and build your record</p>
-                              <h3>Pay in parts or finish it.</h3>
+                              <h3>Pay back, borrow more.</h3>
                               <p class="deal-product-note">Completed repayments become history future funders can review and can unlock higher available limits.</p>
                               <div class="deal-growth-rail" aria-label="Illustrative limit progression: 15 dollars, then 10 dollars more each level">
                                  <span><b>$15</b><small>First limit</small></span>
@@ -643,13 +648,13 @@
                            </div>
                            <figure class="deal-product-shot deal-product-shot-repay">
                               <img
-                                 src="/landing/assets/app/repay-product-amount-hd.png"
-                                 alt="The current Moodeng repayment screen showing partial and full payment controls"
+                                 src="/landing/assets/app/example-repay.png"
+                                 alt="Example of the Moodeng repay screen: pay $16.50, then a bigger next loan"
                                  width="853"
                                  height="1844"
                                  loading="lazy"
                               />
-                              <figcaption>Current repayment controls</figcaption>
+                              <figcaption>Example repay screen</figcaption>
                            </figure>
                         </article>
                      </div>
@@ -687,33 +692,33 @@
                      <figure class="deal-mobile-scene">
                         <div class="deal-mobile-device">
                            <img
-                              src="/landing/assets/app/step2-board-cards-hd.png"
+                              src="/landing/assets/app/example-board.png"
                               alt="The current Moodeng funding board showing open requests"
                               width="853"
                               height="1844"
                               loading="lazy"
                            />
                         </div>
-                        <figcaption>Current funding board. Funding is not guaranteed.</figcaption>
+                        <figcaption>Example request board. Funding is not guaranteed.</figcaption>
                      </figure>
                   </li>
                   <li data-deal-step>
                      <span class="mark" aria-hidden="true">03</span
                      ><span
                         ><b>Cash out your way</b
-                        ><small>Choose a current provider. Moneybees is an external handoff, and other routes remain visible.</small></span
+                        ><small>Pick the app you already use: GCash, PDAX, Binance or Moneybees.</small></span
                      >
                      <figure class="deal-mobile-scene">
                         <div class="deal-mobile-device">
                            <img
-                              src="/landing/assets/app/cashout-product-moneybees-hd.png"
-                              alt="The current Moodeng Moneybees handoff"
+                              src="/landing/assets/app/example-cashout.png"
+                              alt="Example of the Moodeng cash-out screen: $15 to GCash"
                               width="853"
                               height="1844"
                               loading="lazy"
                            />
                         </div>
-                        <figcaption>Current Moneybees handoff</figcaption>
+                        <figcaption>Example cash-out screen</figcaption>
                      </figure>
                   </li>
                   <li data-deal-step>
@@ -724,7 +729,7 @@
                      <figure class="deal-mobile-scene">
                         <div class="deal-mobile-device">
                            <img
-                              src="/landing/assets/app/repay-product-amount-hd.png"
+                              src="/landing/assets/app/example-repay.png"
                               alt="The current Moodeng repayment screen"
                               width="853"
                               height="1844"
@@ -736,7 +741,7 @@
                            ><span><b>$25</b><small>More history</small></span><i aria-hidden="true"></i
                            ><span><b>$35+</b><small>Longer record</small></span>
                         </div>
-                        <figcaption>Actual repayment controls. Limit progression is illustrative.</figcaption>
+                        <figcaption>Example repay screen.</figcaption>
                      </figure>
                   </li>
                </ul>
@@ -826,6 +831,33 @@
                   </div>
                </div>
             </div>
+         </section>
+
+         <!-- Real numbers, counted from the loans table on 2026-11-28 (funded, non-test, non-refunded
+              loans). Update them by hand and keep the "as of" line honest. Same four as the phone page. -->
+         <section class="fact-strip numbers-strip" aria-label="Moodeng so far, as of November 2026">
+            <dl class="container fact-grid">
+               <div class="fact">
+                  <dt>Loans funded</dt>
+                  <dd>99</dd>
+                  <small>As of November 2026.</small>
+               </div>
+               <div class="fact">
+                  <dt>People funded</dt>
+                  <dd>57</dd>
+                  <small>Each one ID checked.</small>
+               </div>
+               <div class="fact">
+                  <dt>Paid back</dt>
+                  <dd>42 of 43</dd>
+                  <small>Of the loans due so far.</small>
+               </div>
+               <div class="fact">
+                  <dt>Typical wait</dt>
+                  <dd>22 min</dd>
+                  <small>From asking to funded.</small>
+               </div>
+            </dl>
          </section>
 
          <section class="section" id="borrower-stories" aria-labelledby="proof-heading">
