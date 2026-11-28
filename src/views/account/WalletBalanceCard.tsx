@@ -152,6 +152,27 @@ const WALLET_COPY: Record<LocaleCode, WalletCopy> = {
       copyAddress: 'Sao chép',
       copied: 'Đã sao chép địa chỉ',
       copyFailed: 'Sao chép thất bại'
+   },
+   es: {
+      availableBalance: 'Saldo disponible',
+      subtitle: 'El dinero que recibas llega aquí.',
+      emptySubtitle: 'Cuando un Moo-lender te financie, el dinero aparecerá aquí.',
+      moneyArrivedTitle: 'Ha llegado dinero',
+      moneyArrivedBody: 'ha llegado a tu cartera',
+      cashOut: 'Retirar',
+      addMoney: 'Añadir dinero',
+      addMoneyStep1: 'Compra USDC en GCash (GCrypto), Coins.ph (en pausa temporalmente) o en el exchange que uses.',
+      addMoneyStep2: 'Envíalo a la dirección de tu cartera que aparece abajo, eligiendo la red Base.',
+      addMoneyStep3: 'Aparece en tu saldo en aproximadamente un minuto.',
+      addMoneySafety: 'Solo tú puedes mover este dinero.',
+      done: 'Hecho',
+      details: 'Detalles de la cartera',
+      instantWallet: 'Instant Wallet',
+      walletType: 'Tipo de cartera',
+      address: 'Dirección de la cartera',
+      copyAddress: 'Copiar',
+      copied: 'Dirección copiada',
+      copyFailed: 'No se pudo copiar'
    }
 };
 

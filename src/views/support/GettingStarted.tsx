@@ -146,6 +146,22 @@ const GETTING_STARTED_COPY = {
          { title: 'Tìm hiểu thêm tại Học viện', description: 'Vay, ví, điểm Pandesal và Hạng tín dụng' },
          { title: 'Đọc Blog Moodeng', description: 'Câu chuyện về tín dụng công bằng, cho vay nặng lãi và niềm tin' }
       ]
+   },
+   es: {
+      title: 'Primeros pasos',
+      heading: 'Aprende lo básico de Moodeng',
+      latestVideo: 'Último vídeo guía',
+      latestVideoTitle: 'Último vídeo guía',
+      lenderBenefitsTitle: 'Ventajas para Moo-lenders',
+      lenderBenefitsDescription: 'Descubre por qué prestar es importante',
+      basics: [
+         { title: 'Ver las guías', description: 'Inicio rápido para usuarios nuevos' },
+         { title: 'Ver las ventajas', description: 'Descubre por qué merece la pena' },
+         { title: 'Por qué Moodeng usa USDC', description: 'Descubre cómo funciona USDC' },
+         { title: 'Aprende el sistema de niveles de crédito', description: 'Aumenta tus límites, genera confianza' },
+         { title: 'Aprende más en la Academia', description: 'Préstamos, carteras, puntos Pandesal y nivel de crédito' },
+         { title: 'Leer los blogs de Moodeng', description: 'Historias sobre crédito justo, usureros y confianza' }
+      ]
    }
 } as const;
 

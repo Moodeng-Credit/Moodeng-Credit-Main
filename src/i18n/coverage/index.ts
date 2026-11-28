@@ -8,7 +8,8 @@ const coverageLoaders: Record<CoverageLocale, () => Promise<Record<string, strin
    fil: () => import('@/i18n/coverage/fil').then((module) => module.screenCoverage),
    id: () => import('@/i18n/coverage/id').then((module) => module.screenCoverage),
    th: () => import('@/i18n/coverage/th').then((module) => module.screenCoverage),
-   vi: () => import('@/i18n/coverage/vi').then((module) => module.screenCoverage)
+   vi: () => import('@/i18n/coverage/vi').then((module) => module.screenCoverage),
+   es: () => import('@/i18n/coverage/es').then((module) => module.screenCoverage)
 };
 
 export function loadScreenCoverage(locale: LocaleCode): Promise<Record<string, string>> {

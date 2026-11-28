@@ -102,6 +102,19 @@ const POPUP_COPY: Record<
       homeScreenGuideHeading: 'Thêm Moodeng vào Màn hình chính của bạn',
       homeScreenGuideBody: 'iPhone chỉ gửi thông báo từ các ứng dụng trên Màn hình chính.',
       gotItCta: 'Đã hiểu'
+   },
+   es: {
+      congratsTitle: '¡Enhorabuena, Moo-lender!',
+      repeatTitle: '¡Gracias, Moo-lender!',
+      repaysLine: (name, amount, byDate) => `¡Has financiado a ${name}! Te devolverá $${amount}${byDate ? ` antes del ${byDate}` : ''}.`,
+      enableHeading: '¿Quieres saber cuándo te devuelven el dinero?',
+      enableCta: 'Avisarme cuando lo devuelvan',
+      thanksHeading: '¡Ya eres oficialmente Moo‑lender!',
+      repeatThanksHeading: '¡Gracias por ser Moo‑lender!',
+      doneCta: 'Hecho',
+      homeScreenGuideHeading: 'Añade Moodeng a tu pantalla de inicio',
+      homeScreenGuideBody: 'Los iPhone solo envían notificaciones de las apps que están en la pantalla de inicio.',
+      gotItCta: 'Entendido'
    }
 };
 

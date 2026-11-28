@@ -155,6 +155,33 @@ const WELCOME_COPY = {
       codeSelf: 'Bạn không thể dùng mã của chính mình.',
       codeOld: 'Mã chỉ dùng cho tài khoản mới.',
       codeError: 'Không thêm được. Thử lại.'
+   },
+   es: {
+      title: 'Primeros pasos',
+      lenderHeadline: 'Presta a personas reales y ayúdalas a generar crédito.',
+      lenderSubtitle: 'Gana onchain, con la tecnología de Base.',
+      borrowerHeadline: 'Estás construyendo una reputación que tu cartera puede llevar a cualquier parte.',
+      borrowerSubtitle: 'Pide prestado con responsabilidad. Genera confianza. Desbloquea más con el tiempo.',
+      getStartedTitle: 'Empieza ahora',
+      recommended: 'Recomendado',
+      setupBody: 'Configura tu cuenta, conoce a nuestro equipo en una llamada rápida y verifica tu identidad para acceder al crédito',
+      startSetup: 'Empezar la configuración',
+      watchTutorial: 'Ver el tutorial',
+      checkFirstTitle: 'Échale un vistazo primero',
+      noCommitment: 'Sin compromiso',
+      checkFirstBody: 'Explora las funciones, compara tipos de interés y descubre cómo funciona todo',
+      previewItems: ['Explorar las funciones', 'Ver tipos de interés', '¡Descubre cómo funciona!'],
+      exploreMoodeng: 'Explorar Moodeng',
+      codeTitle: '¿Te ha invitado alguien?',
+      codeHint: 'Escribe su código para que se lo reconozcamos.',
+      codePlaceholder: 'Su código',
+      codeAdd: 'Añadir',
+      codeAdded: 'Código añadido: {code}',
+      codeInvalid: 'Ese código no ha funcionado. Revisa cómo está escrito.',
+      codeAlready: 'Tu cuenta ya tiene un código{code}.',
+      codeSelf: 'No puedes usar tu propio código.',
+      codeOld: 'Los códigos solo funcionan con cuentas nuevas.',
+      codeError: 'No se ha podido añadir. Inténtalo de nuevo.'
    }
 } satisfies Record<
    LocaleCode,

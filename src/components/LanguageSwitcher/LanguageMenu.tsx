@@ -11,7 +11,8 @@ const SUGGESTED_LABEL: Record<LocaleCode, string> = {
    fil: 'Mungkahi',
    id: 'Disarankan',
    th: 'แนะนำ',
-   vi: 'Gợi ý'
+   vi: 'Gợi ý',
+   es: 'Sugerido'
 };
 
 interface LanguageMenuProps {

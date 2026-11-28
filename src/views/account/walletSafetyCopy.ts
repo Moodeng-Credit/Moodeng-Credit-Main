@@ -71,5 +71,17 @@ export const WALLET_SAFETY_COPY: Record<LocaleCode, WalletSafetyCopy> = {
          } ${intent === 'disconnect' ? 'Ngắt kết nối' : 'Đổi'} ví ở đây là an toàn. Việc này chỉ ảnh hưởng đến các khoản vay bạn cấp vốn từ bây giờ.`,
       usingNonBaseWallet: (walletLabel) =>
          `Tài khoản của bạn đang dùng ${walletLabel}. Hãy chuyển sang Instant Wallet hoặc Base Account để khoản vay và các lần trả nợ dùng đúng ví.`
+   },
+   es: {
+      borrowerBlocked: (count, intent) =>
+         `Tienes ${count} ${count === 1 ? 'préstamo activo' : 'préstamos activos'} pendiente${count === 1 ? '' : 's'} de devolver. No puedes ${intent === 'disconnect' ? 'desconectar' : 'cambiar'} tu cartera hasta que lo hayas devuelto por completo: es la cartera a la que están vinculados tu préstamo y tus pagos.`,
+      lenderWarning: (count, walletList, intent) =>
+         `Tienes ${count} ${count === 1 ? 'préstamo activo' : 'préstamos activos'} en proceso de devolución.${
+            walletList
+               ? ` Los pagos seguirán llegando a la cartera desde la que financiaste (${walletList}), no a la cartera que conectes aquí.`
+               : ' Los pagos seguirán llegando a la cartera desde la que financiaste cada préstamo, no a la cartera que conectes aquí.'
+         } ${intent === 'disconnect' ? 'Desconectar' : 'Cambiar'} tu cartera aquí es seguro. Solo afecta a los préstamos que financies a partir de ahora.`,
+      usingNonBaseWallet: (walletLabel) =>
+         `Tu cuenta está usando ${walletLabel}. Cambia a tu Instant Wallet o a una cuenta Base para que los préstamos y los pagos usen la cartera correcta.`
    }
 };

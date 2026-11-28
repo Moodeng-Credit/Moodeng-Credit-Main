@@ -75,6 +75,18 @@ const COPY = {
       next: 'Tiếp tục',
       skip: 'Không ai mời tôi',
       error: 'Không thêm được. Thử lại.'
+   },
+   es: {
+      title: '¿Quién te ha invitado?',
+      subtitle: 'Escribe su nombre o código para que se lo reconozcamos.',
+      placeholder: 'Su nombre o código',
+      tap: 'Toca para usarlo',
+      matched: '¡{name} te ha invitado! 🎉',
+      matchedCode: '¡Código {code} encontrado! 🎉',
+      notFound: 'Todavía no hay ningún código así. Sigue escribiendo o pregúntaselo.',
+      next: 'Continuar',
+      skip: 'Nadie me ha invitado',
+      error: 'No se ha podido añadir. Inténtalo de nuevo.'
    }
 } satisfies Record<LocaleCode, Record<string, string>>;
 
