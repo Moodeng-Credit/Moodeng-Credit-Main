@@ -289,6 +289,9 @@ export async function getRecentStateChanges(limit = 20): Promise<AdminHistoryEve
 
 /** Look up a username, for "Approved by @x" on realtime highlights. */
 export async function getUsername(userId: string): Promise<string | null> {
+   // "decided by" is sometimes words, not a user id ("call-cancelled by George"): nothing to look up, and
+   // asking the database for a non-uuid id is an error it logs every time.
+   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId)) return null;
    const { data } = await getSupabaseBrowserClient().from('users').select('username').eq('id', userId).maybeSingle();
    return (data as { username?: string | null } | null)?.username ?? null;
 }
