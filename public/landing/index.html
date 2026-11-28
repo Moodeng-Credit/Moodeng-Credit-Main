@@ -229,14 +229,15 @@
          <section class="hero-home">
             <div class="container">
                <div class="hero-copy stack-lg">
-                  <p class="eyebrow">Small help for the weeks that stretch</p>
+                  <p class="eyebrow">Salary delayed? Bill due?</p>
                   <h1 class="display">Small loans that <em>treat you right.</em></h1>
-                  <p class="lead">Your first loan is $15. You choose the expected payback and date before you ask. Moodeng adds $0.</p>
+                  <p class="lead">Your first loan is $15. Pay back $16.50 in 30 days. Moodeng adds $0.</p>
+                  <p style="margin: 0; font-weight: 650">A few questions → a short video call → money, usually the same day.</p>
                   <a class="text-link hero-walkthrough hero-walkthrough-v1" href="/how-it-works"
                      >See how Moodeng works <span aria-hidden="true">→</span></a
                   >
                   <div class="version-two-actions">
-                     <a class="button" href="/request-board">Get your first loan <span class="arrow" aria-hidden="true">→</span></a>
+                     <a class="button" data-start href="/request-board">Get your first loan <span class="arrow" aria-hidden="true">→</span></a>
                      <a class="text-link hero-walkthrough hero-walkthrough-v2" href="/how-it-works"
                         >See how Moodeng works <span aria-hidden="true">→</span></a
                      >
@@ -309,9 +310,9 @@
                         <div class="ask-topbar-copy">
                            <div class="ask-title-lockup">
                               <img src="/landing/assets/brand/moodeng-logo-small.png" alt="" width="36" height="36" />
-                              <span><small>Try it here</small><strong id="ask-builder-title">Shape your first ask</strong></span>
+                              <span><small>Try it here</small><strong id="ask-builder-title">See your first loan</strong></span>
                            </div>
-                           <p class="ask-topbar-note">Change a choice. See the complete deal update.</p>
+                           <p class="ask-topbar-note">Pick what it is for. The deal is the same for everyone.</p>
                         </div>
                         <span class="ask-fixed"><b>$15</b> fixed</span>
                      </header>
@@ -360,22 +361,15 @@
                               </div>
                            </fieldset>
 
-                           <fieldset class="ask-choice" data-ask-group>
-                              <legend><span>2</span> Your thank-you to the funder</legend>
-                              <div class="ask-chips">
-                                 <button class="ask-chip" type="button" aria-pressed="false" data-ask-payback="16">+$1</button>
-                                 <button class="ask-chip" type="button" aria-pressed="true" data-ask-payback="18">+$3</button>
-                                 <button class="ask-chip" type="button" aria-pressed="false" data-ask-payback="20">+$5</button>
-                              </div>
+                           <!-- Fixed terms since 2026-11-25 (src/lib/loanPricing.ts): 10% for 30 days, nothing to choose. -->
+                           <fieldset class="ask-choice">
+                              <legend><span>2</span> The deal</legend>
+                              <p style="margin: 0">Pay back <b>$16.50</b> in <b>30 days</b>. The extra $1.50 goes to the person who funds you.</p>
                            </fieldset>
 
-                           <fieldset class="ask-choice" data-ask-group>
-                              <legend><span>3</span> When can you pay it back?</legend>
-                              <div class="ask-chips">
-                                 <button class="ask-chip" type="button" aria-pressed="true" data-ask-due="In 2 weeks">2 weeks</button>
-                                 <button class="ask-chip" type="button" aria-pressed="false" data-ask-due="In 3 weeks">3 weeks</button>
-                                 <button class="ask-chip" type="button" aria-pressed="false" data-ask-due="In 1 month">1 month</button>
-                              </div>
+                           <fieldset class="ask-choice">
+                              <legend><span>3</span> What you need</legend>
+                              <p style="margin: 0">A job or income, Facebook, and a valid ID. The first time: a few questions and a short video call.</p>
                            </fieldset>
                         </div>
 
@@ -395,19 +389,19 @@
                               </div>
                               <div>
                                  <dt>Pay back</dt>
-                                 <dd data-ask-preview-payback>$18</dd>
+                                 <dd data-ask-preview-payback>$16.50</dd>
                               </div>
                               <div>
                                  <dt>Due</dt>
-                                 <dd data-ask-preview-due>In 2 weeks</dd>
+                                 <dd data-ask-preview-due>In 30 days</dd>
                               </div>
                               <div class="ask-fee">
                                  <dt>Moodeng fee</dt>
                                  <dd>$0</dd>
                               </div>
                            </dl>
-                           <a class="button ask-continue" href="/request-board"
-                              >Continue with this ask <span class="arrow" aria-hidden="true">→</span></a
+                           <a class="button ask-continue" data-start href="/request-board"
+                              >Get your first loan <span class="arrow" aria-hidden="true">→</span></a
                            >
                            <p class="ask-disclosure" id="ask-builder-note">
                               Interactive example. You choose the terms. Funders decide whether to help.
@@ -428,8 +422,8 @@
                </div>
                <div class="fact">
                   <dt>Exact example</dt>
-                  <dd>$15 → $18</dd>
-                  <small>The extra $3 goes to the funder.</small>
+                  <dd>$15 → $16.50</dd>
+                  <small>The extra $1.50 goes to the funder.</small>
                </div>
                <div class="fact">
                   <dt>Moodeng fees</dt>
@@ -525,7 +519,7 @@
                      <h2 class="section-title" id="deal-heading">The number you see is the number you <em>repay.</em></h2>
                   </div>
                   <div class="deal-number">
-                     <strong>$15</strong><span>→ $18</span><small>See the complete deal first, then follow every step.</small>
+                     <strong>$15</strong><span>→ $16.50</span><small>See the complete deal first, then follow every step.</small>
                   </div>
 
                   <div class="deal-visual-stage" aria-live="polite">
@@ -539,8 +533,8 @@
                            <h3>One complete deal.</h3>
                            <dl class="deal-receipt-grid">
                               <div><dt>You receive</dt><dd>$15</dd></div>
-                              <div><dt>Pay back</dt><dd>$18</dd></div>
-                              <div><dt>Due</dt><dd>In 2 weeks</dd></div>
+                              <div><dt>Pay back</dt><dd>$16.50</dd></div>
+                              <div><dt>Due</dt><dd>In 30 days</dd></div>
                               <div class="deal-zero"><dt>Moodeng fee</dt><dd>$0</dd></div>
                            </dl>
                            <p class="deal-panel-note"><span aria-hidden="true">✓</span> Your request shows these exact terms before anyone funds it.</p>
@@ -622,14 +616,14 @@
                      <span class="mark" aria-hidden="true">01</span
                      ><span
                         ><b>See the whole deal</b
-                        ><small>$15 received, $18 repaid, one date, and a $0 Moodeng fee. You see it before asking.</small></span
+                        ><small>$15 received, $16.50 repaid, one date, and a $0 Moodeng fee. You see it before asking.</small></span
                      >
                      <div class="deal-mobile-scene deal-mobile-receipt">
                         <span class="deal-mobile-label">Typical first request</span>
                         <dl class="deal-receipt-grid">
                            <div><dt>You receive</dt><dd>$15</dd></div>
-                           <div><dt>Pay back</dt><dd>$18</dd></div>
-                           <div><dt>Due</dt><dd>In 2 weeks</dd></div>
+                           <div><dt>Pay back</dt><dd>$16.50</dd></div>
+                           <div><dt>Due</dt><dd>In 30 days</dd></div>
                            <div class="deal-zero"><dt>Moodeng fee</dt><dd>$0</dd></div>
                         </dl>
                      </div>
@@ -768,7 +762,7 @@
                         </svg>
                      </div>
                      <h3>We never make you prove yourself twice.</h3>
-                     <p>One ID check proves you are one person. Funders see the check, never your documents.</p>
+                     <p>Your ID, a few questions and a short call, the first time. Funders see the check, never your documents.</p>
                   </article>
                </div>
 
@@ -872,10 +866,18 @@
                      </p>
                   </details>
                   <details>
-                     <summary>Where does the extra $3 go?</summary>
+                     <summary>What do I need to get a loan?</summary>
                      <p class="faq-answer">
-                        In the $15 to $18 example, the $3 is the funder’s expected return for helping. Moodeng adds no service fee or
-                        processing fee. Every request shows its exact expected payback before it goes live.
+                        A job or steady income, a Facebook account, and a valid ID. The first time, you answer a few questions, show
+                        proof of income (like a payslip), and join a short video call with our team. Not everyone is approved. Most
+                        people who are approved get their money the same day they sign up.
+                     </p>
+                  </details>
+                  <details>
+                     <summary>Where does the extra $1.50 go?</summary>
+                     <p class="faq-answer">
+                        In the $15 to $16.50 example, the $1.50 is the funder’s return for helping. Moodeng adds no service fee or
+                        processing fee. Every request shows its exact payback before it goes live.
                      </p>
                   </details>
                   <details id="faq-usdc">
@@ -914,9 +916,9 @@
             <div class="narrow stack-lg reveal">
                <p class="eyebrow">Start small</p>
                <h2 class="section-title wide" id="final-heading">See the whole deal. Then decide if it is <em>right for you.</em></h2>
-               <p class="lead">Your first request is $15. The expected payback and date are visible before you ask.</p>
+               <p class="lead">Your first request is $15. Pay back $16.50 in 30 days. You see it before you ask.</p>
                <div class="button-row">
-                  <a class="button light" href="/request-board">Start your first request <span class="arrow" aria-hidden="true">→</span></a>
+                  <a class="button light" data-start href="/request-board">Start your first request <span class="arrow" aria-hidden="true">→</span></a>
                   <a class="button subtle" href="/how-it-works">Review the walkthrough</a>
                </div>
             </div>
@@ -964,6 +966,7 @@
       <script src="https://web-iota-sage-38.vercel.app/widget.js" data-launcher="hidden" data-title="Moodeng Support" data-accent="#16a34a" defer></script>
       <script src="/landing/messenger-chat.js?v=20261023-2" defer></script>
 
+      <script src="/landing/start-links.js?v=20261128-1" defer></script>
       <script src="/landing/continue-banner.js?v=20261030-2" defer></script>
       <script src="/landing/open-in-browser.js?v=20261018-7" defer></script>
    </body>
