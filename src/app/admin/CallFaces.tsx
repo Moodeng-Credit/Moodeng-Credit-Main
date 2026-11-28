@@ -51,7 +51,8 @@ export function FaceStrip({ face, light = false }: { face?: AdminCallFace | null
    const [avatarBroken, setAvatarBroken] = useState(false);
    if (!face) return null;
    const avatar = face.avatar && !avatarBroken ? face.avatar : null;
-   if (!avatar && !face.clip && !face.photos.length) return null;
+   const proof = face.proof ?? [];
+   if (!avatar && !face.clip && !face.photos.length && !proof.length) return null;
    const tile = `h-28 w-24 rounded-xl border object-cover ${light ? 'border-[#e3e3e3] bg-[#f5f5f5]' : 'border-[#2a1453] bg-black/30'}`;
    const caption = `mt-1 text-center text-[11px] font-black uppercase ${light ? 'text-[#6b6b6b]' : 'text-[#a89bb8]'}`;
    return (
@@ -72,6 +73,17 @@ export function FaceStrip({ face, light = false }: { face?: AdminCallFace | null
             <a key={photo.url} href={photo.url} target="_blank" rel="noreferrer" className="block no-underline">
                <img src={photo.url} alt={photo.label} loading="lazy" className={tile} />
                <p className={caption}>{photo.label}</p>
+            </a>
+         ))}
+         {proof.length ? <span aria-hidden="true" className={`mx-1 w-px self-stretch ${light ? 'bg-[#e3e3e3]' : 'bg-[#2a1453]'}`} /> : null}
+         {proof.map((file) => (
+            <a key={file.url} href={file.url} target="_blank" rel="noreferrer" title="Open full size" className="block no-underline">
+               {file.image ? (
+                  <img src={file.url} alt={file.label} loading="lazy" className={tile} />
+               ) : (
+                  <span className={`${tile} grid place-items-center text-3xl`}>📄</span>
+               )}
+               <p className={`${caption} max-w-24 truncate`}>{file.label}</p>
             </a>
          ))}
       </div>

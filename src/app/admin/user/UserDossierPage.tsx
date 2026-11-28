@@ -596,11 +596,32 @@ function Income({ d }: { d: Dossier }) {
    );
 }
 
+// What the team was told is long: every Telegram post about the person plus the AI's reads. It is
+// sorted into a few tabs, each with one line saying what it is, and every entry opens on a tap.
+type SummaryGroup = 'ai' | 'screen' | 'calls' | 'alerts' | 'other';
+const SUMMARY_TABS: Array<{ id: SummaryGroup; label: string; about: string }> = [
+   { id: 'ai', label: '✨ AI reads', about: 'What our AI concluded from their pre-screening answers, their call and the booking chat. Start here.' },
+   { id: 'screen', label: '🎥 Pre-screening and proof', about: 'What the team was sent when they answered the pre-screening questions or sent proof of income.' },
+   { id: 'calls', label: '📞 Calls', about: 'Their call: booked, moved, confirmed, and how it ended.' },
+   { id: 'alerts', label: '🚨 Alerts', about: 'Risk alerts and links to other accounts.' },
+   { id: 'other', label: 'Everything else', about: 'Other team posts about them, like connecting WhatsApp or Messenger.' }
+];
+// Which tab a team Telegram post belongs under, from its first line.
+const teamPostGroup = (title: string): SummaryGroup => {
+   if (/pre-?screen|good fit|proof|income|payslip|document/i.test(title)) return 'screen';
+   if (/call|showed up|no-?show|booked|can borrow|approved|rejected/i.test(title)) return 'calls';
+   if (/alert|risk|linked|flag/i.test(title)) return 'alerts';
+   return 'other';
+};
+
 function TeamSummaries({ d }: { d: Dossier }) {
-   const items: Array<{ key: string; title: string; at: string | null; body: ReactNode }> = [];
+   const [picked, setPicked] = useState<SummaryGroup | null>(null);
+   const [openKey, setOpenKey] = useState<string | null>(null);
+   const items: Array<{ key: string; group: SummaryGroup; title: string; at: string | null; body: ReactNode }> = [];
    for (const p of d.prescreens) {
       items.push({
          key: `ps-${p.created_at}`,
+         group: 'ai',
          title: `🎥 Pre-screening · ${p.score ?? p.overall ?? '–'} pts${p.repay_chance != null ? ` · repay chance ${p.repay_chance}%` : ''}`,
          at: p.created_at,
          body: (
@@ -626,6 +647,7 @@ function TeamSummaries({ d }: { d: Dossier }) {
       if (!t.summary) continue;
       items.push({
          key: `ct-${t.call_started_at}`,
+         group: 'ai',
          title: `📞 Call summary${t.risk_level ? ` · ${t.risk_level} risk` : ''}`,
          at: t.call_started_at,
          body: (
@@ -651,6 +673,7 @@ function TeamSummaries({ d }: { d: Dossier }) {
          .trim();
       items.push({
          key: `tp-${p.first_at}-${p.title}`,
+         group: teamPostGroup(p.title),
          title: `💬 ${p.title}${p.times > 1 ? ` · ×${p.times}` : ''}`,
          at: p.last_at,
          body: (
@@ -668,6 +691,7 @@ function TeamSummaries({ d }: { d: Dossier }) {
    for (const a of d.risk_alerts) {
       items.push({
          key: `ra-${a.created_at}`,
+         group: 'alerts',
          title: `🚨 Risk alert · ${a.severity ?? ''} ${a.signal ?? ''}`,
          at: a.created_at,
          body: <p className="text-sm text-[#d9c9f5]">{a.message}</p>
@@ -677,6 +701,7 @@ function TeamSummaries({ d }: { d: Dossier }) {
       const detail = typeof d.linked_alert.detail === 'string' ? d.linked_alert.detail : JSON.stringify(d.linked_alert.detail, null, 1);
       items.push({
          key: 'linked',
+         group: 'alerts',
          title: `🔗 Linked accounts${d.linked_alert.auto_rejected_at ? ' · auto-rejected' : ''}${d.linked_alert.team_cleared_at ? ' · cleared by team' : ''}`,
          at: d.linked_alert.alerted_at,
          body: <pre className="whitespace-pre-wrap break-words text-xs text-[#d9c9f5]">{detail}</pre>
@@ -685,29 +710,66 @@ function TeamSummaries({ d }: { d: Dossier }) {
    for (const b of d.bot_answers) {
       items.push({
          key: `bot-${b.created_at}`,
+         group: 'ai',
          title: `🤖 Booking bot · ${b.fit_verdict ?? b.kind ?? ''}`,
          at: b.created_at,
          body: b.fit_reason ? <p className="text-sm text-[#d9c9f5]">{b.fit_reason}</p> : null
       });
    }
    items.sort((a, b) => (b.at ?? '').localeCompare(a.at ?? ''));
+   const tabs = SUMMARY_TABS.map((t) => ({ ...t, count: items.filter((it) => it.group === t.id).length })).filter((t) => t.count);
+   const tab = tabs.find((t) => t.id === picked) ?? tabs[0];
+   const shown = tab ? items.filter((it) => it.group === tab.id) : [];
+   // The newest entry of a tab starts open, so there is something to read without a tap.
+   // '' = the reader closed everything.
+   const open = openKey === '' ? null : openKey !== null && shown.some((it) => it.key === openKey) ? openKey : (shown[0]?.key ?? null);
    return (
       <Card title="📝 What the team was told">
-         <p className="mb-3 text-xs text-[#6f6385]">
-            Team Telegram posts about this person (saved from Nov 25, 2026; repeats counted once), plus AI reads, call summaries and alerts.
-         </p>
          {!items.length ? <Empty>No summaries yet.</Empty> : null}
-         <div className="space-y-3">
-            {items.map((it) => (
-               <div key={it.key} className="rounded-2xl border border-[#2a1453] bg-[#14062b] p-3">
-                  <div className="mb-1 flex items-center justify-between gap-2">
-                     <span className="text-sm font-black text-white">{it.title}</span>
-                     <span className="shrink-0 text-xs text-[#a89bb8]">{bkkDate(it.at)}</span>
-                  </div>
-                  {it.body}
+         {tab ? (
+            <>
+               <div className="flex flex-wrap gap-1.5" role="tablist">
+                  {tabs.map((t) => (
+                     <button
+                        key={t.id}
+                        type="button"
+                        role="tab"
+                        aria-selected={t.id === tab.id}
+                        onClick={() => {
+                           setPicked(t.id);
+                           setOpenKey(null);
+                        }}
+                        className={`rounded-full px-3 py-1.5 text-sm font-black ${t.id === tab.id ? 'bg-[#8336f0] text-white' : 'border border-[#3d1f6e] text-[#c9bde0] hover:bg-[#2a1453]'}`}
+                     >
+                        {t.label} <span className="opacity-70">{t.count}</span>
+                     </button>
+                  ))}
                </div>
-            ))}
-         </div>
+               <p className="mb-3 mt-2 text-sm text-[#a89bb8]">{tab.about}</p>
+               <div className="space-y-2">
+                  {shown.map((it) => {
+                     const isOpen = it.key === open;
+                     return (
+                        <div key={it.key} className="rounded-2xl border border-[#2a1453] bg-[#14062b]">
+                           <button
+                              type="button"
+                              aria-expanded={isOpen}
+                              onClick={() => setOpenKey(isOpen ? '' : it.key)}
+                              className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left"
+                           >
+                              <span className={`min-w-0 text-sm font-black text-white ${isOpen ? 'break-words' : 'truncate'}`}>{it.title}</span>
+                              <span className="shrink-0 text-xs text-[#a89bb8]">
+                                 {bkkDate(it.at)} {isOpen ? '▴' : '▾'}
+                              </span>
+                           </button>
+                           {isOpen && it.body ? <div className="border-t border-[#2a1453] px-3 py-2.5">{it.body}</div> : null}
+                        </div>
+                     );
+                  })}
+               </div>
+               <p className="mt-3 text-xs text-[#6f6385]">Team Telegram posts are saved from Nov 25, 2026; repeats are counted once.</p>
+            </>
+         ) : null}
       </Card>
    );
 }
@@ -973,9 +1035,9 @@ function DossierBody({ userId }: { userId: string }) {
    return (
       <div className="space-y-5">
          <Header d={d} selfie={selfie} face={face} onChanged={() => void load()} />
-         {face && (face.avatar || face.clip || face.photos.length) ? (
+         {face && (face.avatar || face.clip || face.photos.length || face.proof?.length) ? (
             <section className="rounded-3xl border border-[#2a1453] bg-[#1c0a3a] p-5">
-               <h2 className="mb-3 text-sm font-black uppercase tracking-wide text-[#a89bb8]">What they look like</h2>
+               <h2 className="mb-3 text-sm font-black uppercase tracking-wide text-[#a89bb8]">Photos and proof they sent</h2>
                <FaceStrip face={face} />
             </section>
          ) : null}
