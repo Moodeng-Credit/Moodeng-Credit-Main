@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { AdminCallApprovalRow } from '@/app/admin/adminSupabase';
-import { callResult, groupCallApprovals, relativeStart } from '@/app/admin/callApprovalsModel';
+import { buildCallLine, buildDaySchedule, callResult, groupCallApprovals, relativeStart } from '@/app/admin/callApprovalsModel';
 
 const NOW = Date.parse('2026-10-10T12:00:00Z');
 const at = (minFromNow: number) => new Date(NOW + minFromNow * 60000).toISOString();
@@ -87,5 +87,65 @@ describe('relativeStart', () => {
       expect(relativeStart(at(12), NOW)).toBe('in 12 min');
       expect(relativeStart(at(-5), NOW)).toBe('started 5 min ago');
       expect(relativeStart(at(-180), NOW)).toBe('started 3 h ago');
+   });
+});
+
+describe('buildCallLine', () => {
+   it('splits the line into on now, still waiting, up next and later', () => {
+      const rows = [
+         row({ userId: 'old', callStartsAt: at(-300) }),
+         row({ userId: 'live', callStartsAt: at(-10) }),
+         row({ userId: 'soon', callStartsAt: at(5) }),
+         row({ userId: 'next', callStartsAt: at(40) }),
+         row({ userId: 'after', callStartsAt: at(90) }),
+         row({ userId: 'ask', request: { id: 'r1', kind: 'approval', reason: null, createdAt: at(-5) } })
+      ];
+      const line = buildCallLine(groupCallApprovals(rows, NOW), NOW);
+      expect(line.onNow.map((r) => r.userId)).toEqual(['live', 'soon']);
+      expect(line.waiting.map((r) => r.userId).sort()).toEqual(['ask', 'old']);
+      expect(line.upNext?.userId).toBe('next');
+      expect(line.later.map((r) => r.userId)).toEqual(['after']);
+   });
+
+   it('moves a call up the line when its time changes', () => {
+      const rows = [row({ userId: 'a', callStartsAt: at(60) }), row({ userId: 'b', callStartsAt: at(120) })];
+      expect(buildCallLine(groupCallApprovals(rows, NOW), NOW).upNext?.userId).toBe('a');
+      const moved = [rows[0], { ...rows[1], callStartsAt: at(30) }];
+      const line = buildCallLine(groupCallApprovals(moved, NOW), NOW);
+      expect(line.upNext?.userId).toBe('b');
+      expect(line.later.map((r) => r.userId)).toEqual(['a']);
+   });
+});
+
+describe('buildDaySchedule', () => {
+   const dayStart = NOW - 12 * 3600000;
+   const dayEnd = dayStart + 24 * 3600000;
+
+   it('lists the day in time order with where each call stands', () => {
+      const rows = [
+         row({ userId: 'later', callStartsAt: at(180) }),
+         row({ userId: 'done', callStartsAt: at(-120), outcome: 'attended', outcomeAt: at(-100) }),
+         row({ userId: 'missed', callStartsAt: at(-90), outcome: 'no_show', outcomeAt: at(-60) }),
+         row({ userId: 'undecided', callStartsAt: at(-60) }),
+         row({ userId: 'live', callStartsAt: at(-5) }),
+         row({ userId: 'next', callStartsAt: at(45) }),
+         row({ userId: 'tomorrow', callStartsAt: at(24 * 60) }),
+         row({ userId: 'ask', request: { id: 'r1', kind: 'approval', reason: null, createdAt: at(-5) } })
+      ];
+      const schedule = buildDaySchedule(rows, NOW, dayStart, dayEnd);
+      expect(schedule.map((e) => [e.row.userId, e.state])).toEqual([
+         ['done', 'approved'],
+         ['missed', 'no_show'],
+         ['undecided', 'waiting'],
+         ['live', 'now'],
+         ['next', 'next'],
+         ['later', 'upcoming']
+      ]);
+   });
+
+   it('shows another day without marking anyone next unless they really are', () => {
+      const rows = [row({ userId: 'today', callStartsAt: at(30) }), row({ userId: 'tomorrow', callStartsAt: at(24 * 60) })];
+      const schedule = buildDaySchedule(rows, NOW, dayEnd, dayEnd + 24 * 3600000);
+      expect(schedule.map((e) => [e.row.userId, e.state])).toEqual([['tomorrow', 'upcoming']]);
    });
 });
