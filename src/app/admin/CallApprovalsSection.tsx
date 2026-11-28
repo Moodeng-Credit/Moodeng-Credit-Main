@@ -34,6 +34,15 @@ const CLOCK_MS = 15000;
 // "Time changed" stays on a card this long after a borrower moves their call.
 const MOVED_NOTE_MS = 3 * 60000;
 const DAY_MS = 24 * 3600000;
+// "My calls": show one host's calls only. Remembered on this computer.
+const HOST_KEY = 'moodeng_admin_calls_host';
+const readSavedHost = () => {
+   try {
+      return window.localStorage.getItem(HOST_KEY) ?? '';
+   } catch {
+      return '';
+   }
+};
 
 const formatClock = (ms: number) => new Date(ms).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 // The row name is "Name · @username · email"; the card shows just the name, the rest sits underneath.
@@ -147,6 +156,16 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
    const [openId, setOpenId] = useState<string | null>(null);
    // Which day the schedule on the right shows (0 = today).
    const [dayOffset, setDayOffset] = useState(0);
+   // '' = everyone's calls, else one host's (people asking for access without a call always show).
+   const [hostFilter, setHostFilter] = useState(readSavedHost);
+   const pickHost = (host: string) => {
+      setHostFilter(host);
+      try {
+         window.localStorage.setItem(HOST_KEY, host);
+      } catch {
+         // Private mode: the choice just isn't remembered.
+      }
+   };
    // People whose call time just changed: the time it was, and when we noticed.
    const [moved, setMoved] = useState<Record<string, { from: string; at: number }>>({});
    const lastStarts = useRef<Map<string, string | null> | null>(null);
@@ -210,11 +229,16 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
       return () => window.clearInterval(timer);
    }, []);
 
+   const hosts = useMemo(() => [...new Set((rows ?? []).map((r) => r.host).filter((h): h is string => Boolean(h)))].sort(), [rows]);
+   // The short "waiting" card on Requests always shows everyone. A saved host nobody has calls with is ignored.
+   const activeHost = variant === 'full' && hosts.includes(hostFilter) ? hostFilter : '';
+   const hostRows = useMemo(() => (activeHost ? (rows ?? []).filter((r) => !r.host || r.host === activeHost) : (rows ?? [])), [rows, activeHost]);
+
    const groups = useMemo(() => {
       const q = query.trim().toLowerCase();
-      const list = q ? (rows ?? []).filter((r) => `${r.name} ${r.username ?? ''} ${r.facebookName ?? ''}`.toLowerCase().includes(q)) : (rows ?? []);
+      const list = q ? hostRows.filter((r) => `${r.name} ${r.username ?? ''} ${r.facebookName ?? ''}`.toLowerCase().includes(q)) : hostRows;
       return groupCallApprovals(list, now);
-   }, [rows, now, query]);
+   }, [hostRows, now, query]);
 
    const line = useMemo(() => buildCallLine(groups, now), [groups, now]);
    // Faces for everyone still ahead or waiting (not the 30 days of finished calls). Full screen only.
@@ -225,7 +249,7 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
    const faces = useCallFaces(faceIds);
    // The schedule ignores the search box: it is the whole day, finished calls included.
    const dayStart = localDayStart(now, dayOffset);
-   const schedule = useMemo(() => buildDaySchedule(rows ?? [], now, dayStart, localDayStart(now, dayOffset + 1)), [rows, now, dayStart, dayOffset]);
+   const schedule = useMemo(() => buildDaySchedule(hostRows, now, dayStart, localDayStart(now, dayOffset + 1)), [hostRows, now, dayStart, dayOffset]);
 
    const completedShown = useMemo(() => {
       if (tab === 'upcoming') return [];
@@ -760,12 +784,27 @@ export default function CallApprovalsSection({ onCountChange, variant = 'full', 
                         </button>
                      ))}
                   </div>
+                  {hosts.length > 1 ? (
+                     <div className="ml-auto flex overflow-hidden rounded-full border border-[#3d1f6e]" role="group" aria-label="Whose calls">
+                        {['', ...hosts].map((host) => (
+                           <button
+                              key={host || 'all'}
+                              type="button"
+                              aria-pressed={activeHost === host}
+                              onClick={() => pickHost(host)}
+                              className={`px-3 py-1.5 text-sm font-black capitalize ${activeHost === host ? 'bg-[#ffd166] text-[#2a1453]' : 'text-[#c9bde0] hover:bg-[#2a1453]'}`}
+                           >
+                              {host || 'Everyone'}
+                           </button>
+                        ))}
+                     </div>
+                  ) : null}
                   <input
                      type="search"
                      value={query}
                      onChange={(e) => setQuery(e.target.value)}
                      placeholder="Search a name"
-                     className="ml-auto w-full max-w-xs rounded-full border border-[#3d1f6e] bg-[#1c0a3a] px-4 py-1.5 text-sm text-white placeholder:text-[#a89bb8]"
+                     className={`${hosts.length > 1 ? '' : 'ml-auto '}w-full max-w-[14rem] rounded-full border border-[#3d1f6e] bg-[#1c0a3a] px-4 py-1.5 text-sm text-white placeholder:text-[#a89bb8]`}
                   />
                </div>
                {rows && tab === 'upcoming' ? (
