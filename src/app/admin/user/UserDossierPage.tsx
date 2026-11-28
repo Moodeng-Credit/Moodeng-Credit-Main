@@ -7,7 +7,7 @@ import { Link, useParams } from 'react-router-dom';
 import { Bar, BarChart, Cell, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 
 import { BorrowerTimeline } from '@/app/admin/AdminHistory';
-import type { AdminCallFace } from '@/app/admin/adminSupabase';
+import { type AdminCallFace, approveAdminUser, rejectAdminUser } from '@/app/admin/adminSupabase';
 import CallBriefCard from '@/app/admin/CallBrief';
 import { FaceStrip, FaceThumb, useCallFaces } from '@/app/admin/CallFaces';
 import ProofHistory from '@/app/admin/ProofHistory';
@@ -32,7 +32,8 @@ import {
 } from '@/app/admin/user/userDossierModel';
 
 // Admin → Users → click a name: one person's whole account on one page, like a bank's customer view.
-// Read-only; the actions (ban, watchlist, 2FA, notices) stay on the Users list under "Manage".
+// Approve / Reject are here (same as the Telegram buttons); the other actions (ban, watchlist, 2FA,
+// notices) stay on the Users list under "Manage".
 
 const OUTCOME: Record<LoanOutcome, { label: string; color: string; text: string }> = {
    on_time: { label: 'On time', color: '#2ecc71', text: 'text-emerald-300' },
@@ -153,7 +154,60 @@ function Photo({ label, url }: { label: string; url: string }) {
    );
 }
 
-function Header({ d, selfie, face }: { d: Dossier; selfie: string | null; face?: AdminCallFace }) {
+// Approve / Reject for someone not decided yet. Same code path as Telegram's buttons, so the borrower
+// gets the usual message and a booked call is cancelled on reject. Rejected is final and an approved
+// borrower can't be rejected from here, so decided people get no buttons.
+function AccessButtons({ userId, name, status, onChanged }: { userId: string; name: string; status: string | null; onChanged: () => void }) {
+   const [busy, setBusy] = useState(false);
+   const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null);
+   const decided = status === 'approved' || status === 'rejected';
+   const act = async (kind: 'approve' | 'reject') => {
+      const ask =
+         kind === 'reject'
+            ? `Reject ${name}? They're told they can't borrow and any booked call is cancelled. This is final.`
+            : `Approve ${name}? They're told they can borrow.`;
+      if (!window.confirm(ask)) return;
+      setBusy(true);
+      setNote(null);
+      try {
+         const result = await (kind === 'reject' ? rejectAdminUser(userId) : approveAdminUser(userId));
+         setNote({ ok: result.ok, text: result.summary });
+         onChanged();
+      } catch (err) {
+         setNote({ ok: false, text: err instanceof Error ? err.message : 'Could not save.' });
+      } finally {
+         setBusy(false);
+      }
+   };
+   if (decided && !note) return null;
+   return (
+      <>
+         {!decided ? (
+            <>
+               <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void act('approve')}
+                  className="rounded-2xl bg-emerald-600 px-4 py-2 text-center text-sm font-black text-white hover:bg-emerald-500 disabled:opacity-50"
+               >
+                  ✅ Approve
+               </button>
+               <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void act('reject')}
+                  className="rounded-2xl border border-red-800 px-4 py-2 text-center text-sm font-black text-red-300 hover:bg-red-950 disabled:opacity-50"
+               >
+                  🚫 Reject
+               </button>
+            </>
+         ) : null}
+         {note ? <p className={`max-w-[14rem] text-xs font-bold ${note.ok ? 'text-emerald-300' : 'text-amber-300'}`}>{note.text}</p> : null}
+      </>
+   );
+}
+
+function Header({ d, selfie, face, onChanged }: { d: Dossier; selfie: string | null; face?: AdminCallFace; onChanged: () => void }) {
    const u = d.user;
    const kyc = d.kyc[0];
    const sheetName = d.call_screenings[0]?.answers?.fullName;
@@ -262,6 +316,7 @@ function Header({ d, selfie, face }: { d: Dossier; selfie: string | null; face?:
                >
                   Manage
                </Link>
+               <AccessButtons userId={u.id} name={realName || u.display_name || u.username} status={u.loan_access_status} onChanged={onChanged} />
             </div>
          </div>
       </section>
@@ -917,7 +972,7 @@ function DossierBody({ userId }: { userId: string }) {
    const u = d.user;
    return (
       <div className="space-y-5">
-         <Header d={d} selfie={selfie} face={face} />
+         <Header d={d} selfie={selfie} face={face} onChanged={() => void load()} />
          {face && (face.avatar || face.clip || face.photos.length) ? (
             <section className="rounded-3xl border border-[#2a1453] bg-[#1c0a3a] p-5">
                <h2 className="mb-3 text-sm font-black uppercase tracking-wide text-[#a89bb8]">What they look like</h2>
