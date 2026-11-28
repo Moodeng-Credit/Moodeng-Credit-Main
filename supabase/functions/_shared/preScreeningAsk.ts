@@ -21,7 +21,7 @@ import { blockRows, hasLinkedFlag } from './blockForGood.ts';
 import { GEMINI_MODEL } from './geminiPreScreen.ts';
 import { autoRejectLinked, linkedRedFlag, loadLinkedAccounts } from './linkedAccounts.ts';
 import { type Lang, langOf, teamStepIn } from './messengerIncomeDocReply.ts';
-import { preScreeningDecisionRows } from './preScreening.ts';
+import { autoGoodRows, preScreeningDecisionRows } from './preScreening.ts';
 import { applyPreScreeningDecision, autoDeclineForCosts } from './preScreeningDecision.ts';
 import {
    jobRedFlags,
@@ -80,6 +80,7 @@ type Row = {
       }>;
       income?: { note?: string; read?: Record<string, unknown> | null } | null;
       medical?: MedicalRead | null;
+      urgency?: { urgent: string | null; caps: boolean } | null;
    } | null;
    score: number | null;
    team_decision: string | null;
@@ -430,6 +431,9 @@ export const plainRedFlags = (grade: Row['grade'], job?: { questions?: unknown; 
       : null;
    if (permit) out.push(permit);
    if ((grade?.answers ?? []).some((a) => a.seen?.person_visible === false)) out.push('nobody on camera in an answer');
+   // George 2026-11-28: "urgently need it" / typed in CAPS — the team decides (preScreenUrgency.ts).
+   if (grade?.urgency?.urgent) out.push('says they urgently need the loan');
+   if (grade?.urgency?.caps) out.push('typed answers in CAPS');
    const medical = medicalRedFlag(grade?.medical);
    if (medical) out.push(medical);
    out.push(...photoRedFlags(grade?.answers ?? []));
@@ -492,6 +496,12 @@ async function autoGood(svc: SupabaseClient, row: Row, card: { chat: number | st
       .maybeSingle();
    if (!saved) return false;
    const result = await applyPreScreeningDecision(svc, row.id);
+   // The card itself shows it's done (it kept ✅ Good fit / ❌ Not a fit and looked undecided — George 2026-11-28).
+   await callTelegramApi('editMessageReplyMarkup', {
+      chat_id: card.chat,
+      message_id: card.msg,
+      reply_markup: { inline_keyboard: autoGoodRows(row.id) }
+   }).catch(() => undefined);
    await sendTelegramMessage(card.chat, `✅ Auto good fit (pre-screen) — ${line}. ${result.summary}\nNot approved to borrow yet: that's 🔓 after their call. Tap ❌ Not a fit on the card to overrule.`, {
       replyToMessageId: card.msg
    }).catch(() => undefined);

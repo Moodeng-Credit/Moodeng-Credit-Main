@@ -40,6 +40,7 @@ import {
 } from './prescreenV2.ts';
 import { sendTelegramFiles, sendTelegramMessage, type TelegramInlineKeyboard, type TelegramUpload } from './telegram.ts';
 import { withToday } from './aiToday.ts';
+import { applyUrgency, urgencyCheck } from './preScreenUrgency.ts';
 import { chatTokens, logAiUsage } from './aiUsage.ts';
 
 // The team's decision buttons (handled in telegram-webhook via preScreeningDecision.ts).
@@ -51,6 +52,11 @@ export const preScreeningDecisionRow = (id: string): TelegramInlineKeyboard[numb
 export const preScreeningDecisionRows = (id: string): TelegramInlineKeyboard => [
    preScreeningDecisionRow(id),
    [{ text: '💬 Ask more', callback_data: `pq:ask:${id}` }]
+];
+// After the AI's ✅ Good fit: the card says so, ❌ still overrules (asks why first, like a team ❌).
+export const autoGoodRows = (id: string): TelegramInlineKeyboard => [
+   [{ text: '✅ AUTO GOOD FIT (pre-screen) · tap to overrule ❌', callback_data: `ps:no:${id}` }],
+   [{ text: '▶️ Watch the answers', url: `${ADMIN_URL}?screen=${id}` }]
 ];
 // ❌ asks why (one tap) — the reason teaches the AI (loadTeamExamples) and shows on the card.
 export const NOT_FIT_REASONS: Record<string, string> = {
@@ -157,6 +163,8 @@ export type PreScreenGrade = {
    setting_cut?: { points: number; reasons: string[] } | null;
    /** Lying down in a clip: held under the auto ✅ line and flagged as a reject for the team (never auto ❌). */
    lying_down?: boolean;
+   /** Said it's urgent or typed in CAPS (preScreenUrgency.ts): cut hard and held under the auto ✅ line. */
+   urgency?: { urgent: string | null; caps: boolean } | null;
 };
 
 type Row = {
@@ -884,7 +892,16 @@ export async function gradePreScreening(svc: SupabaseClient, id: string, apiKey:
    const lying = gemini ? lyingDown(gemini.seen, new Set(['job_video'])) : false;
    const afterCut = built.overall != null && cut.points ? Math.max(0, built.overall - cut.points) : built.overall;
    const afterLying = lying && afterCut != null ? Math.min(afterCut, LYING_CAP) : afterCut;
-   const overall = capForPermit(afterLying, permit);
+   // George 2026-11-28: "urgently need it" or typed in CAPS = big cut and no auto ✅ (team decides).
+   const urgency = urgencyCheck(
+      row.questions
+         .filter((q) => q.kind !== 'medical' && q.kind !== 'photo' && q.kind !== 'doc')
+         .map((q) => {
+            const ans = answerOf(q.id);
+            return { spoken: answers.find((a) => a.q === q.id)?.transcript ?? null, typed: [ans?.text, ans?.first] };
+         })
+   );
+   const overall = capForPermit(applyUrgency(afterLying, urgency), permit);
    const grade: PreScreenGrade = {
       ...built,
       overall,
@@ -892,6 +909,7 @@ export async function gradePreScreening(svc: SupabaseClient, id: string, apiKey:
       answers,
       flags: [
          ...(lying ? ['🛌 Lying down in the video — counts as a reject; your call (not auto-rejected)'] : []),
+         ...(urgency ? [`🚨 Urgency: ${urgency.reasons.join(', ')} — score cut hard, not auto-approved; your call`] : []),
          ...(cut.points ? [`🎥 −${cut.points} for how they recorded: ${cut.reasons.join(', ')}`] : []),
          ...v2Flags,
          ...cameraFlags,
@@ -899,6 +917,7 @@ export async function gradePreScreening(svc: SupabaseClient, id: string, apiKey:
       ].slice(0, 12),
       graded_by: gemini ? GEMINI_MODEL : 'deepseek',
       ...(gemini ? { setting_cut: cut.points ? cut : null, lying_down: lying } : {}),
+      urgency: urgency ? { urgent: urgency.urgent, caps: urgency.caps } : null,
       ...(medQ ? { medical } : {})
    };
    const failed = grade.overall == null;
