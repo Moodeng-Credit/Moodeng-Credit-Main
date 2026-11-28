@@ -125,11 +125,14 @@
             top: 100%; right: auto; bottom: auto; left: 0; display: block; min-height: 0; border-radius: 0;
             background: none; color: #fff9ec; padding: 8px 0 0; font-size: 0.95rem; font-weight: 400; white-space: nowrap; box-shadow: none;
          }
-         html[data-landing-version='2'] .hero-home .tilt-hero-video a { display: block; width: 100%; height: 100%; }
+         html[data-landing-version='2'] .hero-home .tilt-hero-video a { display: block; width: 100%; height: 100%; overflow: hidden; }
          /* Phone videos are tall: keep these two slots portrait so the whole face shows. */
          html[data-landing-version='2'] .hero-home .tilt-hero-video { width: clamp(150px, 12.5vw, 184px); }
          html[data-landing-version='2'] .hero-home .tilt-hero-video img { object-fit: cover; object-position: 50% 40%; }
          html[data-landing-version='2'] .hero-home .tilt-hero-video .tilt-hero-amount { pointer-events: none; }
+         /* Right-hand photos: caption grows leftwards so it never runs off the page. */
+         html[data-landing-version='2'] .hero-home .tilt-hero-photo-rider figcaption,
+         html[data-landing-version='2'] .hero-home .tilt-hero-photo-stock figcaption { right: 0; left: auto; text-align: right; }
          html[data-landing-version='2'] .hero-home .tilt-hero-photo figcaption b { font-weight: 800; }
          html[data-landing-version='2'] .hero-home .tilt-hero-photo figcaption i { font-family: Georgia, 'Times New Roman', serif; }
       </style>
@@ -295,35 +298,19 @@
                      <li><b>$0</b><span>Moodeng fees</span></li>
                   </ul>
                </div>
-               <figure class="tilt-hero-photo tilt-hero-photo-school">
-                  <img
-                     src="/landing/assets/faces/sari-sari.jpg"
-                     alt="Portrait of a sari-sari store owner at her counter"
-                     width="720"
-                     height="960"
-                  />
-                  <span class="tilt-hero-amount" aria-label="Illustrative bills request: 15 dollars"
+               <figure class="tilt-hero-photo tilt-hero-photo-school tilt-hero-video">
+                  <!-- A frame from a real borrower's own video (same videos as the Borrower stories section). -->
+                  <a href="https://youtube.com/shorts/2ZmuK7Vq40k" target="_blank" rel="noreferrer" aria-label="Watch a real borrower's story on YouTube">
+                     <img src="https://i.ytimg.com/vi/2ZmuK7Vq40k/oar2.jpg" alt="A real Moodeng borrower talking to the camera" width="405" height="720" style="transform: scale(1.8); transform-origin: 50% 38%" />
+                  </a>
+                  <span class="tilt-hero-amount"
                      ><span class="tilt-hero-amount-icon" aria-hidden="true"
-                        ><svg class="site-icon" focusable="false"><use href="#icon-bill"></use></svg></span
-                     ><span>+$15</span></span
+                        ><svg class="site-icon" focusable="false"><use href="#icon-play"></use></svg></span
+                     ><span>Real borrower</span></span
                   >
-                  <figcaption><b>Cash</b> <i>for the electric bill</i></figcaption>
+                  <figcaption><b>No harassment</b> <i>a safer way to borrow</i></figcaption>
                </figure>
-               <figure class="tilt-hero-photo tilt-hero-photo-rider">
-                  <img
-                     src="/landing/assets/faces/rider.jpg"
-                     alt="Portrait of a delivery rider holding his helmet"
-                     width="720"
-                     height="960"
-                  />
-                  <span class="tilt-hero-amount" aria-label="Illustrative safer-helmet request: 20 dollars"
-                     ><span class="tilt-hero-amount-icon" aria-hidden="true"
-                        ><svg class="site-icon" focusable="false"><use href="#icon-helmet"></use></svg></span
-                     ><span>+$20</span></span
-                  >
-                  <figcaption><b>Cash</b> <i>for a new helmet</i></figcaption>
-               </figure>
-               <figure class="tilt-hero-photo tilt-hero-photo-repair tilt-hero-video">
+               <figure class="tilt-hero-photo tilt-hero-photo-rider tilt-hero-video">
                   <!-- A frame from a real borrower's own video (same videos as the Borrower stories section). -->
                   <a href="https://youtube.com/shorts/DRAVbsiSPrA" target="_blank" rel="noreferrer" aria-label="Watch a real borrower's story on YouTube">
                      <img src="https://i.ytimg.com/vi/DRAVbsiSPrA/oar2.jpg" alt="A real Moodeng borrower talking to the camera" width="405" height="720" />
@@ -333,7 +320,19 @@
                         ><svg class="site-icon" focusable="false"><use href="#icon-play"></use></svg></span
                      ><span>Real borrower</span></span
                   >
-                  <figcaption><b>Watch</b> <i>their story</i></figcaption>
+                  <figcaption><b>Single mom</b> <i>stress-free support</i></figcaption>
+               </figure>
+               <figure class="tilt-hero-photo tilt-hero-photo-repair tilt-hero-video">
+                  <!-- A frame from a real borrower's own video (same videos as the Borrower stories section). -->
+                  <a href="https://youtube.com/shorts/t8dnE2h4mNk" target="_blank" rel="noreferrer" aria-label="Watch a real borrower's story on YouTube">
+                     <img src="https://i.ytimg.com/vi/t8dnE2h4mNk/oar2.jpg" alt="A real Moodeng borrower talking to the camera" width="405" height="720" />
+                  </a>
+                  <span class="tilt-hero-amount"
+                     ><span class="tilt-hero-amount-icon" aria-hidden="true"
+                        ><svg class="site-icon" focusable="false"><use href="#icon-play"></use></svg></span
+                     ><span>Real borrower</span></span
+                  >
+                  <figcaption><b>“0% interest”</b> <i>was a lie at other apps</i></figcaption>
                </figure>
                <figure class="tilt-hero-photo tilt-hero-photo-stock tilt-hero-video">
                   <!-- A frame from a real borrower's own video (same videos as the Borrower stories section). -->
@@ -345,7 +344,7 @@
                         ><svg class="site-icon" focusable="false"><use href="#icon-play"></use></svg></span
                      ><span>Real borrower</span></span
                   >
-                  <figcaption><b>Watch</b> <i>their story</i></figcaption>
+                  <figcaption><b>Trapped</b> <i>by a loan app, until this</i></figcaption>
                </figure>
             </div>
          </section>
