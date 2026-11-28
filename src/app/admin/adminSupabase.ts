@@ -3318,7 +3318,7 @@ export type AdminCallDecision =
 let callApprovalsCache: { at: number; rows: Promise<AdminCallApprovalRow[]> } | null = null;
 
 async function invokeAdminCallApprovals<T>(body: Record<string, unknown>): Promise<T> {
-   if (body.action !== 'list') callApprovalsCache = null;
+   if (body.action !== 'list' && body.action !== 'faces' && body.action !== 'brief') callApprovalsCache = null;
    const { data, error } = await getSupabaseBrowserClient().functions.invoke('admin-call-approvals', { body });
    if (error) {
       const ctx = (error as { context?: Response }).context;
@@ -3341,6 +3341,58 @@ export async function getAdminCallApprovals({ maxAgeMs = 2000 }: { maxAgeMs?: nu
       if (callApprovalsCache === entry) callApprovalsCache = null;
    });
    return rows;
+}
+
+/** What a borrower looks like: sign-in profile picture, pre-screening intro video, photos they took. */
+export interface AdminCallFace {
+   avatar: string | null;
+   clip: string | null;
+   photos: { label: string; url: string }[];
+}
+
+// Storage links are signed for an hour; keep each person's for 45 min so pictures don't reload on
+// every list refresh, and only ask the server for people we don't have yet.
+const FACE_TTL_MS = 45 * 60_000;
+const callFaceCache = new Map<string, { at: number; face: AdminCallFace }>();
+
+export async function getAdminCallFaces(userIds: string[]): Promise<Record<string, AdminCallFace>> {
+   const now = Date.now();
+   const out: Record<string, AdminCallFace> = {};
+   const missing: string[] = [];
+   for (const id of new Set(userIds)) {
+      const hit = callFaceCache.get(id);
+      if (hit && now - hit.at < FACE_TTL_MS) out[id] = hit.face;
+      else missing.push(id);
+   }
+   for (let i = 0; i < missing.length; i += 40) {
+      const { faces } = await invokeAdminCallApprovals<{ faces: Record<string, AdminCallFace> }>({ action: 'faces', userIds: missing.slice(i, i + 40) });
+      for (const [id, face] of Object.entries(faces ?? {})) {
+         callFaceCache.set(id, { at: now, face });
+         out[id] = face;
+      }
+   }
+   return out;
+}
+
+/** The AI's read-back for the host: what the borrower told us, as sentences to confirm on the call. */
+export interface AdminCallBrief {
+   headline: string;
+   say_back: string[];
+   ask: string[];
+   watch: string[];
+}
+
+// 'peek' returns the saved brief or null without writing one; 'refresh' writes a new one.
+export async function getAdminCallBrief(
+   userId: string,
+   mode: 'make' | 'peek' | 'refresh' = 'make'
+): Promise<{ brief: AdminCallBrief; createdAt: string } | null> {
+   const result = await invokeAdminCallApprovals<{ brief: AdminCallBrief | null; createdAt?: string }>({
+      action: 'brief',
+      userId,
+      ...(mode === 'peek' ? { peek: true } : mode === 'refresh' ? { refresh: true } : {})
+   });
+   return result.brief ? { brief: result.brief, createdAt: result.createdAt ?? '' } : null;
 }
 
 export async function decideAdminCall(input: AdminCallDecision): Promise<{ ok: boolean; summary: string }> {

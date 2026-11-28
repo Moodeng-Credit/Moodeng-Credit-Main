@@ -2,6 +2,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 import { ATTENDANCE_COLUMNS, describeAttendance, zoomActiveForHost } from '../_shared/attendance.ts';
+import { loadCallBrief, makeCallBrief } from '../_shared/callBrief.ts';
 import { checkCallForm } from '../_shared/callFormCheck.ts';
 import { getEffectiveCreditLimit, shiftCreditLevel } from '../_shared/creditAndPoints.ts';
 import { postDiscord } from '../_shared/discord.ts';
@@ -37,6 +38,11 @@ import { recordCallOutcome } from '../_shared/videoCallOutcome.ts';
 //                                       button; also the only way on Cal Video calls)  → { ok, channel, sentAt }
 //   { action: 'check_form', userId }    re-run the AI form check on their latest call transcript
 //                                       (after the host edits the sheet)  → { ok, check }
+//   { action: 'faces', userIds }      profile picture + pre-screening intro video + photos per person, so
+//                                       the host knows the face before the call  → { faces: { [userId]: … } }
+//   { action: 'brief', userId, refresh?, peek? }  the AI's "say this back to them" summary of everything we
+//                                       know (saved; refresh makes a new one, peek never makes one)
+//                                       → { brief, createdAt } | { brief: null }
 //   { action: 'credit_level', userId, direction: 'up' | 'down' }  move their limit one ladder step
 //                                       (mistakes, early repay) → { ok, summary, cs }
 // verify_jwt is on; the caller must also be an active admin.
@@ -74,6 +80,15 @@ type UserRow = {
    video_call_arrived_at: string | null;
    video_call_joined_at: string | null;
    video_call_left_at: string | null;
+};
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+// The picture a sign-in provider gave us (or the avatar they uploaded). https links only.
+const profilePicture = (meta: Record<string, unknown> | null | undefined): string | null => {
+   for (const key of ['avatar_url', 'picture', 'photo_url']) {
+      const value = meta?.[key];
+      if (typeof value === 'string' && /^https:\/\//i.test(value)) return value;
+   }
+   return null;
 };
 type RequestRow = { id: string; user_id: string; kind: string; display_name: string | null; reason: string | null; created_at: string };
 
@@ -157,6 +172,73 @@ serve(async (req) => {
             });
          }
          return json({ rows });
+      }
+
+      // What the borrower looks like, for the host before a call: their sign-in profile picture (Facebook /
+      // Google / TikTok login, when they used one), their pre-screening intro video and the photos they
+      // took there. Facebook does not give us a Page contact's photo, so this is the closest we have.
+      // Storage links are signed for an hour; the panel keeps them and asks again only for new people.
+      if (body.action === 'faces') {
+         const ids = [...new Set((Array.isArray(body.userIds) ? body.userIds : []).filter((v): v is string => typeof v === 'string' && UUID_RE.test(v)))].slice(0, 40);
+         if (!ids.length) return json({ faces: {} });
+         const [{ data: screens, error: screensError }, avatars] = await Promise.all([
+            svc
+               .from('pre_screenings')
+               .select('user_id, answers, created_at')
+               .in('user_id', ids)
+               .is('files_removed_at', null)
+               .order('created_at', { ascending: false }),
+            Promise.all(
+               ids.map((id) =>
+                  svc.auth.admin.getUserById(id).then(
+                     (r) => [id, profilePicture(r.data?.user?.user_metadata)] as const,
+                     () => [id, null] as const
+                  )
+               )
+            )
+         ]);
+         if (screensError) throw new Error(screensError.message);
+         // Newest pre-screening per person.
+         const media = new Map<string, { clip: string | null; photos: { label: string; path: string }[] }>();
+         for (const row of (screens ?? []) as { user_id: string; answers: unknown }[]) {
+            if (media.has(row.user_id)) continue;
+            const entry = { clip: null as string | null, photos: [] as { label: string; path: string }[] };
+            for (const a of Array.isArray(row.answers) ? (row.answers as Record<string, unknown>[]) : []) {
+               const q = typeof a?.q === 'string' ? a.q : '';
+               if (q === 'intro' && typeof a.video === 'string' && a.video) entry.clip = a.video;
+               if (typeof a?.photo === 'string' && a.photo && entry.photos.length < 6) {
+                  entry.photos.push({ label: q.startsWith('job') ? 'Job photo' : 'Photo', path: a.photo });
+               }
+            }
+            media.set(row.user_id, entry);
+         }
+         const paths = [...media.values()].flatMap((m) => [...(m.clip ? [m.clip] : []), ...m.photos.map((ph) => ph.path)]);
+         const signedByPath = new Map<string, string>();
+         if (paths.length) {
+            const { data: signed } = await svc.storage.from('pre-screenings').createSignedUrls(paths, 3600);
+            for (const item of signed ?? []) if (item.path && item.signedUrl) signedByPath.set(item.path, item.signedUrl);
+         }
+         const avatarById = new Map(avatars);
+         const faces: Record<string, { avatar: string | null; clip: string | null; photos: { label: string; url: string }[] }> = {};
+         for (const id of ids) {
+            const m = media.get(id);
+            faces[id] = {
+               avatar: avatarById.get(id) ?? null,
+               clip: m?.clip ? (signedByPath.get(m.clip) ?? null) : null,
+               photos: (m?.photos ?? []).flatMap((ph) => {
+                  const url = signedByPath.get(ph.path);
+                  return url ? [{ label: ph.label, url }] : [];
+               })
+            };
+         }
+         return json({ faces });
+      }
+
+      if (body.action === 'brief' && typeof body.userId === 'string' && UUID_RE.test(body.userId)) {
+         const saved = body.refresh === true ? null : await loadCallBrief(svc, body.userId);
+         if (saved) return json(saved);
+         if (body.peek === true) return json({ brief: null });
+         return json(await makeCallBrief(svc, body.userId));
       }
 
       if (body.action === 'decide') {
